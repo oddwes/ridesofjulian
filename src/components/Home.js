@@ -1,9 +1,10 @@
-import { getAtheleteStats, getAthlete, getAthleteActivities, isLoggedIn } from "../utils/StravaUtil"
+import { Navigate, useNavigate } from "react-router-dom"
+import { getAthlete, getAthleteActivities, isLoggedIn } from "../strava/StravaUtil"
 import { useEffect, useState } from "react"
 
-import { Navigate } from "react-router-dom"
-
 const Home = () => {
+  const navigate = useNavigate()
+
   const [athlete, setAthlete] = useState()
   const [athleteActivities, setAthleteActivities] = useState([{}])
 
@@ -29,13 +30,17 @@ const Home = () => {
   }
 
   useEffect(() => {
-    loadAthlete()
-    loadAthleteActivities()
+    if(isLoggedIn()) {
+      loadAthlete()
+      loadAthleteActivities()
+    } else {
+      navigate('/login')
+    }
   }, [])
 
   return (
     <>
-      <h1>HOMEPAGE</h1>
+      <h1 style={{padding: '20px', 'text-align': 'center', color: 'white', 'background-color': '#FC5201'}}>RIDESOFJULIAN</h1>
       <h2>Hello {athlete?.firstname}</h2>
       <h2>Total ride time this year: {getTotalTime()} hours</h2>
       <h2>Total ride time this year: {getTotalDistance()} KMs</h2>
@@ -48,7 +53,6 @@ const Home = () => {
           )
         })
       }
-      {!isLoggedIn() && <Navigate replace to="/login" />}
     </>
   )
 }
