@@ -1,6 +1,9 @@
 import { Navigate, useNavigate } from "react-router-dom"
-import { getAthlete, getAthleteActivities, isLoggedIn } from "../strava/StravaUtil"
+import { getAthlete, getAthleteActivities, isLoggedIn } from "../utils/StravaUtil"
 import { useEffect, useState } from "react"
+
+import Calendar from "./Calendar"
+import dayjs from "dayjs"
 
 const Home = () => {
   const navigate = useNavigate()
@@ -38,9 +41,12 @@ const Home = () => {
     }
   }, [selectedYear])
 
+  const start = selectedYear === dayjs().year()
+    ? dayjs()
+    : dayjs(`${selectedYear}-12-31`)
+
   return (
     <>
-      <h1 style={{padding: '20px', textAlign: 'center', color: 'white', backgroundColor: '#FC5201'}}>RIDESOFJULIAN</h1>
       <h2>Hello {athlete?.firstname}</h2>
       <select
         default={selectedYear}
@@ -55,15 +61,7 @@ const Home = () => {
       <h2>Total ride time: {getTotalTime()} hours</h2>
       <h2>Total distance: {getTotalDistance()} KMs</h2>
       <h2>Ride count: {athleteActivities.length}</h2>
-      {
-        athleteActivities.map((activity) => {
-          return (
-            <pre key={activity.id}>
-              {JSON.stringify(activity, null, 0)}
-            </pre>
-          )
-        })
-      }
+      <Calendar start={start} activities={athleteActivities} />
     </>
   )
 }

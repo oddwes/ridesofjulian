@@ -1,3 +1,5 @@
+import { getBeginningOfYear, getEndOfYear } from "./TimeUtil";
+
 import axios from "axios";
 
 const { REACT_APP_STRAVA_CLIENT_ID, REACT_APP_STRAVA_CLIENT_SECRET } = process.env
@@ -37,9 +39,9 @@ export const getAthleteStats = async () => {
 }
 
 export const getAthleteActivities = async (year, page = 1) => {
-  const perPage = 50
-  const firstDayOfYear = new Date(year, 0, 1).getTime()/1000
-  const lastDayOfYear = new Date(year, 11, 31).getTime()/1000
+  const perPage = 100
+  const firstDayOfYear = getBeginningOfYear(year).valueOf()/1000
+  const lastDayOfYear = getEndOfYear(year).valueOf()/1000
   const activities = await stravaApiV3Get(
     'https://www.strava.com/api/v3/athlete/activities',
     {
