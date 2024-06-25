@@ -38,7 +38,7 @@ const Calendar = ({start, activities}) => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {(activity.distance/1000).toFixed(2)} KM
+              {(activity.distance/1000).toFixed(2)} km | {activity.total_elevation_gain} m
             </Link>
           )
         } else {
