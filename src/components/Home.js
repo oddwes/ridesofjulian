@@ -32,6 +32,10 @@ const Home = () => {
     return (totalRideDistance / 1000).toFixed(2)
   }
 
+  const getTotalElevation = () => {
+    return athleteActivities.map((activity) => activity.total_elevation_gain).reduce((partialSum, a) => partialSum + a, 0)
+  }
+
   useEffect(() => {
     if(isLoggedIn()) {
       loadAthlete()
@@ -59,7 +63,8 @@ const Home = () => {
         <option value='2020'>2020</option>
       </select>
       <h2>Total ride time: {getTotalTime()} hours</h2>
-      <h2>Total distance: {getTotalDistance()} KMs</h2>
+      <h2>Total distance: {getTotalDistance()} km</h2>
+      <h2>Total elevation: {getTotalElevation()} m</h2>
       <h2>Ride count: {athleteActivities.length}</h2>
       <Calendar start={start} activities={athleteActivities} />
     </>
