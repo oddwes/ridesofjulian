@@ -1,6 +1,6 @@
 import '../styling/strava.css';
 
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY, getAccessToken } from '../strava/StravaUtil';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY, getAccessToken } from '../utils/StravaUtil';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useEffect } from 'react';

@@ -1,6 +1,6 @@
 import '../styling/strava.css';
 
-import { isLoggedIn, login } from "../strava/StravaUtil"
+import { isLoggedIn, login } from "../utils/StravaUtil"
 
 import { Navigate } from 'react-router-dom';
 import strava_logo from "../assets/images/strava-logo.svg"
