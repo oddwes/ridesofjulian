@@ -1,10 +1,11 @@
+import Header from "./components/Header";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routes";
 
 function App() {
   return (
     <div className="App">
-      <h1 style={{padding: '20px', textAlign: 'center', color: 'white', backgroundColor: '#FC5201'}}>RIDESOFJULIAN</h1>
+      <Header />
       <RouterProvider router={router} />
     </div>
   );
