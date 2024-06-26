@@ -1,3 +1,5 @@
+import '../styling/calendar.css';
+
 import { getBeginningOfWeek, getEndOfWeek } from "../utils/TimeUtil"
 
 import Col from "react-bootstrap/Col"
@@ -9,17 +11,21 @@ import dayjs from "dayjs"
 const Calendar = ({start, activities}) => {
   const printRow = (header, columns) => {
     return (
-      <Row>
-        <Col xs={2} style={{textAlign:'center'}}>{header}</Col>
-        {
-          columns.map(col => <Col>{col}</Col>)
-        }
-      </Row>
+      <>
+        <Row>
+          <Col xs={2} style={{textAlign:'left'}}>{header}</Col>
+          {
+            columns.map(col => <Col>{col}</Col>)
+          }
+        </Row>
+        <hr/>
+      </>
     )
   }
 
-  let rows = []
-  for(let i=0; i< 8; ++i) {
+  const weekCount = dayjs(start).diff(dayjs(start).startOf('year'), 'weeks')
+  const rows = []
+  for(let i=0; i<weekCount; ++i) {
     const today = start.subtract(i, 'weeks')
     const startDate = getBeginningOfWeek(today)
     const endDate = getEndOfWeek(today)
@@ -51,12 +57,12 @@ const Calendar = ({start, activities}) => {
 
   return (
     <>
-      <hr/>
       <Container fluid>
-        {printRow(2024, ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun'])}
+        <hr/>
+          {printRow(dayjs(start).year(), ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun'])}
+        <hr/>
+        {rows}
       </Container>
-      <hr/>
-      {rows}
     </>
   )
 }

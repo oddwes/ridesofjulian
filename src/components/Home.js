@@ -1,25 +1,35 @@
-import { Navigate, useNavigate } from "react-router-dom"
+import { Col, Container, Row } from "react-bootstrap"
 import { getAthlete, getAthleteActivities, isLoggedIn } from "../utils/StravaUtil"
 import { useEffect, useState } from "react"
 
 import Calendar from "./Calendar"
+import Loading from "./Loading"
+import ReactSelect from "react-select"
 import dayjs from "dayjs"
+import { useNavigate } from "react-router-dom"
 
 const Home = () => {
+  const yearOptions = [
+    { value: '2024', label: 2024 },
+    { value: '2023', label: 2023 },
+    { value: '2022', label: 2022 },
+    { value: '2021', label: 2021 },
+    { value: '2020', label: 2020 },
+    { value: '2019', label: 2019 },
+  ]
+
   const navigate = useNavigate()
 
-  const [athlete, setAthlete] = useState()
+  const [isLoading, setIsLoading] = useState(true)
   const [athleteActivities, setAthleteActivities] = useState([{}])
-  const [selectedYear, setSelectedYear] = useState(2024)
-
-  const loadAthlete = async () => {
-    const response = await getAthlete()
-    setAthlete(response)
-  }
+  const [selectedYear, setSelectedYear] = useState(yearOptions[0])
 
   const loadAthleteActivities = async () => {
-    const response = await getAthleteActivities(selectedYear)
+    const response = await getAthleteActivities(selectedYear.value)
+    response.sort((a,b) => dayjs(b.start_date) - dayjs(a.start_date))
+
     setAthleteActivities(response)
+    setIsLoading(false)
   }
 
   const getTotalTime = () => {
@@ -38,36 +48,43 @@ const Home = () => {
 
   useEffect(() => {
     if(isLoggedIn()) {
-      loadAthlete()
       loadAthleteActivities()
     } else {
       navigate('/login')
     }
   }, [selectedYear])
 
-  const start = selectedYear === dayjs().year()
+  const start = selectedYear.value == dayjs().year()
     ? dayjs()
-    : dayjs(`${selectedYear}-12-31`)
+    : dayjs(`${selectedYear.value}-12-31`)
 
   return (
-    <>
-      <h2>Hello {athlete?.firstname}</h2>
-      <select
-        default={selectedYear}
-        onChange={e => setSelectedYear(e.target.value)}
-      >
-        <option value='2024'>2024</option>
-        <option value='2023'>2023</option>
-        <option value='2022'>2022</option>
-        <option value='2021'>2021</option>
-        <option value='2020'>2020</option>
-      </select>
-      <h2>Total ride time: {getTotalTime()} hours</h2>
-      <h2>Total distance: {getTotalDistance()} km</h2>
-      <h2>Total elevation: {getTotalElevation()} m</h2>
-      <h2>Ride count: {athleteActivities.length}</h2>
-      <Calendar start={start} activities={athleteActivities} />
-    </>
+    <Container fluid>
+      <Row className="justify-content-md-center">
+        <Col xs={1} style={{padding:'10px'}}>
+          <ReactSelect
+            options={yearOptions}
+            value={selectedYear}
+            onChange={e => {
+              setIsLoading(true)
+              setSelectedYear(e)
+            }}
+          />
+        </Col>
+      </Row>
+      {isLoading && <Loading />}
+      {!isLoading &&
+        <>
+          <Row>
+            <Col><h2 style={{textAlign: 'center'}}>Total ride time: {getTotalTime()} hours</h2></Col>
+            <Col><h2 style={{textAlign: 'center'}}>Total distance: {getTotalDistance()} km</h2></Col>
+            <Col><h2 style={{textAlign: 'center'}}>Total elevation: {getTotalElevation()} m</h2></Col>
+            <Col><h2 style={{textAlign: 'center'}}>Ride count: {athleteActivities.length}</h2></Col>
+          </Row>
+          <Calendar start={start} activities={athleteActivities} />
+        </>
+      }
+    </Container>
   )
 }
 
