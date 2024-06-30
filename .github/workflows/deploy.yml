@@ -46,7 +46,7 @@ jobs:
           REACT_APP_STRAVA_CLIENT_ID: ${{ secrets.REACT_APP_STRAVA_CLIENT_ID }}
           REACT_APP_STRAVA_CLIENT_SECRET: ${{ secrets.REACT_APP_STRAVA_CLIENT_SECRET }}
         run: |
-          echo $REACT_APP_STRAVA_CLIENT_ID
+          echo "$REACT_APP_STRAVA_CLIENT_ID"
           ${{ steps.detect-package-manager.outputs.runner }} npm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
