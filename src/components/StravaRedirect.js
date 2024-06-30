@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 const StravaRedirect = () => {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   useEffect(() => {
     async function getTokens() {
@@ -19,7 +19,7 @@ const StravaRedirect = () => {
       navigate('/')
     }
     getTokens()
-  }, [navigate])
+  }, [navigate, searchParams])
 }
 
 export default StravaRedirect
