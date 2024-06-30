@@ -64,8 +64,8 @@ const Calendar = ({start, activities, isHeader = false}) => {
     } else {
       dateRange = `${startDate.format('D')} ${startDate.format('MMM')}-${endDate.format('D')} ${endDate.format('MMM')}`
     }
-    const totalDistance = (weekActivities.reduce((partialSum, a) => partialSum + a.distance, 0)/1000).toFixed(2)
-    const totalElevation = weekActivities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0)
+    const totalDistance = Math.round(weekActivities.reduce((partialSum, a) => partialSum + a.distance, 0)/1000)
+    const totalElevation = Math.round(weekActivities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0))
     return (
       <Col xs={2}>
         <p className='header-col'>{dateRange}</p>
@@ -101,16 +101,12 @@ const Calendar = ({start, activities, isHeader = false}) => {
                   <div className='circle' style={{margin:'auto'}}>
                     <div className='text'>
                       <div>
-                        {`${(activity.distance/1000).toFixed(2)} km`}
+                        {`${Math.round(activity.distance/1000)} km`}
                       </div>
                       <div>
-                        {`${(activity.total_elevation_gain).toFixed(2)} m`}
+                        {`${Math.round(activity.total_elevation_gain)} m`}
                       </div>
                     </div>
-                    {/* <p className='text'>
-                        {`${(activity.distance/1000).toFixed(2)} km\n
-                        ${(activity.total_elevation_gain).toFixed(2)} m`}
-                    </p> */}
                   </div>
                 <div className='centered activity-sub-text small-text'>{activity.name}</div>
               </div>

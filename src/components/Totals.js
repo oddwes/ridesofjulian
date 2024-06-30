@@ -6,16 +6,16 @@ import dayjs from 'dayjs';
 const Totals = ({athleteActivities}) => {
   const getTotalTime = () => {
     let totalRideTime = athleteActivities.reduce((partialSum, a) => partialSum + a.moving_time, 0)
-    return (totalRideTime / 3600).toFixed(2)
+    return Math.round(totalRideTime / 3600)
   }
 
   const getTotalDistance = () => {
     let totalRideDistance = athleteActivities.reduce((partialSum, a) => partialSum + a.distance, 0)
-    return (totalRideDistance / 1000).toFixed(2)
+    return Math.round(totalRideDistance / 1000)
   }
 
   const getTotalElevation = () => {
-    return athleteActivities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0)
+    return Math.round(athleteActivities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0))
   }
 
   return (
