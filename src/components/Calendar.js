@@ -46,7 +46,7 @@ const Calendar = ({start, activities, isHeader = false}) => {
                 [...Array(7).keys()].map(i => {
                   const date = startDate.add(i, 'day')
                   const activity = weekActivities.find(a => dayjs(a.start_date).isSame(date, 'date'))
-                  return printDay(activity)
+                  return printDay(activity, date.isSame(dayjs(), 'date'))
                 })
               }
             </Row>
@@ -81,12 +81,7 @@ const Calendar = ({start, activities, isHeader = false}) => {
     )
   }
 
-  const printDay = (activity) => {
-    let isToday
-    if(activity) {
-      isToday = dayjs(activity.start_date).isSame(dayjs(), 'date')
-    }
-
+  const printDay = (activity, isToday) => {
     return (
       <Col>
         {
@@ -113,14 +108,16 @@ const Calendar = ({start, activities, isHeader = false}) => {
             </Link>
           )
         }
-        {
-          !activity && isToday && (<div className='centered activity-sub-text small-text'>Today</div>)
-        }
-        {isToday && (
-          <div className='centered activity-sub-text'>
-            <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
+        <div className='fill-parent'>
+          <div className='vertical-center centered activity-sub-text'>
+            {!activity && isToday && (<div>Today</div>)}
+            {isToday && (
+              <div>
+                <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </Col>
     )
   }
