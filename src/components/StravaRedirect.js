@@ -19,7 +19,7 @@ const StravaRedirect = () => {
       navigate('/')
     }
     getTokens()
-  }, [])
+  }, [navigate])
 }
 
 export default StravaRedirect
