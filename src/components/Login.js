@@ -1,9 +1,9 @@
 import '../styling/strava.css';
 
-import { Col, Row } from 'react-bootstrap';
 import { isLoggedIn, login } from "../utils/StravaUtil"
 
 import { Navigate } from 'react-router-dom';
+import { Row } from 'react-bootstrap';
 import strava_logo from "../assets/images/strava-logo.svg"
 
 const Login = () => {
