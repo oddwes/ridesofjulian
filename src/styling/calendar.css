@@ -1,0 +1,40 @@
+.circle {
+  display: flex;
+  width: 115px;
+  height: 115px;
+  background-color: #FC5201;
+  border-radius: 50%;
+}
+
+.text {
+  margin: auto;
+  color: white;
+  text-align: center;
+}
+
+.header-col {
+  text-align: left;
+  font-weight: bold;
+}
+
+.header-row {
+  font-weight: bold;
+}
+
+.centered {
+  text-align: center;
+}
+
+.activity-circle-text {
+  color: white;
+  text-decoration: none;
+}
+
+.activity-sub-text {
+  color: black;
+  padding-top: 10px;
+}
+
+.small-text {
+  font-size: x-small;
+}
