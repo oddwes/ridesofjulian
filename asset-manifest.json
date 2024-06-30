@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/ridesofjulian/static/css/main.3653b612.css",
-    "main.js": "/ridesofjulian/static/js/main.dcc48999.js",
+    "main.js": "/ridesofjulian/static/js/main.e7b6f4f1.js",
     "static/js/453.c5d2e3bf.chunk.js": "/ridesofjulian/static/js/453.c5d2e3bf.chunk.js",
     "index.html": "/ridesofjulian/index.html",
     "static/media/strava-logo.svg": "/ridesofjulian/static/media/strava-logo.4b9e035a308139b25f48f3f4c0fe1056.svg",
     "main.3653b612.css.map": "/ridesofjulian/static/css/main.3653b612.css.map",
-    "main.dcc48999.js.map": "/ridesofjulian/static/js/main.dcc48999.js.map",
+    "main.e7b6f4f1.js.map": "/ridesofjulian/static/js/main.e7b6f4f1.js.map",
     "453.c5d2e3bf.chunk.js.map": "/ridesofjulian/static/js/453.c5d2e3bf.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.3653b612.css",
-    "static/js/main.dcc48999.js"
+    "static/js/main.e7b6f4f1.js"
   ]
 }
