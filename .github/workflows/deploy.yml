@@ -43,6 +43,9 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build project
         run: ${{ steps.detect-package-manager.outputs.runner }} npm run build
+        env:
+          REACT_APP_STRAVA_CLIENT_ID: ${{ secrets.REACT_APP_STRAVA_CLIENT_ID }}
+          REACT_APP_STRAVA_CLIENT_SECRET: ${{ secrets.REACT_APP_STRAVA_CLIENT_SECRET }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
