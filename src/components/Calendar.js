@@ -1,6 +1,7 @@
 import '../styling/calendar.css';
 
 import { getBeginningOfWeek, getEndOfWeek } from "../utils/TimeUtil"
+import { getTotalDistance, getTotalElevation, getTotalTime } from '../utils/StravaUtil';
 
 import Col from "react-bootstrap/Col"
 import Container from "react-bootstrap/Container"
@@ -64,18 +65,20 @@ const Calendar = ({start, activities, isHeader = false}) => {
     } else {
       dateRange = `${startDate.format('D')} ${startDate.format('MMM')}-${endDate.format('D')} ${endDate.format('MMM')}`
     }
-    const totalDistance = Math.round(weekActivities.reduce((partialSum, a) => partialSum + a.distance, 0)/1000)
-    const totalElevation = Math.round(weekActivities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0))
     return (
       <Col xs={2}>
         <p className='header-col'>{dateRange}</p>
         <div>
           <div className='small-text'>Total Distance</div>
-          {totalDistance} km
+          {getTotalDistance(weekActivities)} km
         </div>
         <div>
           <div className='small-text'>Total Elevation</div>
-          {totalElevation} m
+          {getTotalElevation(weekActivities)} m
+        </div>
+        <div>
+          <div className='small-text'>Total Time</div>
+          {getTotalTime(weekActivities)} h
         </div>
       </Col>
     )

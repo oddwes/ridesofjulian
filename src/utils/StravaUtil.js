@@ -73,3 +73,15 @@ const stravaApiV3Get = async (url, params = {}) => {
     console.log(error);
   }
 }
+
+export const getTotalDistance = (activities) => {
+  return Math.round(activities.reduce((partialSum, a) => partialSum + a.distance, 0)/1000)
+}
+
+export const getTotalElevation = (activities) => {
+  return Math.round(activities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0))
+}
+
+export const getTotalTime = (activities) => {
+  return Math.round(activities.reduce((partialSum, a) => partialSum + a.moving_time, 0)/3600)
+}

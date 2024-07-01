@@ -1,43 +1,31 @@
 import '../styling/totals.css';
 
+import { getTotalDistance, getTotalElevation, getTotalTime } from '../utils/StravaUtil';
+
 import { Table } from "react-bootstrap"
 import dayjs from 'dayjs';
 
 const Totals = ({athleteActivities}) => {
-  const getTotalTime = () => {
-    let totalRideTime = athleteActivities.reduce((partialSum, a) => partialSum + a.moving_time, 0)
-    return Math.round(totalRideTime / 3600)
-  }
-
-  const getTotalDistance = () => {
-    let totalRideDistance = athleteActivities.reduce((partialSum, a) => partialSum + a.distance, 0)
-    return Math.round(totalRideDistance / 1000)
-  }
-
-  const getTotalElevation = () => {
-    return Math.round(athleteActivities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0))
-  }
-
   return (
     <Table striped bordered hover>
       <tbody>
         <tr>
-          <th colSpan={2} className="centered">{dayjs(athleteActivities[0].start_date).year()}</th>
+          <td colSpan={2} className="centered" style={{fontSize: 'large'}}>{dayjs(athleteActivities[0].start_date).year()}</td>
         </tr>
         <tr>
-          <td>Total ride time</td>
-          <td className='total'>{getTotalTime()} h</td>
+          <td style={{fontSize: 'smaller'}}>Total ride time</td>
+          <td className='total'>{getTotalTime(athleteActivities)} h</td>
         </tr>
         <tr>
-          <td>Total distance</td>
-          <td className='total'>{getTotalDistance()} km</td>
+          <td style={{fontSize: 'smaller'}}>Total distance</td>
+          <td className='total'>{getTotalDistance(athleteActivities)} km</td>
         </tr>
         <tr>
-          <td>Total elevation</td>
-          <td className='total'>{getTotalElevation()} m</td>
+          <td style={{fontSize: 'smaller'}}>Total elevation</td>
+          <td className='total'>{getTotalElevation(athleteActivities)} m</td>
         </tr>
         <tr>
-          <td>Ride count</td>
+          <td style={{fontSize: 'smaller'}}>Ride count</td>
           <td className='total'>{athleteActivities.length}</td>
         </tr>
       </tbody>
