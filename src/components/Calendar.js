@@ -125,9 +125,9 @@ const Calendar = ({start, activities, isHeader = false}) => {
       <div className='fill-parent'>
         <div className='vertical-center centered activity-sub-text'>
           <div>Today</div>
-          <div>
-            <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
-          </div>
+        </div>
+        <div className='vertical-bottom'>
+          <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
         </div>
       </div>
     )
