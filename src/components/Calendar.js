@@ -84,41 +84,52 @@ const Calendar = ({start, activities, isHeader = false}) => {
   const printDay = (activity, isToday) => {
     return (
       <Col>
-        {
-          activity && (
-            <Link
-              to={`https://strava.com/activities/${activity.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className='activity-circle-text'
-            >
-              <div className='centered'>
-                  <div className='circle' style={{margin:'auto'}}>
-                    <div className='text'>
-                      <div>
-                        {`${Math.round(activity.distance/1000)} km`}
-                      </div>
-                      <div>
-                        {`${Math.round(activity.total_elevation_gain)} m`}
-                      </div>
-                    </div>
-                  </div>
-                <div className='centered activity-sub-text small-text'>{activity.name}</div>
-              </div>
-            </Link>
-          )
-        }
-        <div className='fill-parent'>
-          <div className='vertical-center centered activity-sub-text'>
-            {!activity && isToday && (<div>Today</div>)}
-            {isToday && (
+        {activity && activityCircle(activity, isToday)}
+        {!activity && isToday && todayTag()}
+      </Col>
+    )
+  }
+
+  const activityCircle = (activity, isToday) => {
+    return (
+      <Link
+        to={`https://strava.com/activities/${activity.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className='activity-circle-text'
+      >
+        <div className='centered'>
+          <div className='circle' style={{margin:'auto'}}>
+            <div className='text'>
               <div>
-                <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
+                {`${Math.round(activity.distance/1000)} km`}
               </div>
-            )}
+              <div>
+                {`${Math.round(activity.total_elevation_gain)} m`}
+              </div>
+            </div>
+          </div>
+          <div className='centered activity-sub-text small-text'>{activity.name}</div>
+          {isToday && (
+            <div>
+              <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
+            </div>
+          )}
+        </div>
+      </Link>
+    )
+  }
+
+  const todayTag = () => {
+    return (
+      <div className='fill-parent'>
+        <div className='vertical-center centered activity-sub-text'>
+          <div>Today</div>
+          <div>
+            <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
           </div>
         </div>
-      </Col>
+      </div>
     )
   }
 
