@@ -1,4 +1,4 @@
-import '../styling/calendar.css';
+import '../styling/totals.css';
 
 import { Table } from "react-bootstrap"
 import dayjs from 'dayjs';
@@ -26,19 +26,19 @@ const Totals = ({athleteActivities}) => {
         </tr>
         <tr>
           <td>Total ride time</td>
-          <td>{getTotalTime()} h</td>
+          <td className='total'>{getTotalTime()} h</td>
         </tr>
         <tr>
           <td>Total distance</td>
-          <td>{getTotalDistance()} km</td>
+          <td className='total'>{getTotalDistance()} km</td>
         </tr>
         <tr>
           <td>Total elevation</td>
-          <td>{getTotalElevation()} m</td>
+          <td className='total'>{getTotalElevation()} m</td>
         </tr>
         <tr>
           <td>Ride count</td>
-          <td>{athleteActivities.length}</td>
+          <td className='total'>{athleteActivities.length}</td>
         </tr>
       </tbody>
     </Table>
