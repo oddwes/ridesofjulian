@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import '../styling/BikeTrails.css';  // Add custom styles for animation here
 
 export const BikeTrails = () => {
+  const pageHeight = window.innerHeight
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [pageHeight, setPageHeight] = useState(window.innerHeight);
   const [trail, setTrail] = useState([]);
+
+  const bikePositionX = (position) => Math.sin(position * 20) * 300
+  const bikePositionY = (position) => position * (pageHeight)
 
   const handleScroll = () => {
     const position = window.scrollY;
@@ -27,24 +30,20 @@ export const BikeTrails = () => {
           key={prevTrail.length}
           className="trail"
           style={{
-            top: bikePositionY,
-            transform: `translate(${zigzagX}px)`
+            top: bikePositionY(scrollPosition),
+            transform: `translate(${bikePositionX(scrollPosition)}px)`
           }}
         />
       )
     ]);
   }, [scrollPosition])
 
-  // Calculate zigzag effect and vertical position based on scroll
-  const zigzagX = Math.sin(scrollPosition * 20) * 300; // Adjust the zigzag intensity
-  const bikePositionY = scrollPosition * (pageHeight - 100); // Adjust the vertical position
-
   return (
     <div className="trail-container">
       <div
         className="bike"
         style={{
-          transform: `translate(${zigzagX}px, ${bikePositionY}px)`,
+          transform: `translate(${bikePositionX(scrollPosition)}px, ${bikePositionY(scrollPosition)}px)`,
         }}
       >
         🚲
