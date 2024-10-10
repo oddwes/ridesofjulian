@@ -1,5 +1,4 @@
 import { Col, Row } from "react-bootstrap"
-
 import { Rings } from "react-loader-spinner"
 
 const Loading = () => {
