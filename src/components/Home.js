@@ -8,6 +8,7 @@ import ReactSelect from "react-select"
 import Totals from "./Totals"
 import dayjs from "dayjs"
 import { useNavigate } from "react-router-dom"
+import { BikeTrails } from "./BikeTrails"
 
 const Home = () => {
   const yearOptions = [
@@ -46,6 +47,7 @@ const Home = () => {
 
   return (
     <Container fluid>
+      <BikeTrails />
       <Row className="justify-content-md-center">
         <Col xs={1} style={{padding:'10px'}}>
           <ReactSelect
