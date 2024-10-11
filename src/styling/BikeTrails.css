@@ -7,13 +7,9 @@
   z-index: -1;
 }
 
-.trail {
+.line {
   position: fixed;
-  top: 0;
-  left: 50%;
-  width: 2px;
-  height: 2px;
-  background-color: black;
-  border-radius: 50%;
+  stroke: grey;
+  stroke-width: 0.75;
   z-index: -1;
 }
