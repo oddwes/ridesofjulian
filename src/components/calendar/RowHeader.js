@@ -15,7 +15,7 @@ export const RowHeader = ({startDate, endDate, activitiesForWeek}) => {
 
   return (
     <Col xs={2}>
-      <p className='header-col'>{dateRange}</p>
+      <div className='header-col'>{dateRange}</div>
       <div>
         <div className='small-text'>Total Distance</div>
         {getTotalDistance(activitiesForWeek)} km
