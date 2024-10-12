@@ -2,12 +2,13 @@ import { Col, Container, Row } from "react-bootstrap"
 import { getAthleteActivities, isLoggedIn } from "../utils/StravaUtil"
 import { useEffect, useState } from "react"
 
-import Calendar from "./Calendar"
+import Calendar from "./calendar/Calendar"
 import Loading from "./Loading"
 import ReactSelect from "react-select"
 import Totals from "./Totals"
 import dayjs from "dayjs"
 import { useNavigate } from "react-router-dom"
+import { FTP, FtpContext } from "./FTP"
 
 const Home = () => {
   const yearOptions = [
@@ -24,6 +25,7 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [athleteActivities, setAthleteActivities] = useState([{}])
   const [selectedYear, setSelectedYear] = useState(yearOptions[0])
+  const [ftp, setFtp] = useState(240)
 
   useEffect(() => {
     if(isLoggedIn()) {
@@ -46,29 +48,32 @@ const Home = () => {
 
   return (
     <Container fluid>
-      <Row className="justify-content-md-center">
-        <Col xs={1} style={{padding:'10px'}}>
-          <ReactSelect
-            options={yearOptions}
-            value={selectedYear}
-            onChange={e => {
-              setIsLoading(true)
-              setSelectedYear(e)
-            }}
-          />
-        </Col>
-      </Row>
-      {isLoading && <Loading />}
-      {!isLoading &&
-        <Row>
-          <Col xs={10}>
-            <Calendar start={start} activities={athleteActivities} />
-          </Col>
-          <Col xs={2}>
-            <Totals athleteActivities={athleteActivities} />
+      <FtpContext.Provider value={ftp}>
+        <Row className="justify-content-md-center">
+          <Col xs={1} style={{padding:'10px'}}>
+            <ReactSelect
+              options={yearOptions}
+              value={selectedYear}
+              onChange={e => {
+                setIsLoading(true)
+                setSelectedYear(e)
+              }}
+            />
           </Col>
         </Row>
-      }
+        {isLoading && <Loading />}
+        {!isLoading &&
+          <Row>
+            <Col xs={10}>
+              <Calendar start={start} activities={athleteActivities} />
+            </Col>
+            <Col xs={2}>
+              <Totals athleteActivities={athleteActivities} />
+              <FTP setFtp={setFtp} />
+            </Col>
+          </Row>
+        }
+      </FtpContext.Provider>
     </Container>
   )
 }

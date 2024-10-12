@@ -86,15 +86,14 @@ export const getTotalTime = (activities) => {
   return Math.round(activities.reduce((partialSum, a) => partialSum + a.moving_time, 0)/3600)
 }
 
-export const getTSS = (activity) => {
+export const getTSS = (activity, ftp) => {
   if (!activity.weighted_average_watts) {
     return 0
   }
-  const ftp = 240
   const intensityFactor = activity.weighted_average_watts / ftp
   return Math.round((activity.moving_time * activity.weighted_average_watts * intensityFactor)/(ftp * 3600) * 100)
 }
 
-export const getTotalTss = (activities) => {
-  return activities.reduce((partialSum, activity) => partialSum + getTSS(activity), 0)
+export const getTotalTss = (activities, ftp) => {
+  return activities.reduce((partialSum, activity) => partialSum + getTSS(activity, ftp), 0)
 }
