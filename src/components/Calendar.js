@@ -1,8 +1,5 @@
-import '../styling/calendar.css';
-
 import { getBeginningOfWeek, getEndOfWeek } from "../utils/TimeUtil"
-import { getTotalDistance, getTotalElevation, getTotalTime } from '../utils/StravaUtil';
-
+import { getTotalDistance, getTotalElevation, getTotalTime, getTotalTss, getTSS } from '../utils/StravaUtil';
 import Col from "react-bootstrap/Col"
 import Container from "react-bootstrap/Container"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,6 +8,8 @@ import Row from "react-bootstrap/Row"
 import dayjs from "dayjs"
 import { faAngleUp } from '@fortawesome/free-solid-svg-icons';
 import isBetween from "dayjs/plugin/isBetween"
+
+import '../styling/Calendar.css';
 
 const Calendar = ({start, activities, isHeader = false}) => {
   const printHeaderRow = () => {
@@ -80,6 +79,10 @@ const Calendar = ({start, activities, isHeader = false}) => {
           <div className='small-text'>Total Time</div>
           {getTotalTime(weekActivities)} h
         </div>
+        <div>
+          <div className='small-text'>Total TSS</div>
+          {getTotalTss(weekActivities)} TSS
+        </div>
       </Col>
     )
   }
@@ -101,23 +104,28 @@ const Calendar = ({start, activities, isHeader = false}) => {
         rel="noopener noreferrer"
         className='activity-circle-text'
       >
-        <div className='centered'>
-          <div className='circle' style={{margin:'auto'}}>
-            <div className='text'>
-              <div>
-                {`${Math.round(activity.distance/1000)} km`}
-              </div>
-              <div>
-                {`${Math.round(activity.total_elevation_gain)} m`}
+        <div className="fill-parent">
+          <div className='centered vertical-center'>
+            <div className='circle' style={{margin:'auto'}}>
+              <div className='text'>
+                <div>
+                  {Math.round(activity.distance/1000)} km
+                </div>
+                <div>
+                  {Math.round(activity.total_elevation_gain)} m
+                </div>
+                <div>
+                  {getTSS(activity)} TSS
+                </div>
               </div>
             </div>
+            <div className='centered activity-sub-text small-text'>{activity.name}</div>
+            {isToday && (
+              <div>
+                <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
+              </div>
+            )}
           </div>
-          <div className='centered activity-sub-text small-text'>{activity.name}</div>
-          {isToday && (
-            <div>
-              <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
-            </div>
-          )}
         </div>
       </Link>
     )
