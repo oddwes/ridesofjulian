@@ -1,6 +1,5 @@
 import { createBrowserRouter, redirect } from "react-router-dom";
 
-import Calendar from "./components/Calendar";
 import Home from "./components/Home";
 import Login from "./components/Login";
 import StravaRedirect from "./components/StravaRedirect";
