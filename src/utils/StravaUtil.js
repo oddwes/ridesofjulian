@@ -10,7 +10,7 @@ export const TOKEN_EXPIRY_KEY = 'strava_token_expiry'
 
 export const login = () => {
   const redirectUrl = "http://localhost:3000/strava_redirect";
-  const scope = "activity:read_all"
+  const scope = "activity:read_all,profile:read_all"
   window.location = `http://www.strava.com/oauth/authorize?client_id=${REACT_APP_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
 }
 
@@ -84,4 +84,17 @@ export const getTotalElevation = (activities) => {
 
 export const getTotalTime = (activities) => {
   return Math.round(activities.reduce((partialSum, a) => partialSum + a.moving_time, 0)/3600)
+}
+
+export const getTSS = (activity) => {
+  if (!activity.weighted_average_watts) {
+    return 0
+  }
+  const ftp = 240
+  const intensityFactor = activity.weighted_average_watts / ftp
+  return Math.round((activity.moving_time * activity.weighted_average_watts * intensityFactor)/(ftp * 3600) * 100)
+}
+
+export const getTotalTss = (activities) => {
+  return activities.reduce((partialSum, activity) => partialSum + getTSS(activity), 0)
 }
