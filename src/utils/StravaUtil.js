@@ -9,7 +9,7 @@ export const REFRESH_TOKEN_KEY = 'strava_refresh_token';
 export const TOKEN_EXPIRY_KEY = 'strava_token_expiry';
 
 export const login = () => {
-  const redirectUrl = 'http://localhost:3000/strava_redirect';
+  const redirectUrl = process.env.REACT_APP_STRAVA_REDIRECT_URL;
   const scope = 'activity:read_all,profile:read_all';
   window.location = `http://www.strava.com/oauth/authorize?client_id=${REACT_APP_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
 };
