@@ -31,12 +31,24 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "predeploy" : "npm run build",
-    "deploy" : "gh-pages -d build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint src/**/*.js src/**/*.jsx"
+    "lint": "eslint src/**/*.js src/**/*.jsx",
+    "prepare": "husky install"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "eslintConfig": {
     "extends": [
@@ -57,9 +69,15 @@
     ]
   },
   "devDependencies": {
-    "@eslint/js": "^9.5.0",
-    "eslint": "^8.57.0",
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react": "^7.37.2",
     "gh-pages": "^6.1.1",
-    "globals": "^15.6.0"
+    "globals": "^15.11.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3"
   }
 }
