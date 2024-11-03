@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { Week } from './Week';
 
-import '../../styling/Calendar.css';
+import './../../styling/Calendar.css';
 
 const Calendar = ({ start, activities }) => {
   const printHeaderRow = () => {
