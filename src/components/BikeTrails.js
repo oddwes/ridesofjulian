@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import '../styling/BikeTrails.css'; // Add custom styles for animation here
+import '../styling/biketrails.css'; // Add custom styles for animation here
 
 export const BikeTrails = () => {
   const getScrollPosition = () => {
@@ -46,7 +46,7 @@ export const BikeTrails = () => {
       </svg>
     ]);
     setPrevScrollPosition({ x: bikePosition.x, y: bikePosition.y });
-  }, [scrollPosition]);
+  }, [scrollPosition, prevScrollPosition]);
 
   return (
     <div className="trail-container">
