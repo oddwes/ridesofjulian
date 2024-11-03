@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import '../styling/biketrails.css'; // Add custom styles for animation here
+import '../styling/BikeTrails.css'; // Add custom styles for animation here
 
 export const BikeTrails = () => {
   const getScrollPosition = () => {
