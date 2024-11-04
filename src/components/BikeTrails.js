@@ -46,7 +46,8 @@ export const BikeTrails = () => {
       </svg>
     ]);
     setPrevScrollPosition({ x: bikePosition.x, y: bikePosition.y });
-  }, [scrollPosition, prevScrollPosition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollPosition]);
 
   return (
     <div className="trail-container">
