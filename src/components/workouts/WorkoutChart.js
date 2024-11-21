@@ -128,8 +128,7 @@ export const WorkoutChart = ({ workout, title }) => {
       x: {
         type: 'linear',
         title: {
-          display: true,
-          text: 'Time (minutes)'
+          display: false
         },
         ticks: {
           stepSize: 5
@@ -137,8 +136,7 @@ export const WorkoutChart = ({ workout, title }) => {
       },
       y: {
         title: {
-          display: true,
-          text: 'Intensity (% FTP)'
+          display: false
         },
         min: 0,
         max: 140
