@@ -4,7 +4,7 @@
   "homepage": "https://oddwes.github.io/ridesofjulian",
   "private": true,
   "engines": {
-    "node": "18.20.2"
+    "node": "23.3.0"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
@@ -84,6 +84,7 @@
     "globals": "^15.11.0",
     "husky": "^8.0.0",
     "lint-staged": "^15.2.10",
+    "morgan": "^1.10.0",
     "prettier": "^3.3.3"
   }
 }
