@@ -1,26 +1,24 @@
-import { createContext, useContext } from "react"
-import { Button, Form, InputGroup } from "react-bootstrap"
+"use client"
+
+import { createContext, useContext, useState } from "react"
 
 export const FtpContext = createContext(0)
 
-export const FTP = ({ setFtp }) => {
-  const ftp = useContext(FtpContext)
+const FTP = () => {
+  const [ftp, setFtp] = useState(250)
+  const ftpContext = useContext(FtpContext)
 
   return (
-    <InputGroup className="mb-3">
-      <Form.Control
-        id="ftp_input"
-        placeholder={ftp}
+    <div className="flex items-center gap-4">
+      <label className="text-sm font-medium text-gray-700">FTP:</label>
+      <input
         type="number"
-        style={{'-webkit-appearance': 'none',margin: 0}}
+        value={ftp}
+        onChange={(e) => setFtp(Number(e.target.value))}
+        className="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
       />
-      <Button
-        variant="secondary"
-        id="button-addon2"
-        onClick={() => setFtp(document.getElementById('ftp_input').value)}
-      >
-        Set
-      </Button>
-    </InputGroup>
+    </div>
   )
 }
+
+export default FTP

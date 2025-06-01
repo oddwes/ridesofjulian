@@ -2,22 +2,20 @@ import { getBeginningOfYear, getEndOfYear } from './TimeUtil';
 
 import axios from 'axios';
 
-const { REACT_APP_STRAVA_CLIENT_ID, REACT_APP_STRAVA_CLIENT_SECRET } = process.env;
-
 export const ACCESS_TOKEN_KEY = 'strava_access_token';
 export const REFRESH_TOKEN_KEY = 'strava_refresh_token';
 export const TOKEN_EXPIRY_KEY = 'strava_token_expiry';
 
 export const login = () => {
-  const redirectUrl = process.env.REACT_APP_STRAVA_REDIRECT_URL;
+  const redirectUrl = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URL;
   const scope = 'activity:read_all,profile:read_all';
-  window.location = `http://www.strava.com/oauth/authorize?client_id=${REACT_APP_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
+  window.location = `http://www.strava.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
 };
 
 export const getAccessToken = async (authCode) => {
   try {
     const response = await axios.post(
-      `https://www.strava.com/api/v3/oauth/token?client_id=${REACT_APP_STRAVA_CLIENT_ID}&client_secret=${REACT_APP_STRAVA_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code`
+      `https://www.strava.com/api/v3/oauth/token?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code`
     );
     return response.data;
   } catch (error) {
@@ -90,7 +88,7 @@ export const getTSS = (activity, ftp) => {
   const intensityFactor = activity.weighted_average_watts / ftp;
   return Math.round(
     ((activity.moving_time * activity.weighted_average_watts * intensityFactor) / (ftp * 3600)) *
-      100
+    100
   );
 };
 

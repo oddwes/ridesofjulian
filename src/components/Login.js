@@ -1,22 +1,28 @@
-import '../styling/strava.css';
+"use client"
 
 import { isLoggedIn, login } from "../utils/StravaUtil"
-
-import { Navigate } from 'react-router-dom';
-import { Row } from 'react-bootstrap';
-import strava_logo from "../assets/images/strava-logo.svg"
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 const Login = () => {
-  const loginButton =
-    <Row className='justify-content-md-center'>
-      <button className="strava-button" onClick={login}>
-        <img src={strava_logo} width="50" height="50" alt="strava logo"/>
-        <span style={{fontWeight: "bold"}}> Login</span>
-      </button>
-    </Row>
+  const router = useRouter()
+
+  useEffect(() => {
+    if (isLoggedIn()) {
+      router.push('/')
+    }
+  }, [router])
 
   return (
-    isLoggedIn() ? <Navigate replace to="/" /> : loginButton
+    <div className="flex justify-center items-center min-h-screen">
+      <button
+        onClick={login}
+        className="flex items-center gap-2 bg-[#FC4C02] text-white pl-4 pr-6 py-3 rounded-lg"
+      >
+        <img src="/strava-logo.svg" width="50" height="50" alt="strava logo" />
+        <span className="font-bold">Login</span>
+      </button>
+    </div>
   )
 }
 

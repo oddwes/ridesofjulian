@@ -1,73 +1,60 @@
-import { faAngleUp } from "@fortawesome/free-solid-svg-icons"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { Link } from "react-router-dom"
 import { getTSS } from "../../utils/StravaUtil"
-import { Col } from "react-bootstrap"
 import { useContext } from "react"
 import { FtpContext } from "../FTP"
+import Link from "next/link"
+import Col from "../ui/Col";
+import { ChevronUp } from "lucide-react"
 
-export const Day = ({ activity, isToday }) => {
+const Day = ({ activity, isToday }) => {
   const ftp = useContext(FtpContext)
 
   const todayTag = (
-      <div className='fill-parent'>
-        <div className='vertical-center centered activity-sub-text'>
-          <div>Today</div>
-        </div>
-        <div className='vertical-bottom'>
-          <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
-        </div>
+    <Col>
+      <div className="flex flex-col justify-center items-center h-full">
+        <p>Today</p>
       </div>
+      <div>
+        <ChevronUp className="text-[#FC5201]" />
+      </div>
+    </Col>
   )
 
   const activityCircle = (activity, isToday) => {
     return (
-      <Link
-        to={`https://strava.com/activities/${activity.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className='activity-circle-text'
-      >
-        <div className="fill-parent">
-          <div className='centered vertical-center'>
-            <div className='circle' style={{margin:'auto'}}>
-              <div className='text'>
-                <div>
-                  {Math.round(activity.distance/1000)} km
-                </div>
-                <div>
-                  {Math.round(activity.total_elevation_gain)} m
-                </div>
-                <div>
-                  {getTSS(activity, ftp)} TSS
-                </div>
-              </div>
+      <Col className="gap-2">
+        <Link
+          href={`https://strava.com/activities/${activity.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className='activity-circle-text'
+        >
+          <div className='rounded-full bg-[#FC5201] text-[16px] font-[400] w-[125px] h-[125px] flex flex-col justify-center items-center text-center text-white'>
+            <div>
+              {Math.round(activity.distance / 1000)} km
             </div>
-            <div className='centered activity-sub-text small-text'>{activity.name}</div>
+            <div>
+              {Math.round(activity.total_elevation_gain)} m
+            </div>
+            <div>
+              {getTSS(activity, ftp)} TSS
+            </div>
           </div>
-          {isToday && (
-            <div className="centered vertical-bottom">
-              <FontAwesomeIcon icon={faAngleUp} className='strava-text'/>
-            </div>
-          )}
-        </div>
-      </Link>
+        </Link>
+        <div className='centered activity-sub-text text-[10px] text-center'>{activity.name}</div>
+        {isToday && (
+          <ChevronUp className="text-bg-[#FC5201]" />
+        )}
+      </Col>
     )
   }
 
   if (activity) {
-    return (
-      <Col>
-        {activityCircle(activity, isToday)}
-      </Col>
-    )
+    return (activityCircle(activity, isToday))
   } else if (isToday) {
-    return (
-      <Col>
-        {todayTag}
-      </Col>
-    )
+    return todayTag
   } else {
     return <Col />
   }
 }
+
+export default Day

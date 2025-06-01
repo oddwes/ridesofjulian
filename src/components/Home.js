@@ -1,81 +1,64 @@
-import { Col, Container, Row } from 'react-bootstrap';
-import { getAthleteActivities, isLoggedIn } from '../utils/StravaUtil';
-import { useEffect, useState } from 'react';
+"use client"
 
-import Calendar from './calendar/Calendar';
-import Loading from './Loading';
-import ReactSelect from 'react-select';
-import Totals from './Totals';
-import dayjs from 'dayjs';
-import { useNavigate } from 'react-router-dom';
-import { FTP, FtpContext } from './FTP';
+import { useEffect, useState } from 'react'
+import { getAthleteActivities, isLoggedIn } from '../utils/StravaUtil'
+import Calendar from './calendar/Calendar'
+import ReactSelect from 'react-select'
+import Totals from './Totals'
+import dayjs from 'dayjs'
+import { useRouter } from 'next/navigation'
+import FTP from './FTP'
+import { LoadingSpinner } from './LoadingSpinner'
 
 const Home = () => {
-  const yearOptions = [
-    { value: 2025, label: 2025 },
-    { value: 2024, label: 2024 },
-    { value: 2023, label: 2023 },
-    { value: 2022, label: 2022 },
-    { value: 2021, label: 2021 },
-    { value: 2020, label: 2020 },
-    { value: 2019, label: 2019 }
-  ];
-
-  const navigate = useNavigate();
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [athleteActivities, setAthleteActivities] = useState([{}]);
-  const [selectedYear, setSelectedYear] = useState(yearOptions[0]);
-  const [ftp, setFtp] = useState(240);
+  const [activities, setActivities] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedYear, setSelectedYear] = useState(dayjs().year())
+  const router = useRouter()
 
   useEffect(() => {
-    if (isLoggedIn()) {
-      async function loadAthleteActivities() {
-        const response = await getAthleteActivities(selectedYear.value);
-        response.sort((a, b) => dayjs(b.start_date) - dayjs(a.start_date));
-
-        setAthleteActivities(response);
-        setIsLoading(false);
-      }
-      loadAthleteActivities();
-    } else {
-      navigate('/login');
+    if (!isLoggedIn()) {
+      router.push('/login')
+      return
     }
-  }, [navigate, selectedYear]);
 
-  const start =
-    selectedYear.value === dayjs().year() ? dayjs() : dayjs(`${selectedYear.value}-12-31`);
+    const fetchActivities = async () => {
+      const data = await getAthleteActivities(selectedYear)
+      setActivities(data)
+      setLoading(false)
+    }
+
+    fetchActivities()
+  }, [selectedYear, router])
+
+  if (loading) return <LoadingSpinner />
+
+  const yearOptions = Array.from({ length: 5 }, (_, i) => ({
+    value: dayjs().year() - i,
+    label: dayjs().year() - i
+  }))
+
+  const start = selectedYear === dayjs().year() ? dayjs() : dayjs(`${selectedYear}-12-31`);
 
   return (
-    <Container fluid>
-      <FtpContext.Provider value={ftp}>
-        <Row className="justify-content-md-center">
-          <Col xs={1} style={{ padding: '10px' }}>
-            <ReactSelect
-              options={yearOptions}
-              value={selectedYear}
-              onChange={(e) => {
-                setIsLoading(true);
-                setSelectedYear(e);
-              }}
-            />
-          </Col>
-        </Row>
-        {isLoading && <Loading />}
-        {!isLoading && (
-          <Row>
-            <Col xs={10}>
-              <Calendar start={start} activities={athleteActivities} />
-            </Col>
-            <Col xs={2}>
-              <Totals athleteActivities={athleteActivities} />
-              <FTP setFtp={setFtp} />
-            </Col>
-          </Row>
-        )}
-      </FtpContext.Provider>
-    </Container>
-  );
-};
+    <div className="p-4">
+      <div className="flex justify-center">
+        <ReactSelect
+          value={yearOptions.find(option => option.value === selectedYear)}
+          onChange={(option) => setSelectedYear(option.value)}
+          options={yearOptions}
+          className="w-48"
+        />
+      </div>
+      <div className="flex justify-between gap-4">
+        <Calendar start={start} activities={activities} />
+        <div className="flex flex-col gap-4">
+          <Totals athleteActivities={activities} />
+          <FTP />
+        </div>
+      </div>
+    </div>
+  )
+}
 
-export default Home;
+export default Home
