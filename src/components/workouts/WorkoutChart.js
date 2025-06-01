@@ -101,7 +101,7 @@ const generateWorkoutData = (workout) => {
   };
 };
 
-export const WorkoutChart = ({ workout, title }) => {
+export const WorkoutChart = ({ workout, title, subtitle }) => {
   const parsedWorkout = parseWorkoutData(workout);
   const data = generateWorkoutData(parsedWorkout);
 
@@ -114,6 +114,10 @@ export const WorkoutChart = ({ workout, title }) => {
       title: {
         display: true,
         text: title
+      },
+      subtitle: {
+        display: true,
+        text: subtitle
       },
       tooltip: {
         enabled: false // Hide main tooltip
@@ -145,7 +149,7 @@ export const WorkoutChart = ({ workout, title }) => {
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="min-w-96">
       <Line data={data} options={options} />
     </div>
   );

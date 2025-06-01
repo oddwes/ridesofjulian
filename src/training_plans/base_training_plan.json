@@ -1,0 +1,662 @@
+{
+  "week 1": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "120 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "75% FTP",
+            "time": "15 minutes"
+          },
+          "rest": {
+            "power": "55% FTP",
+            "time": "5 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "180 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 2": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "75% FTP",
+            "time": "20 minutes"
+          },
+          "rest": {
+            "power": "55% FTP",
+            "time": "10 minutes"
+          },
+          "count": 2
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "210 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 3": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "120 minutes"
+          },
+          "rest": {
+            "power": "80% FTP",
+            "time": "5 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "80% FTP",
+            "time": "15 minutes"
+          },
+          "rest": {
+            "power": "55% FTP",
+            "time": "5 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "240 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "60 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 4": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "60% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "60 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "60% FTP",
+            "time": "150 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "60 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 5": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "150 minutes"
+          },
+          "rest": {
+            "power": "75% FTP",
+            "time": "10 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "80% FTP",
+            "time": "15 minutes"
+          },
+          "rest": {
+            "power": "55% FTP",
+            "time": "5 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "240 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 6": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "80% FTP",
+            "time": "20 minutes"
+          },
+          "rest": {
+            "power": "55% FTP",
+            "time": "10 minutes"
+          },
+          "count": 2
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "120 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "270 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 7": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "180 minutes"
+          },
+          "rest": {
+            "power": "80% FTP",
+            "time": "20 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "80% FTP",
+            "time": "15 minutes"
+          },
+          "rest": {
+            "power": "55% FTP",
+            "time": "5 minutes"
+          },
+          "count": 3
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "65% FTP",
+            "time": "300 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "15 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  },
+  "week 8": {
+    "Monday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "60% FTP",
+            "time": "120 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Wednesday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "90 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Friday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "60% FTP",
+            "time": "180 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    },
+    "Sunday": {
+      "workout": {
+        "warmup": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        },
+        "intervals": {
+          "work": {
+            "power": "55% FTP",
+            "time": "60 minutes"
+          },
+          "count": 1
+        },
+        "cooldown": {
+          "power": "50% FTP",
+          "time": "10 minutes"
+        }
+      }
+    }
+  }
+}
