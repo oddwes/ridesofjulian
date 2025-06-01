@@ -1,3 +1,5 @@
+"use client"
+
 import WorkoutChart from './WorkoutChart';
 import workoutData from '../../workout_data.json';
 
