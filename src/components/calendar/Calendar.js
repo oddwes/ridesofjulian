@@ -42,7 +42,7 @@ const Calendar = ({ start, activities }) => {
       );
 
       return (
-        <>
+        <div key={startDate}>
           <hr className="w-full h-0.25 bg-gray-300 border-0 rounded-sm" />
           <Week
             startDate={startDate}
@@ -50,7 +50,7 @@ const Calendar = ({ start, activities }) => {
             activitiesForWeek={activitiesForWeek}
             key={startDate}
           />
-        </>
+        </div>
       );
     })
   };
