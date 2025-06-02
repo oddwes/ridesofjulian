@@ -13,18 +13,13 @@ const Calendar = ({ start, activities }) => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return (
       <div className="font-bold">
-        <Row>
-          <div className="flex justify-center">
-            {dayjs(start).year()}
-          </div>
-          <div className="flex justify-between w-full mx-4">
-            {days.map((day, index) => (
-              <div key={index} className="text-center w-full">
-                {day}
-              </div>
-            ))}
-          </div>
-        </Row>
+        <Row header={dayjs(start).year()} columns={
+          days.map((day, index) => (
+            <div key={index} className="text-center w-full">
+              {day}
+            </div>
+          ))
+        } />
       </div>
     );
   };
