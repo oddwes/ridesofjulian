@@ -31,7 +31,11 @@ const Home = () => {
     fetchActivities()
   }, [selectedYear, router])
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return (
+    <div className="flex items-center justify-center mt-8">
+      <LoadingSpinner />
+    </div>
+  )
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => ({
     value: dayjs().year() - i,
