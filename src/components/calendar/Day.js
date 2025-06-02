@@ -53,7 +53,7 @@ const Day = ({ activity, isToday }) => {
   } else if (isToday) {
     return todayTag
   } else {
-    return <Col />
+    return <Col><div></div></Col>
   }
 }
 

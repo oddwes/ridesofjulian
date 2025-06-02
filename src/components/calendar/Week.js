@@ -13,9 +13,9 @@ export const Week = ({ startDate, endDate, activitiesForWeek }) => {
   })
 
   return (
-    <Row>
-      <RowHeader startDate={startDate} endDate={endDate} activitiesForWeek={activitiesForWeek} />
-      {days}
-    </Row>
+    <Row
+      header={<RowHeader startDate={startDate} endDate={endDate} activitiesForWeek={activitiesForWeek} />}
+      columns={days}
+    />
   )
 }
