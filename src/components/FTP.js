@@ -1,12 +1,11 @@
 "use client"
 
-import { createContext, useContext, useState } from "react"
+import { createContext, useState } from "react"
 
 export const FtpContext = createContext(0)
 
 const FTP = () => {
   const [ftp, setFtp] = useState(250)
-  const ftpContext = useContext(FtpContext)
 
   return (
     <div className="flex items-center gap-4">
