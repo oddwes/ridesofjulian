@@ -14,22 +14,22 @@ export const RowHeader = ({ startDate, endDate, activitiesForWeek }) => {
 
   return (
     <div className="flex flex-col">
-      <div className='text-[16px] font-[700] text-left pb-2'>{dateRange}</div>
+      <div className='font-bold text-left pb-2'>{dateRange}</div>
       <div>
-        <div className='text-[10px]'>Total Distance</div>
-        <p className="text-[16px] font-[400]">{getTotalDistance(activitiesForWeek)} km</p>
+        <div className='text-xs'>Total Distance</div>
+        <p className="font-normal">{getTotalDistance(activitiesForWeek)} km</p>
       </div>
       <div>
-        <div className='text-[10px]'>Total Elevation</div>
-        <p className="text-[16px] font-[400]">{getTotalElevation(activitiesForWeek)} m</p>
+        <div className='text-xs'>Total Elevation</div>
+        <p className="font-normal">{getTotalElevation(activitiesForWeek)} m</p>
       </div>
       <div>
-        <div className='text-[10px]'>Total Time</div>
-        <p className="text-[16px] font-[400]">{getTotalTime(activitiesForWeek)} h</p>
+        <div className='text-xs'>Total Time</div>
+        <p className="font-normal">{getTotalTime(activitiesForWeek)} h</p>
       </div>
       <div>
-        <div className='text-[10px]'>Total TSS</div>
-        <p className="text-[16px] font-[400]">{getTotalTss(activitiesForWeek, ftp)} TSS</p>
+        <div className='text-xs'>Total TSS</div>
+        <p className="font-normal">{getTotalTss(activitiesForWeek, ftp)} TSS</p>
       </div>
     </div>
   )

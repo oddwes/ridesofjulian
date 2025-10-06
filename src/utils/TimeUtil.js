@@ -14,9 +14,12 @@ export const getEndOfYear = (year) => {
 }
 
 export const getBeginningOfWeek = (date) => {
-  return date.startOf('week')
+  const dayIndex = date.day() // 0 (Sun) .. 6 (Sat)
+  const diffFromMonday = (dayIndex + 6) % 7 // 0 for Mon, 6 for Sun
+  return date.subtract(diffFromMonday, 'day').startOf('day')
 }
 
 export const getEndOfWeek = (date) => {
-  return date.endOf('week')
+  const beginningOfWeek = getBeginningOfWeek(date)
+  return beginningOfWeek.add(6, 'day').endOf('day')
 }
