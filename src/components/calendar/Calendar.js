@@ -10,7 +10,7 @@ dayjs.extend(isBetween);
 
 const Calendar = ({ start, activities }) => {
   const printHeaderRow = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return (
       <div className="font-bold">
         <Row header={dayjs(start).year()} columns={

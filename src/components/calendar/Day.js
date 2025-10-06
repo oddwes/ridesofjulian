@@ -21,14 +21,13 @@ const Day = ({ activity, isToday }) => {
 
   const activityCircle = (activity, isToday) => {
     return (
-      <Col className="gap-2">
-        <Link
-          href={`https://strava.com/activities/${activity.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className='activity-circle-text'
-        >
-          <div className='rounded-full bg-[#FC5201] text-[16px] font-[400] w-[125px] h-[125px] flex flex-col justify-center items-center text-center text-white'>
+      <Col size="12" className="gap-2">
+        <div className='relative w-[3/4] aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] font-[400] text-white flex flex-col justify-center items-center text-center'>
+          <Link
+            href={`https://strava.com/activities/${activity.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <div>
               {Math.round(activity.distance / 1000)} km
             </div>
@@ -38,8 +37,8 @@ const Day = ({ activity, isToday }) => {
             <div>
               {getTSS(activity, ftp)} TSS
             </div>
-          </div>
-        </Link>
+          </Link>
+        </div>
         <div className='centered activity-sub-text text-[10px] text-center'>{activity.name}</div>
         {isToday && (
           <ChevronUp className="text-bg-[#FC5201]" />

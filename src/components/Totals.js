@@ -12,7 +12,7 @@ const Totals = ({ athleteActivities }) => {
 
   return (
     <div className="bg-white rounded w-fit border border-gray-200 h-fit">
-      <div className="text-center text-xl font-medium py-3 border-b border-gray-200 bg-gray-100">{year}</div>
+      <div className="text-center font-medium py-3 border-b border-gray-200 bg-gray-100">{year}</div>
       <div className="grid grid-cols-2">
         <div className="px-4 py-2 text-gray-700">Total ride time</div>
         <div className="px-4 py-2 text-right">{totalTime} h</div>
