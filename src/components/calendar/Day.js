@@ -22,7 +22,7 @@ const Day = ({ activity, isToday }) => {
   const activityCircle = (activity, isToday) => {
     return (
       <Col size="12" className="gap-2">
-        <div className='relative w-[3/4] aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] font-[400] text-white flex flex-col justify-center items-center text-center'>
+        <div className='relative w-5/6 aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] font-[400] text-white flex flex-col justify-center items-center text-center'>
           <Link
             href={`https://strava.com/activities/${activity.id}`}
             target="_blank"
