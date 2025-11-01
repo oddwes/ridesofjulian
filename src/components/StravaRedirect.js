@@ -1,8 +1,7 @@
 "use client"
 
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TOKEN_EXPIRY_KEY, getAccessToken } from '../utils/StravaUtil';
+import { getAccessToken } from '../utils/StravaUtil';
 import { useRouter, useSearchParams } from 'next/navigation';
-
 import { useEffect } from 'react';
 
 const StravaRedirect = () => {
@@ -18,10 +17,7 @@ const StravaRedirect = () => {
       }
 
       try {
-        const tokens = await getAccessToken(authCode)
-        localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token)
-        localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
-        localStorage.setItem(TOKEN_EXPIRY_KEY, tokens.expires_at)
+        await getAccessToken(authCode)
         router.push('/')
       } catch (error) {
         console.error('Error getting tokens:', error)
