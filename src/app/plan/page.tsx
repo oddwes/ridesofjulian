@@ -144,7 +144,7 @@ export default function PlanPage() {
     
     if (!accessToken) {
       if (confirm("You need to authorize with Wahoo first. Redirect to Wahoo login?")) {
-        window.location.href = getWahooAuthUrl();
+        window.location.href = getWahooAuthUrl('/plan');
       }
       return;
     }
@@ -212,6 +212,7 @@ export default function PlanPage() {
         }
 
         alert("Successfully updated workout on Wahoo!");
+        router.push('/');
         return;
       }
 
@@ -272,6 +273,7 @@ export default function PlanPage() {
       const workoutResult = await workoutResponse.json();
       console.log("Workout created:", workoutResult);
       alert("Successfully pushed workout to Wahoo!");
+      router.push('/');
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error pushing to Wahoo:", error);
