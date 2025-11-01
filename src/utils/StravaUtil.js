@@ -17,10 +17,35 @@ export const getAccessToken = async (authCode) => {
     const response = await axios.post(
       `https://www.strava.com/api/v3/oauth/token?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code`
     );
+    storeTokens(response.data);
     return response.data;
   } catch (error) {
     console.log(error);
   }
+};
+
+export const refreshAccessToken = async () => {
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const response = await axios.post(
+      `https://www.strava.com/api/v3/oauth/token?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${refreshToken}`
+    );
+    storeTokens(response.data);
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
+const storeTokens = (data) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token);
+  localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
+  localStorage.setItem(TOKEN_EXPIRY_KEY, data.expires_at);
 };
 
 export const isLoggedIn = () => {
@@ -28,6 +53,23 @@ export const isLoggedIn = () => {
     !!localStorage.getItem(ACCESS_TOKEN_KEY) &&
     localStorage.getItem(TOKEN_EXPIRY_KEY) > Date.now() / 1000
   );
+};
+
+export const hasRefreshToken = () => {
+  return !!localStorage.getItem(REFRESH_TOKEN_KEY);
+};
+
+export const ensureValidToken = async () => {
+  if (isLoggedIn()) {
+    return true;
+  }
+  
+  if (hasRefreshToken()) {
+    const result = await refreshAccessToken();
+    return !!result;
+  }
+  
+  return false;
 };
 
 export const getAthlete = async () => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { isLoggedIn, login } from "../utils/StravaUtil"
+import { ensureValidToken, login } from "../utils/StravaUtil"
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -8,9 +8,13 @@ const Login = () => {
   const router = useRouter()
 
   useEffect(() => {
-    if (isLoggedIn()) {
-      router.push('/')
+    const checkAuth = async () => {
+      const hasValidToken = await ensureValidToken()
+      if (hasValidToken) {
+        router.push('/')
+      }
     }
+    checkAuth()
   }, [router])
 
   return (

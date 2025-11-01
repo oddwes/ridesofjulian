@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { getAthleteActivities, isLoggedIn } from '../utils/StravaUtil'
+import { getAthleteActivities, ensureValidToken } from '../utils/StravaUtil'
 import { getStoredWahooToken, getWahooAuthUrl } from '../utils/WahooUtil'
 import Calendar from './calendar/Calendar'
 import ReactSelect from 'react-select'
@@ -24,52 +24,56 @@ const Home = () => {
   }, [])
 
   useEffect(() => {
-    if (!isLoggedIn()) {
-      router.push('/login')
-      return
-    }
-
-    const fetchActivities = async () => {
-      const data = await getAthleteActivities(selectedYear)
-      setActivities(data)
-      setLoading(false)
-    }
-
-    const fetchWahooWorkouts = async () => {
-      const wahooToken = getStoredWahooToken()
-      if (!wahooToken) {
-        console.log('No Wahoo token found, skipping workout fetch')
+    const initializeData = async () => {
+      const hasValidToken = await ensureValidToken()
+      if (!hasValidToken) {
+        router.push('/login')
         return
       }
 
-      try {
-        const today = dayjs().startOf('day').format('YYYY-MM-DD')
-        const futureDate = dayjs().add(7, 'days').endOf('day').format('YYYY-MM-DD')
-        
-        const response = await fetch(
-          `https://api.wahooligan.com/v1/workouts?order_by=starts&order_dir=asc&starts_after=${today}&starts_before=${futureDate}`,
-          {
-            headers: {
-              Authorization: `Bearer ${wahooToken}`,
-            },
-          }
-        )
-
-        if (response.ok) {
-          const data = await response.json()
-          // Filter for workouts that have a plan_id (planned workouts)
-          const plannedWorkouts = data.workouts ? data.workouts.filter(w => w.plan_id) : []
-          setPlannedWorkouts(plannedWorkouts)
-        } else {
-          console.error('Failed to fetch Wahoo workouts:', response.statusText)
-        }
-      } catch (error) {
-        console.error('Error fetching Wahoo workouts:', error)
+      const fetchActivities = async () => {
+        const data = await getAthleteActivities(selectedYear)
+        setActivities(data)
+        setLoading(false)
       }
+
+      const fetchWahooWorkouts = async () => {
+        const wahooToken = getStoredWahooToken()
+        if (!wahooToken) {
+          console.log('No Wahoo token found, skipping workout fetch')
+          return
+        }
+
+        try {
+          const today = dayjs().startOf('day').format('YYYY-MM-DD')
+          const futureDate = dayjs().add(7, 'days').endOf('day').format('YYYY-MM-DD')
+          
+          const response = await fetch(
+            `https://api.wahooligan.com/v1/workouts?order_by=starts&order_dir=asc&starts_after=${today}&starts_before=${futureDate}`,
+            {
+              headers: {
+                Authorization: `Bearer ${wahooToken}`,
+              },
+            }
+          )
+
+          if (response.ok) {
+            const data = await response.json()
+            const plannedWorkouts = data.workouts ? data.workouts.filter(w => w.plan_id) : []
+            setPlannedWorkouts(plannedWorkouts)
+          } else {
+            console.error('Failed to fetch Wahoo workouts:', response.statusText)
+          }
+        } catch (error) {
+          console.error('Error fetching Wahoo workouts:', error)
+        }
+      }
+
+      fetchActivities()
+      fetchWahooWorkouts()
     }
 
-    fetchActivities()
-    fetchWahooWorkouts()
+    initializeData()
   }, [selectedYear, router])
 
   if (loading) return (
