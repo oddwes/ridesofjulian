@@ -45,7 +45,7 @@ const Day = ({ activity, plannedWorkout, isToday, date }) => {
   const activityCircle = (activity, isToday) => {
     return (
       <Col size="12" className="justify-between gap-2">
-        <div className='relative w-5/6 aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] text-white flex flex-col justify-center items-center text-center'>
+        <div className='relative w-6/10 aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] text-white flex flex-col justify-center items-center text-center'>
           <Link
             href={`https://strava.com/activities/${activity.id}`}
             target="_blank"
