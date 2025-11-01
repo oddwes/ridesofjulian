@@ -11,8 +11,10 @@ const WahooRedirect = () => {
   useEffect(() => {
     async function getTokens() {
       const authCode = searchParams.get('code');
+      const returnPath = searchParams.get('state') || '/';
+      
       if (!authCode) {
-        router.push('/plan');
+        router.push(returnPath);
         return;
       }
 
@@ -21,10 +23,10 @@ const WahooRedirect = () => {
         localStorage.setItem(WAHOO_ACCESS_TOKEN_KEY, tokens.access_token);
         localStorage.setItem(WAHOO_REFRESH_TOKEN_KEY, tokens.refresh_token);
         localStorage.setItem(WAHOO_TOKEN_EXPIRY_KEY, tokens.expires_at);
-        router.push('/plan');
+        router.push(returnPath);
       } catch (error) {
         console.error('Error getting Wahoo tokens:', error);
-        router.push('/plan');
+        router.push(returnPath);
       }
     }
     getTokens();

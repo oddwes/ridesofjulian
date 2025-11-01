@@ -27,6 +27,7 @@ const Calendar = ({ start, activities, plannedWorkouts = [] }) => {
   const printWeeks = () => {
     dayjs.extend(isBetween);
     const yearStart = dayjs(start).startOf('year');
+    const nextWeek = dayjs().add(1, 'week');
     
     // Find the latest date to display (either start or latest planned workout)
     let latestDate = dayjs(start);
@@ -39,6 +40,11 @@ const Calendar = ({ start, activities, plannedWorkouts = [] }) => {
       if (latestWorkoutDate.isAfter(latestDate)) {
         latestDate = latestWorkoutDate;
       }
+    }
+    
+    // Ensure at least one week beyond current week is shown
+    if (latestDate.isBefore(nextWeek)) {
+      latestDate = nextWeek;
     }
     
     const totalWeeks = latestDate.diff(yearStart, 'weeks') + 1;
