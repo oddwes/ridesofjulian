@@ -115,3 +115,35 @@ export const ensureValidWahooToken = async () => {
   return null;
 };
 
+export const getPlannedWorkouts = async (daysAhead = 7) => {
+  const token = getStoredWahooToken();
+  if (!token) {
+    return [];
+  }
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const futureDate = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const response = await fetch(
+      `https://api.wahooligan.com/v1/workouts?order_by=starts&order_dir=asc&starts_after=${today}&starts_before=${futureDate}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Failed to fetch Wahoo workouts:', response.statusText);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.workouts ? data.workouts.filter(w => w.plan_id) : [];
+  } catch (error) {
+    console.error('Error fetching Wahoo workouts:', error);
+    return [];
+  }
+};
+
