@@ -6,7 +6,7 @@ const Row = ({ header, columns, className = "" }) => {
       <div className="min-w-34">
         {header}
       </div>
-      <div className="grid grid-cols-7 justify-between w-11/12">
+      <div className="grid grid-cols-7 justify-between w-11/12 h-full flex-1">
         {columns}
       </div>
     </div>
