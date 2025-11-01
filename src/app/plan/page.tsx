@@ -77,6 +77,7 @@ export default function PlanPage() {
   const [isPushing, setIsPushing] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<EditingWorkout | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -346,6 +347,27 @@ export default function PlanPage() {
     setIntervals(intervals.filter((interval) => interval.id !== id));
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    
+    const newIntervals = [...intervals];
+    const draggedItem = newIntervals[draggedIndex];
+    newIntervals.splice(draggedIndex, 1);
+    newIntervals.splice(index, 0, draggedItem);
+    
+    setIntervals(newIntervals);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const getIntervalColor = (powerMin: number, powerMax: number) => {
     const avgPower = (powerMin + powerMax) / 2;
     if (avgPower < 100) return "rgba(156, 163, 175, 0.6)";
@@ -487,10 +509,16 @@ export default function PlanPage() {
 
       {/* Interval Rows */}
       <div className="space-y-3">
-        {intervals.map((interval) => (
+        {intervals.map((interval, index) => (
           <div
             key={interval.id}
-            className="bg-white border border-gray-300 rounded-lg p-4 flex gap-4 items-center"
+            draggable
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragEnd={handleDragEnd}
+            className={`bg-white border border-gray-300 rounded-lg p-4 flex gap-4 items-center cursor-move ${
+              draggedIndex === index ? 'opacity-50' : ''
+            }`}
           >
             <div className="flex-1">
               <label className="block text-xs text-gray-600 mb-1">Name</label>
