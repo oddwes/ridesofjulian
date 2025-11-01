@@ -2,11 +2,23 @@ import { getTSS } from "../../utils/StravaUtil"
 import { useContext } from "react"
 import { FtpContext } from "../FTP"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import Col from "../ui/Col";
 import { ChevronUp } from "lucide-react"
 
 const Day = ({ activity, plannedWorkout, isToday }) => {
   const ftp = useContext(FtpContext)
+  const router = useRouter()
+  
+  const handleWorkoutClick = (workout) => {
+    sessionStorage.setItem('editing_workout', JSON.stringify({
+      id: workout.id,
+      workoutTitle: workout.name,
+      selectedDate: workout.starts.split('T')[0],
+      planId: workout.plan_id
+    }))
+    router.push('/plan')
+  }
 
   const todayTag = (
     <Col>
@@ -57,7 +69,10 @@ const Day = ({ activity, plannedWorkout, isToday }) => {
     
     return (
       <Col size="12" className="justify-between gap-2">
-        <div className='relative w-1/2 aspect-square rounded-full border-2 border-[#FC5201] [container-type:inline-size] text-[#FC5201] flex flex-col justify-center items-center text-center'>
+        <div 
+          onClick={() => handleWorkoutClick(workout)}
+          className='relative w-1/2 aspect-square rounded-full border-2 border-[#FC5201] [container-type:inline-size] text-[#FC5201] flex flex-col justify-center items-center text-center cursor-pointer hover:bg-[#FC5201] hover:text-white transition-colors'
+        >
           <div className="text-xs font-semibold px-2">
             {workout.name}
           </div>
