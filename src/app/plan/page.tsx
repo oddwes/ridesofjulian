@@ -17,6 +17,13 @@ interface Interval {
   powerMax: number;
 }
 
+interface EditingWorkout {
+  id: number;
+  workoutTitle: string;
+  selectedDate: string;
+  planId?: number;
+}
+
 const WORKOUT_STORAGE_KEY = 'workout_builder_data';
 
 const loadWorkoutFromStorage = () => {
@@ -68,9 +75,11 @@ export default function PlanPage() {
     storedWorkout?.workoutTitle || ""
   );
   const [isPushing, setIsPushing] = useState(false);
-  const [editingWorkout, setEditingWorkout] = useState<any>(null);
+  const [editingWorkout, setEditingWorkout] = useState<EditingWorkout | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const stored = sessionStorage.getItem('editing_workout');
     const newDate = sessionStorage.getItem('new_workout_date');
     
@@ -406,6 +415,10 @@ export default function PlanPage() {
       },
     },
   };
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>
