@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getAthleteActivities, ensureValidToken } from '../utils/StravaUtil'
-import { getStoredWahooToken, getWahooAuthUrl } from '../utils/WahooUtil'
+import { ensureValidWahooToken, hasWahooRefreshToken, getWahooAuthUrl } from '../utils/WahooUtil'
 import Calendar from './calendar/Calendar'
 import ReactSelect from 'react-select'
 import Totals from './Totals'
@@ -20,7 +20,7 @@ const Home = () => {
   const router = useRouter()
 
   useEffect(() => {
-    setHasWahooToken(!!getStoredWahooToken())
+    setHasWahooToken(hasWahooRefreshToken())
   }, [])
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const Home = () => {
       }
 
       const fetchWahooWorkouts = async () => {
-        const wahooToken = getStoredWahooToken()
+        const wahooToken = await ensureValidWahooToken()
         if (!wahooToken) {
           console.log('No Wahoo token found, skipping workout fetch')
           return
