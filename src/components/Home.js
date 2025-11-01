@@ -74,7 +74,11 @@ const Home = () => {
         )}
       </div>
       <div className="flex justify-between gap-4">
-        <Calendar start={start} activities={activities} plannedWorkouts={plannedWorkouts} />
+        <Calendar 
+          start={start} 
+          activities={activities} 
+          plannedWorkouts={selectedYear === dayjs().year() ? plannedWorkouts : []} 
+        />
         <div className="flex flex-col gap-4">
           <Totals athleteActivities={activities} />
           <FTP />
