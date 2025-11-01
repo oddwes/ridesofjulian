@@ -469,7 +469,9 @@ export default function PlanPage() {
             >
               {isPushing 
                 ? (editingWorkout ? "Updating..." : "Pushing...") 
-                : (editingWorkout ? "Update Workout" : "Push to Wahoo")}
+                : !getStoredWahooToken()
+                  ? "Connect to Wahoo"
+                  : (editingWorkout ? "Update Workout" : "Push to Wahoo")}
             </button>
           </div>
         </div>
