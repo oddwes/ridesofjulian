@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import { Trash2 } from "lucide-react";
@@ -54,6 +55,7 @@ const defaultIntervals = [
 ];
 
 export default function PlanPage() {
+  const router = useRouter();
   const storedWorkout = loadWorkoutFromStorage();
   
   const [intervals, setIntervals] = useState<Interval[]>(
@@ -66,6 +68,17 @@ export default function PlanPage() {
     storedWorkout?.workoutTitle || ""
   );
   const [isPushing, setIsPushing] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<any>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('editing_workout');
+    if (stored) {
+      const workout = JSON.parse(stored);
+      setEditingWorkout(workout);
+      setWorkoutTitle(workout.workoutTitle || "");
+      setSelectedDate(workout.selectedDate || new Date().toISOString().split("T")[0]);
+    }
+  }, []);
 
   useEffect(() => {
     const workoutData = {
@@ -127,6 +140,61 @@ export default function PlanPage() {
       
       const externalId = `workout-${Date.now()}`;
       const providerUpdatedAt = new Date().toISOString();
+
+      // If editing existing workout, update it
+      if (editingWorkout?.id) {
+        // Update existing plan if planId exists
+        if (editingWorkout.planId) {
+          const planFormBody = new URLSearchParams();
+          planFormBody.append("plan[file]", dataUri);
+          planFormBody.append("plan[filename]", "plan.json");
+          planFormBody.append("plan[external_id]", externalId);
+          planFormBody.append("plan[provider_updated_at]", providerUpdatedAt);
+
+          const planUpdateResponse = await fetch(`https://api.wahooligan.com/v1/plans/${editingWorkout.planId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: planFormBody.toString(),
+          });
+
+          if (!planUpdateResponse.ok) {
+            throw new Error(`Plan update failed: ${planUpdateResponse.statusText}`);
+          }
+        }
+
+        // Update workout
+        const workoutDate = new Date(selectedDate + 'T12:00:00');
+        const totalMinutes = Math.ceil(intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
+        
+        const workoutFormBody = new URLSearchParams();
+        workoutFormBody.append("workout[workout_token]", `workout-${Date.now()}`);
+        workoutFormBody.append("workout[workout_type_id]", "1");
+        workoutFormBody.append("workout[starts]", workoutDate.toISOString());
+        workoutFormBody.append("workout[minutes]", totalMinutes.toString());
+        workoutFormBody.append("workout[name]", workoutTitle || "Custom Workout");
+        if (editingWorkout.planId) {
+          workoutFormBody.append("workout[plan_id]", editingWorkout.planId.toString());
+        }
+
+        const workoutResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${editingWorkout.id}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: workoutFormBody.toString(),
+        });
+
+        if (!workoutResponse.ok) {
+          throw new Error(`Workout update failed: ${workoutResponse.statusText}`);
+        }
+
+        alert("Successfully updated workout on Wahoo!");
+        return;
+      }
 
       // Step 1: Create the plan with form-encoded data
       const formBody = new URLSearchParams();
@@ -195,6 +263,45 @@ export default function PlanPage() {
       }
     } finally {
       setIsPushing(false);
+    }
+  };
+
+  const deleteWorkout = async () => {
+    if (!editingWorkout?.id) return;
+
+    if (!confirm("Are you sure you want to delete this workout?")) return;
+
+    const accessToken = getStoredWahooToken();
+    if (!accessToken) {
+      alert("Not authorized with Wahoo");
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://api.wahooligan.com/v1/workouts/${editingWorkout.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.statusText}`);
+      }
+
+      alert("Workout deleted successfully!");
+      sessionStorage.removeItem('editing_workout');
+      setEditingWorkout(null);
+      setIntervals(defaultIntervals);
+      setWorkoutTitle("");
+      setSelectedDate(new Date().toISOString().split("T")[0]);
+      router.push('/');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(`Failed to delete workout: ${error.message}`);
+      } else {
+        alert("Failed to delete workout: Unknown error");
+      }
     }
   };
 
@@ -297,13 +404,25 @@ export default function PlanPage() {
       <Container className="py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Workout Builder</h1>
-          <button
-            onClick={pushToWahoo}
-            disabled={isPushing}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPushing ? "Pushing..." : "Push to Wahoo"}
-          </button>
+          <div className="flex gap-3">
+            {editingWorkout && (
+              <button
+                onClick={deleteWorkout}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Workout
+              </button>
+            )}
+            <button
+              onClick={pushToWahoo}
+              disabled={isPushing}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPushing 
+                ? (editingWorkout ? "Updating..." : "Pushing...") 
+                : (editingWorkout ? "Update Workout" : "Push to Wahoo")}
+            </button>
+          </div>
         </div>
 
       {/* Graph */}
