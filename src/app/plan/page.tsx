@@ -368,6 +368,11 @@ export default function PlanPage() {
     setDraggedIndex(null);
   };
 
+  const clearWorkout = () => {
+    setIntervals(defaultIntervals);
+    setWorkoutTitle("");
+  };
+
   const getIntervalColor = (powerMin: number, powerMax: number) => {
     const avgPower = (powerMin + powerMax) / 2;
     if (avgPower < 100) return "rgba(156, 163, 175, 0.6)";
@@ -485,26 +490,34 @@ export default function PlanPage() {
       </div>
 
       {/* Title and Date Selector */}
-      <div className="mb-6 flex justify-center gap-6">
-        <div className="flex flex-col">
-          <label className="block text-sm font-medium mb-2 text-center">Title</label>
-          <input
-            type="text"
-            value={workoutTitle}
-            onChange={(e) => setWorkoutTitle(e.target.value)}
-            placeholder="Workout title"
-            className="px-4 py-2 border border-gray-300 rounded"
-          />
+      <div className="mb-6 flex justify-between items-end">
+        <div className="flex justify-center gap-6 flex-1">
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium mb-2 text-center">Title</label>
+            <input
+              type="text"
+              value={workoutTitle}
+              onChange={(e) => setWorkoutTitle(e.target.value)}
+              placeholder="Workout title"
+              className="px-4 py-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium mb-2 text-center">Workout Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded"
+            />
+          </div>
         </div>
-        <div className="flex flex-col">
-          <label className="block text-sm font-medium mb-2 text-center">Workout Date</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded"
-          />
-        </div>
+        <button
+          onClick={clearWorkout}
+          className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+        >
+          Clear Workout
+        </button>
       </div>
 
       {/* Interval Rows */}
