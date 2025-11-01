@@ -8,7 +8,7 @@ import Row from '../ui/Row';
 
 dayjs.extend(isBetween);
 
-const Calendar = ({ start, activities }) => {
+const Calendar = ({ start, activities, plannedWorkouts = [] }) => {
   const printHeaderRow = () => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return (
@@ -26,14 +26,33 @@ const Calendar = ({ start, activities }) => {
 
   const printWeeks = () => {
     dayjs.extend(isBetween);
-    const weekCount = dayjs(start).diff(dayjs(start).startOf('year'), 'weeks');
+    const yearStart = dayjs(start).startOf('year');
+    
+    // Find the latest date to display (either start or latest planned workout)
+    let latestDate = dayjs(start);
+    if (plannedWorkouts.length > 0) {
+      const latestWorkoutDate = plannedWorkouts.reduce((latest, workout) => {
+        const workoutDate = dayjs(workout.starts);
+        return workoutDate.isAfter(latest) ? workoutDate : latest;
+      }, dayjs(start));
+      
+      if (latestWorkoutDate.isAfter(latestDate)) {
+        latestDate = latestWorkoutDate;
+      }
+    }
+    
+    const totalWeeks = latestDate.diff(yearStart, 'weeks') + 1;
 
-    return [...Array(weekCount).keys()].map((i) => {
-      const today = start.subtract(i, 'weeks');
+    return [...Array(totalWeeks).keys()].map((i) => {
+      const today = latestDate.subtract(i, 'weeks');
       const startDate = getBeginningOfWeek(today);
       const endDate = getEndOfWeek(today);
       const activitiesForWeek = activities.filter((activity) =>
         dayjs(activity.start_date).isBetween(startDate, endDate)
+      );
+      
+      const plannedWorkoutsForWeek = plannedWorkouts.filter((workout) =>
+        dayjs(workout.starts).isBetween(startDate, endDate)
       );
 
       return (
@@ -43,6 +62,7 @@ const Calendar = ({ start, activities }) => {
             startDate={startDate}
             endDate={endDate}
             activitiesForWeek={activitiesForWeek}
+            plannedWorkoutsForWeek={plannedWorkoutsForWeek}
             key={startDate}
           />
         </div>

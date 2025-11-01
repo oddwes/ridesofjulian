@@ -34,7 +34,7 @@ const defaultIntervals = [
     id: "1",
     name: "Warmup",
     duration: 300,
-    powerMin: 100,
+    powerMin: 0,
     powerMax: 150,
   },
   {
@@ -48,7 +48,7 @@ const defaultIntervals = [
     id: "3",
     name: "Cooldown",
     duration: 300,
-    powerMin: 100,
+    powerMin: 0,
     powerMax: 150,
   },
 ];
@@ -155,7 +155,8 @@ export default function PlanPage() {
       console.log("Plan created:", planResult);
 
       // Step 2: Create a workout and attach the plan
-      const workoutDate = new Date(selectedDate);
+      // Create date at noon local time to avoid timezone issues
+      const workoutDate = new Date(selectedDate + 'T12:00:00');
       const totalMinutes = Math.ceil(intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
       
       const workoutFormBody = new URLSearchParams();
