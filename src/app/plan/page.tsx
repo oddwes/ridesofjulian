@@ -72,12 +72,21 @@ export default function PlanPage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem('editing_workout');
+    const newDate = sessionStorage.getItem('new_workout_date');
+    
     if (stored) {
       const workout = JSON.parse(stored);
       setEditingWorkout(workout);
       setWorkoutTitle(workout.workoutTitle || "");
       setSelectedDate(workout.selectedDate || new Date().toISOString().split("T")[0]);
+    } else if (newDate) {
+      setSelectedDate(newDate);
+      sessionStorage.removeItem('new_workout_date');
     }
+
+    return () => {
+      sessionStorage.removeItem('editing_workout');
+    };
   }, []);
 
   useEffect(() => {
