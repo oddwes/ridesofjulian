@@ -21,7 +21,7 @@ const Day = ({ activity, isToday }) => {
 
   const activityCircle = (activity, isToday) => {
     return (
-      <Col size="12" className="gap-2">
+      <Col size="12" className="justify-between gap-2">
         <div className='relative w-1/2 aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] text-white flex flex-col justify-center items-center text-center'>
           <Link
             href={`https://strava.com/activities/${activity.id}`}
@@ -39,7 +39,7 @@ const Day = ({ activity, isToday }) => {
             </div>
           </Link>
         </div>
-        <div className='centered activity-sub-text text-[10px] text-center'>{activity.name}</div>
+        <div className='centered activity-sub-text text-xs text-center'>{activity.name}</div>
         {isToday && (
           <ChevronUp className="text-bg-[#FC5201]" />
         )}
