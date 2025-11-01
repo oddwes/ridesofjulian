@@ -184,9 +184,14 @@ export default function PlanPage() {
       const workoutResult = await workoutResponse.json();
       console.log("Workout created:", workoutResult);
       alert("Successfully pushed workout to Wahoo!");
-    } catch (error: any) {
-      console.error("Error pushing to Wahoo:", error);
-      alert(`Failed to push to Wahoo: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error pushing to Wahoo:", error);
+        alert(`Failed to push to Wahoo: ${error.message}`);
+      } else {
+        console.error("Error pushing to Wahoo:", error);
+        alert("Failed to push to Wahoo: Unknown error");
+      }
     } finally {
       setIsPushing(false);
     }
