@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
-import { Trash2 } from "lucide-react";
+import { Trash2, Copy } from "lucide-react";
 import Container from "@/components/ui/Container";
 import TabNavigation from "@/components/TabNavigation";
 import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
@@ -349,6 +349,21 @@ export default function PlanPage() {
     setIntervals(intervals.filter((interval) => interval.id !== id));
   };
 
+  const duplicateInterval = (id: string) => {
+    const index = intervals.findIndex((interval) => interval.id === id);
+    if (index === -1) return;
+    
+    const intervalToDupe = intervals[index];
+    const newInterval: Interval = {
+      ...intervalToDupe,
+      id: Date.now().toString(),
+    };
+    
+    const newIntervals = [...intervals];
+    newIntervals.splice(index + 1, 0, newInterval);
+    setIntervals(newIntervals);
+  };
+
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -515,6 +530,12 @@ export default function PlanPage() {
               className="px-4 py-2 border border-gray-300 rounded"
             />
           </div>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium mb-2 text-center">Total Duration</label>
+            <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded text-center font-semibold">
+              {Math.floor(totalDuration / 60)}:{String(Math.round(totalDuration % 60)).padStart(2, '0')}
+            </div>
+          </div>
         </div>
         <button
           onClick={clearWorkout}
@@ -588,6 +609,13 @@ export default function PlanPage() {
                 />
               </div>
             </div>
+
+            <button
+              onClick={() => duplicateInterval(interval.id)}
+              className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded"
+            >
+              <Copy size={18} />
+            </button>
 
             <button
               onClick={() => deleteInterval(interval.id)}
