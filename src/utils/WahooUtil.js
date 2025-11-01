@@ -16,9 +16,9 @@ export const exchangeWahooToken = async (authCode) => {
   const response = await fetch('https://api.wahooligan.com/oauth/token', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: JSON.stringify({
+    body: new URLSearchParams({
       client_id: WAHOO_CLIENT_ID,
       client_secret: WAHOO_CLIENT_SECRET,
       code: authCode,
@@ -31,7 +31,49 @@ export const exchangeWahooToken = async (authCode) => {
     throw new Error('Failed to exchange Wahoo token');
   }
 
-  return response.json();
+  const data = await response.json();
+  storeWahooTokens(data);
+  return data;
+};
+
+export const refreshWahooToken = async () => {
+  const refreshToken = localStorage.getItem(WAHOO_REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.wahooligan.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: WAHOO_CLIENT_ID,
+        client_secret: WAHOO_CLIENT_SECRET,
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    storeWahooTokens(data);
+    return data;
+  } catch (error) {
+    console.error('Error refreshing Wahoo token:', error);
+    return null;
+  }
+};
+
+const storeWahooTokens = (data) => {
+  const expiresAt = data.created_at + data.expires_in - 300;
+  localStorage.setItem(WAHOO_ACCESS_TOKEN_KEY, data.access_token);
+  localStorage.setItem(WAHOO_REFRESH_TOKEN_KEY, data.refresh_token);
+  localStorage.setItem(WAHOO_TOKEN_EXPIRY_KEY, expiresAt.toString());
 };
 
 export const getStoredWahooToken = () => {
@@ -48,5 +90,28 @@ export const getStoredWahooToken = () => {
   }
   
   return token;
+};
+
+export const hasWahooRefreshToken = () => {
+  if (typeof window === 'undefined') return false;
+  return !!localStorage.getItem(WAHOO_REFRESH_TOKEN_KEY);
+};
+
+export const ensureValidWahooToken = async () => {
+  if (typeof window === 'undefined') return null;
+  
+  const token = getStoredWahooToken();
+  if (token) {
+    return token;
+  }
+  
+  if (hasWahooRefreshToken()) {
+    const result = await refreshWahooToken();
+    if (result) {
+      return result.access_token;
+    }
+  }
+  
+  return null;
 };
 
