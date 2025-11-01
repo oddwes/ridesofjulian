@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { getAthleteActivities, ensureValidToken } from '../utils/StravaUtil'
-import { ensureValidWahooToken, hasWahooRefreshToken, getWahooAuthUrl } from '../utils/WahooUtil'
+import { getAthleteActivities } from '../utils/StravaUtil'
+import { getPlannedWorkouts, hasWahooRefreshToken, getWahooAuthUrl } from '../utils/WahooUtil'
 import Calendar from './calendar/Calendar'
 import ReactSelect from 'react-select'
 import Totals from './Totals'
 import dayjs from 'dayjs'
-import { useRouter } from 'next/navigation'
 import FTP from './FTP'
 import { LoadingSpinner } from './LoadingSpinner'
 
@@ -17,64 +16,25 @@ const Home = () => {
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState(dayjs().year())
   const [hasWahooToken, setHasWahooToken] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     setHasWahooToken(hasWahooRefreshToken())
   }, [])
 
   useEffect(() => {
-    const initializeData = async () => {
-      const hasValidToken = await ensureValidToken()
-      if (!hasValidToken) {
-        router.push('/login')
-        return
-      }
-
-      const fetchActivities = async () => {
-        const data = await getAthleteActivities(selectedYear)
-        setActivities(data)
-        setLoading(false)
-      }
-
-      const fetchWahooWorkouts = async () => {
-        const wahooToken = await ensureValidWahooToken()
-        if (!wahooToken) {
-          console.log('No Wahoo token found, skipping workout fetch')
-          return
-        }
-
-        try {
-          const today = dayjs().startOf('day').format('YYYY-MM-DD')
-          const futureDate = dayjs().add(7, 'days').endOf('day').format('YYYY-MM-DD')
-          
-          const response = await fetch(
-            `https://api.wahooligan.com/v1/workouts?order_by=starts&order_dir=asc&starts_after=${today}&starts_before=${futureDate}`,
-            {
-              headers: {
-                Authorization: `Bearer ${wahooToken}`,
-              },
-            }
-          )
-
-          if (response.ok) {
-            const data = await response.json()
-            const plannedWorkouts = data.workouts ? data.workouts.filter(w => w.plan_id) : []
-            setPlannedWorkouts(plannedWorkouts)
-          } else {
-            console.error('Failed to fetch Wahoo workouts:', response.statusText)
-          }
-        } catch (error) {
-          console.error('Error fetching Wahoo workouts:', error)
-        }
-      }
-
-      fetchActivities()
-      fetchWahooWorkouts()
+    const fetchData = async () => {
+      const [activities, workouts] = await Promise.all([
+        getAthleteActivities(selectedYear),
+        getPlannedWorkouts()
+      ])
+      
+      setActivities(activities)
+      setPlannedWorkouts(workouts)
+      setLoading(false)
     }
 
-    initializeData()
-  }, [selectedYear, router])
+    fetchData()
+  }, [selectedYear])
 
   if (loading) return (
     <div className="flex items-center justify-center mt-8">
