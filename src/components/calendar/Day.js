@@ -1,14 +1,16 @@
 import { getTSS } from "../../utils/StravaUtil"
-import { useContext } from "react"
+import { useContext, useState } from "react"
 import { FtpContext } from "../FTP"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Col from "../ui/Col";
-import { ChevronUp } from "lucide-react"
+import { ChevronUp, PlusCircle } from "lucide-react"
+import dayjs from "dayjs"
 
-const Day = ({ activity, plannedWorkout, isToday }) => {
+const Day = ({ activity, plannedWorkout, isToday, date }) => {
   const ftp = useContext(FtpContext)
   const router = useRouter()
+  const [isHovered, setIsHovered] = useState(false)
   
   const handleWorkoutClick = (workout) => {
     sessionStorage.setItem('editing_workout', JSON.stringify({
@@ -19,6 +21,15 @@ const Day = ({ activity, plannedWorkout, isToday }) => {
     }))
     router.push('/plan')
   }
+
+  const handleAddWorkout = () => {
+    sessionStorage.removeItem('editing_workout')
+    sessionStorage.setItem('new_workout_date', date.format('YYYY-MM-DD'))
+    router.push('/plan')
+  }
+
+  const isFutureDate = date && date.isAfter(dayjs(), 'day')
+  const showAddButton = isFutureDate && !activity && !plannedWorkout
 
   const todayTag = (
     <Col>
@@ -93,6 +104,25 @@ const Day = ({ activity, plannedWorkout, isToday }) => {
     return plannedWorkoutCircle(plannedWorkout, isToday)
   } else if (isToday) {
     return todayTag
+  } else if (showAddButton) {
+    return (
+      <Col>
+        <div 
+          className="relative w-full h-full flex items-center justify-center"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {isHovered && (
+            <div 
+              onClick={handleAddWorkout}
+              className="cursor-pointer"
+            >
+              <PlusCircle className="text-blue-600 hover:text-blue-700" size={32} />
+            </div>
+          )}
+        </div>
+      </Col>
+    )
   } else {
     return <Col><div></div></Col>
   }
