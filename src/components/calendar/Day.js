@@ -8,7 +8,7 @@ import { ChevronUp, PlusCircle } from "lucide-react"
 import dayjs from "dayjs"
 
 const Day = ({ activity, plannedWorkout, isToday, date }) => {
-  const ftp = useContext(FtpContext)
+  const { ftp } = useContext(FtpContext)
   const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
   
@@ -60,9 +60,11 @@ const Day = ({ activity, plannedWorkout, isToday, date }) => {
             <div>
               {Math.round(activity.total_elevation_gain)} m
             </div>
-            <div>
-              {getTSS(activity, ftp)} TSS
-            </div>
+            {ftp && (
+              <div>
+                {getTSS(activity, ftp)} TSS
+              </div>
+            )}
           </Link>
         </div>
         {isToday && (

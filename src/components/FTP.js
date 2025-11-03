@@ -1,23 +1,48 @@
 "use client"
 
-import { createContext, useState } from "react"
+import { createContext, useState, useContext } from "react"
 
-export const FtpContext = createContext(0)
+export const FtpContext = createContext({ ftp: undefined, setFtp: () => {} })
 
-const FTP = () => {
-  const [ftp, setFtp] = useState(250)
+export const FTPProvider = ({ children }) => {
+  const [ftp, setFtp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('ftp')
+      return saved ? Number(saved) : undefined
+    }
+    return undefined
+  })
+
+  const updateFtp = (newFtp) => {
+    setFtp(newFtp)
+    sessionStorage.setItem('ftp', newFtp.toString())
+  }
+
+  return (
+    <FtpContext.Provider value={{ ftp, setFtp: updateFtp }}>
+      {children}
+    </FtpContext.Provider>
+  )
+}
+
+export const FTPInput = () => {
+  const { ftp, setFtp } = useContext(FtpContext)
+
+  const handleFtpChange = (e) => {
+    setFtp(Number(e.target.value))
+  }
 
   return (
     <div className="flex items-center gap-4">
       <label className="text-sm font-medium text-gray-700">FTP:</label>
       <input
         type="number"
-        value={ftp}
-        onChange={(e) => setFtp(Number(e.target.value))}
+        value={ftp || ''}
+        onChange={handleFtpChange}
         className="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
       />
     </div>
   )
 }
 
-export default FTP
+export default FTPProvider

@@ -1,11 +1,11 @@
 "use client";
 
-import { FtpContext } from "@/components/FTP";
+import { FTPProvider } from "@/components/FTP";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <FtpContext.Provider value={250}>
+    <FTPProvider>
       {children}
-    </FtpContext.Provider>
+    </FTPProvider>
   );
 }
