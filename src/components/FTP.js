@@ -29,7 +29,7 @@ export const FTPInput = () => {
   const { ftp, setFtp } = useContext(FtpContext)
 
   const handleFtpChange = (e) => {
-    setFtp(Number(e.target.value))
+    setFtp(e.target.value)
   }
 
   return (
