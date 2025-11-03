@@ -7,7 +7,7 @@ const WAHOO_CLIENT_SECRET = process.env.NEXT_PUBLIC_WAHOO_CLIENT_SECRET;
 const WAHOO_REDIRECT_URI = process.env.NEXT_PUBLIC_WAHOO_REDIRECT_URI || 'http://localhost:3000/wahoo_callback';
 
 export const getWahooAuthUrl = (returnPath = '/') => {
-  const scopes = 'user_read workouts_read workouts_write plans_write';
+  const scopes = 'user_read workouts_read workouts_write plans_read plans_write';
   const state = encodeURIComponent(returnPath);
   return `https://api.wahooligan.com/oauth/authorize?client_id=${WAHOO_CLIENT_ID}&redirect_uri=${encodeURIComponent(WAHOO_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
 };
@@ -121,29 +121,77 @@ export const getPlannedWorkouts = async (daysAhead = 7) => {
     return [];
   }
 
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const futureDate = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    const response = await fetch(
-      `https://api.wahooligan.com/v1/workouts?order_by=starts&order_dir=asc&starts_after=${today}&starts_before=${futureDate}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.error('Failed to fetch Wahoo workouts:', response.statusText);
-      return [];
+  const today = new Date().toISOString().split('T')[0];
+  const futureDate = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  const response = await fetch(
+    `https://api.wahooligan.com/v1/workouts?order_by=starts&order_dir=asc&starts_after=${today}&starts_before=${futureDate}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
+  );
 
-    const data = await response.json();
-    return data.workouts ? data.workouts.filter(w => w.plan_id) : [];
-  } catch (error) {
-    console.error('Error fetching Wahoo workouts:', error);
-    return [];
+  if (!response.ok) {
+    throw new Error(`Failed to fetch workouts: ${response.statusText}`);
   }
+
+  const data = await response.json();
+  return data.workouts ? data.workouts.filter(w => w.plan_id) : [];
+};
+
+export const getWorkoutById = async (workoutId) => {
+  const token = getStoredWahooToken();
+  if (!token) {
+    throw new Error('No Wahoo token available');
+  }
+
+  const response = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch workout: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+export const getPlanById = async (planId) => {
+  const token = getStoredWahooToken();
+  if (!token) {
+    throw new Error('No Wahoo token available');
+  }
+
+  const response = await fetch(`https://api.wahooligan.com/v1/plans/${planId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch plan: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+export const getPlanIntervals = async (planId) => {
+  const planData = await getPlanById(planId);
+  
+  if (!planData.file?.url) {
+    throw new Error('Plan file URL not found');
+  }
+
+  const fileResponse = await fetch(planData.file.url);
+  if (!fileResponse.ok) {
+    throw new Error('Failed to fetch plan file');
+  }
+
+  const planJson = await fileResponse.json();
+  return planJson.intervals || [];
 };
 

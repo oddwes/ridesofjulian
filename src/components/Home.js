@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { getAthleteActivities } from '../utils/StravaUtil'
 import { getPlannedWorkouts, hasWahooRefreshToken, getWahooAuthUrl } from '../utils/WahooUtil'
 import Calendar from './calendar/Calendar'
@@ -11,9 +12,6 @@ import { FTPInput } from './FTP'
 import { LoadingSpinner } from './LoadingSpinner'
 
 const Home = () => {
-  const [activities, setActivities] = useState([])
-  const [plannedWorkouts, setPlannedWorkouts] = useState([])
-  const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState(dayjs().year())
   const [hasWahooToken, setHasWahooToken] = useState(false)
 
@@ -21,20 +19,18 @@ const Home = () => {
     setHasWahooToken(hasWahooRefreshToken())
   }, [])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [activities, workouts] = await Promise.all([
-        getAthleteActivities(selectedYear),
-        getPlannedWorkouts()
-      ])
-      
-      setActivities(activities)
-      setPlannedWorkouts(workouts)
-      setLoading(false)
-    }
+  const { data: activities = [], isLoading: activitiesLoading } = useQuery({
+    queryKey: ['activities', selectedYear],
+    queryFn: () => getAthleteActivities(selectedYear),
+  })
 
-    fetchData()
-  }, [selectedYear])
+  const { data: plannedWorkouts = [], isLoading: workoutsLoading } = useQuery({
+    queryKey: ['plannedWorkouts'],
+    queryFn: () => getPlannedWorkouts(),
+    enabled: hasWahooToken,
+  })
+
+  const loading = activitiesLoading || workoutsLoading
 
   if (loading) return (
     <div className="flex items-center justify-center mt-8">

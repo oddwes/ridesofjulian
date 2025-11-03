@@ -13,17 +13,10 @@ const Day = ({ activity, plannedWorkout, isToday, date }) => {
   const [isHovered, setIsHovered] = useState(false)
   
   const handleWorkoutClick = (workout) => {
-    sessionStorage.setItem('editing_workout', JSON.stringify({
-      id: workout.id,
-      workoutTitle: workout.name,
-      selectedDate: workout.starts.split('T')[0],
-      planId: workout.plan_id
-    }))
-    router.push('/workout')
+    router.push(`/workout/${workout.id}`)
   }
 
   const handleAddWorkout = () => {
-    sessionStorage.removeItem('editing_workout')
     sessionStorage.setItem('new_workout_date', date.format('YYYY-MM-DD'))
     router.push('/workout')
   }
