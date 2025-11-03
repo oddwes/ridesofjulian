@@ -60,7 +60,7 @@ const Day = ({ activity, plannedWorkout, isToday, date }) => {
             <div>
               {Math.round(activity.total_elevation_gain)} m
             </div>
-            {ftp && (
+            {(ftp !== undefined && ftp !== 0) && (
               <div>
                 {getTSS(activity, ftp)} TSS
               </div>
