@@ -212,11 +212,6 @@ export default function PlanPage() {
   };
 
   const saveWorkout = (workout: Workout) => {
-    sessionStorage.setItem('editing_workout', JSON.stringify({
-      id: 0,
-      workoutTitle: workout.workoutTitle,
-      selectedDate: workout.selectedDate,
-    }));
     localStorage.setItem('workout_builder_data', JSON.stringify({
       intervals: workout.intervals,
       selectedDate: workout.selectedDate,

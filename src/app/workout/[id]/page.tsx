@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import { Trash2, Copy } from "lucide-react";
 import Container from "@/components/ui/Container";
 import TabNavigation from "@/components/TabNavigation";
-import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
+import { getStoredWahooToken, getWahooAuthUrl, getWorkoutById, getPlanIntervals } from "@/utils/WahooUtil";
 
 interface Interval {
   id: string;
@@ -18,19 +18,12 @@ interface Interval {
   powerMax: number;
 }
 
-
-const WORKOUT_STORAGE_KEY = 'workout_builder_data';
-
-const loadWorkoutFromStorage = () => {
-  if (typeof window === 'undefined') return null;
-  const stored = localStorage.getItem(WORKOUT_STORAGE_KEY);
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
-};
+interface WorkoutData {
+  id: number;
+  name: string;
+  starts: string;
+  plan_id?: number;
+}
 
 const defaultIntervals = [
   {
@@ -40,58 +33,57 @@ const defaultIntervals = [
     powerMin: 0,
     powerMax: 150,
   },
-  {
-    id: "2",
-    name: "Z2",
-    duration: 2400,
-    powerMin: 145,
-    powerMax: 160,
-  },
-  {
-    id: "3",
-    name: "Cooldown",
-    duration: 300,
-    powerMin: 0,
-    powerMax: 150,
-  },
 ];
 
-export default function WorkoutPage() {
+export default function EditWorkoutPage() {
   const router = useRouter();
+  const params = useParams();
+  const workoutId = params.id as string;
   const queryClient = useQueryClient();
-  const storedWorkout = loadWorkoutFromStorage();
   
-  const [intervals, setIntervals] = useState<Interval[]>(
-    storedWorkout?.intervals || defaultIntervals
-  );
-  const [selectedDate, setSelectedDate] = useState<string>(
-    storedWorkout?.selectedDate || new Date().toISOString().split("T")[0]
-  );
-  const [workoutTitle, setWorkoutTitle] = useState<string>(
-    storedWorkout?.workoutTitle || ""
-  );
+  const [intervals, setIntervals] = useState<Interval[]>(defaultIntervals);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [workoutTitle, setWorkoutTitle] = useState<string>("");
   const [isPushing, setIsPushing] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    setIsMounted(true);
-    const newDate = sessionStorage.getItem('new_workout_date');
-    
-    if (newDate) {
-      setSelectedDate(newDate);
-      sessionStorage.removeItem('new_workout_date');
-    }
-  }, []);
+  const { data: workoutData, isLoading, error } = useQuery({
+    queryKey: ['workout', workoutId],
+    queryFn: () => getWorkoutById(workoutId),
+  });
+
+  const { data: planIntervals } = useQuery({
+    queryKey: ['planIntervals', workoutData?.plan_id],
+    queryFn: () => getPlanIntervals(workoutData!.plan_id!),
+    enabled: !!workoutData?.plan_id,
+  });
 
   useEffect(() => {
-    const workoutData = {
-      intervals,
-      selectedDate,
-      workoutTitle,
-    };
-    localStorage.setItem(WORKOUT_STORAGE_KEY, JSON.stringify(workoutData));
-  }, [intervals, selectedDate, workoutTitle]);
+    if (error) {
+      alert("Failed to load workout");
+      router.push('/');
+    }
+  }, [error, router]);
+
+  useEffect(() => {
+    if (workoutData) {
+      setWorkoutTitle(workoutData.name || "");
+      setSelectedDate(workoutData.starts.split('T')[0]);
+    }
+  }, [workoutData]);
+
+  useEffect(() => {
+    if (planIntervals) {
+      const fetchedIntervals: Interval[] = planIntervals.map((interval: any, idx: number) => ({
+        id: `${Date.now()}-${idx}`,
+        name: interval.name || `Interval ${idx + 1}`,
+        duration: interval.exit_trigger_value,
+        powerMin: interval.targets[0]?.low || 0,
+        powerMax: interval.targets[0]?.high || 0,
+      }));
+      setIntervals(fetchedIntervals);
+    }
+  }, [planIntervals]);
 
   const generatePlanJson = () => {
     const planIntervals = intervals.map((interval, index) => ({
@@ -119,18 +111,15 @@ export default function WorkoutPage() {
     };
   };
 
-  const pushToWahoo = async () => {
+  const updateWorkout = async () => {
     if (intervals.length === 0) {
       alert("Please add at least one interval");
       return;
     }
 
     const accessToken = getStoredWahooToken();
-    
     if (!accessToken) {
-      if (confirm("You need to authorize with Wahoo first. Redirect to Wahoo login?")) {
-        window.location.href = getWahooAuthUrl('/workout');
-      }
+      alert("Not authorized with Wahoo");
       return;
     }
 
@@ -145,47 +134,42 @@ export default function WorkoutPage() {
       const externalId = `workout-${Date.now()}`;
       const providerUpdatedAt = new Date().toISOString();
 
-      // Create the plan with form-encoded data
-      const formBody = new URLSearchParams();
-      formBody.append("plan[file]", dataUri);
-      formBody.append("plan[filename]", "plan.json");
-      formBody.append("plan[external_id]", externalId);
-      formBody.append("plan[provider_updated_at]", providerUpdatedAt);
+      if (workoutData?.plan_id) {
+        const planFormBody = new URLSearchParams();
+        planFormBody.append("plan[file]", dataUri);
+        planFormBody.append("plan[filename]", "plan.json");
+        planFormBody.append("plan[external_id]", externalId);
+        planFormBody.append("plan[provider_updated_at]", providerUpdatedAt);
 
-      const planResponse = await fetch("https://api.wahooligan.com/v1/plans", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formBody.toString(),
-      });
+        const planUpdateResponse = await fetch(`https://api.wahooligan.com/v1/plans/${workoutData.plan_id}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: planFormBody.toString(),
+        });
 
-      if (!planResponse.ok) {
-        const errorText = await planResponse.text();
-        console.error("Plan creation error:", errorText);
-        throw new Error(`Plan creation failed: ${planResponse.statusText} - ${errorText}`);
+        if (!planUpdateResponse.ok) {
+          throw new Error(`Plan update failed: ${planUpdateResponse.statusText}`);
+        }
       }
 
-      const planResult = await planResponse.json();
-      const planId = planResult.id;
-      console.log("Plan created:", planResult);
-
-      // Step 2: Create a workout and attach the plan
-      // Create date at noon local time to avoid timezone issues
       const workoutDate = new Date(selectedDate + 'T12:00:00');
       const totalMinutes = Math.ceil(intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
       
       const workoutFormBody = new URLSearchParams();
       workoutFormBody.append("workout[workout_token]", `workout-${Date.now()}`);
-      workoutFormBody.append("workout[workout_type_id]", "1"); // 1 = Bike
+      workoutFormBody.append("workout[workout_type_id]", "1");
       workoutFormBody.append("workout[starts]", workoutDate.toISOString());
       workoutFormBody.append("workout[minutes]", totalMinutes.toString());
       workoutFormBody.append("workout[name]", workoutTitle || "Custom Workout");
-      workoutFormBody.append("workout[plan_id]", planId.toString());
+      if (workoutData?.plan_id) {
+        workoutFormBody.append("workout[plan_id]", workoutData.plan_id.toString());
+      }
 
-      const workoutResponse = await fetch("https://api.wahooligan.com/v1/workouts", {
-        method: "POST",
+      const workoutResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}`, {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/x-www-form-urlencoded",
@@ -194,31 +178,63 @@ export default function WorkoutPage() {
       });
 
       if (!workoutResponse.ok) {
-        const errorText = await workoutResponse.text();
-        console.error("Workout creation error:", errorText);
-        throw new Error(`Workout creation failed: ${workoutResponse.statusText} - ${errorText}`);
+        throw new Error(`Workout update failed: ${workoutResponse.statusText}`);
       }
 
-      const workoutResult = await workoutResponse.json();
-      console.log("Workout created:", workoutResult);
-      
+      queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
       queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
-      
-      alert("Successfully pushed workout to Wahoo!");
+      if (workoutData?.plan_id) {
+        queryClient.invalidateQueries({ queryKey: ['planIntervals', workoutData.plan_id] });
+      }
+
+      alert("Successfully updated workout on Wahoo!");
       router.push('/');
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error("Error pushing to Wahoo:", error);
-        alert(`Failed to push to Wahoo: ${error.message}`);
+        console.error("Error updating workout:", error);
+        alert(`Failed to update workout: ${error.message}`);
       } else {
-        console.error("Error pushing to Wahoo:", error);
-        alert("Failed to push to Wahoo: Unknown error");
+        console.error("Error updating workout:", error);
+        alert("Failed to update workout: Unknown error");
       }
     } finally {
       setIsPushing(false);
     }
   };
 
+  const deleteWorkout = async () => {
+    if (!confirm("Are you sure you want to delete this workout?")) return;
+
+    const accessToken = getStoredWahooToken();
+    if (!accessToken) {
+      alert("Not authorized with Wahoo");
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed: ${response.statusText}`);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
+
+      alert("Workout deleted successfully!");
+      router.push('/');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(`Failed to delete workout: ${error.message}`);
+      } else {
+        alert("Failed to delete workout: Unknown error");
+      }
+    }
+  };
 
   const addInterval = () => {
     const newInterval: Interval = {
@@ -277,11 +293,6 @@ export default function WorkoutPage() {
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
-  };
-
-  const clearWorkout = () => {
-    setIntervals(defaultIntervals);
-    setWorkoutTitle("");
   };
 
   const getIntervalColor = (powerMin: number, powerMax: number) => {
@@ -354,8 +365,15 @@ export default function WorkoutPage() {
     },
   };
 
-  if (!isMounted) {
-    return null;
+  if (isLoading) {
+    return (
+      <>
+        <TabNavigation />
+        <Container className="py-8">
+          <div className="text-center">Loading workout...</div>
+        </Container>
+      </>
+    );
   }
 
   return (
@@ -363,21 +381,24 @@ export default function WorkoutPage() {
       <TabNavigation />
       <Container className="py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Workout Builder</h1>
-          <button
-            onClick={pushToWahoo}
-            disabled={isPushing}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPushing 
-              ? "Pushing..." 
-              : !getStoredWahooToken()
-                ? "Connect to Wahoo"
-                : "Push to Wahoo"}
-          </button>
+          <h1 className="text-3xl font-bold">Edit Workout</h1>
+          <div className="flex gap-3">
+            <button
+              onClick={deleteWorkout}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Workout
+            </button>
+            <button
+              onClick={updateWorkout}
+              disabled={isPushing}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPushing ? "Updating..." : "Update Workout"}
+            </button>
+          </div>
         </div>
 
-      {/* Graph */}
       <div className="mb-6">
         <div className="relative h-64 bg-gray-50 border border-gray-200 rounded">
           {intervals.length === 0 ? (
@@ -392,44 +413,34 @@ export default function WorkoutPage() {
         </div>
       </div>
 
-      {/* Title and Date Selector */}
-      <div className="mb-6 flex justify-between items-end">
-        <div className="flex justify-center gap-6 flex-1">
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium mb-2 text-center">Title</label>
-            <input
-              type="text"
-              value={workoutTitle}
-              onChange={(e) => setWorkoutTitle(e.target.value)}
-              placeholder="Workout title"
-              className="px-4 py-2 border border-gray-300 rounded"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium mb-2 text-center">Workout Date</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium mb-2 text-center">Total Duration</label>
-            <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded text-center font-semibold">
-              {Math.floor(totalDuration / 60)}:{String(Math.round(totalDuration % 60)).padStart(2, '0')}
-            </div>
+      <div className="mb-6 flex justify-center gap-6">
+        <div className="flex flex-col">
+          <label className="block text-sm font-medium mb-2 text-center">Title</label>
+          <input
+            type="text"
+            value={workoutTitle}
+            onChange={(e) => setWorkoutTitle(e.target.value)}
+            placeholder="Workout title"
+            className="px-4 py-2 border border-gray-300 rounded"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block text-sm font-medium mb-2 text-center">Workout Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label className="block text-sm font-medium mb-2 text-center">Total Duration</label>
+          <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded text-center font-semibold">
+            {Math.floor(totalDuration / 60)}:{String(Math.round(totalDuration % 60)).padStart(2, '0')}
           </div>
         </div>
-        <button
-          onClick={clearWorkout}
-          className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-        >
-          Clear Workout
-        </button>
       </div>
 
-      {/* Interval Rows */}
       <div className="space-y-3">
         {intervals.map((interval, index) => (
           <div
@@ -511,7 +522,6 @@ export default function WorkoutPage() {
         ))}
       </div>
 
-      {/* Add Interval Button */}
       <div className="flex justify-center mt-6">
         <button
           onClick={addInterval}
