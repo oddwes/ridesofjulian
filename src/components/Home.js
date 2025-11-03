@@ -7,7 +7,7 @@ import Calendar from './calendar/Calendar'
 import ReactSelect from 'react-select'
 import Totals from './Totals'
 import dayjs from 'dayjs'
-import FTP from './FTP'
+import { FTPInput } from './FTP'
 import { LoadingSpinner } from './LoadingSpinner'
 
 const Home = () => {
@@ -81,7 +81,7 @@ const Home = () => {
         />
         <div className="flex flex-col gap-4">
           <Totals athleteActivities={activities} />
-          <FTP />
+          <FTPInput />
         </div>
       </div>
     </div>

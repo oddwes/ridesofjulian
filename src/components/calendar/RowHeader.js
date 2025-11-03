@@ -3,7 +3,7 @@ import { useContext } from "react"
 import { FtpContext } from "../FTP"
 
 export const RowHeader = ({ startDate, endDate, activitiesForWeek }) => {
-  const ftp = useContext(FtpContext)
+  const { ftp } = useContext(FtpContext)
 
   let dateRange
   if (startDate.isSame(endDate, 'month')) {
