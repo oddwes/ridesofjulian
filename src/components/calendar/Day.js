@@ -19,13 +19,13 @@ const Day = ({ activity, plannedWorkout, isToday, date }) => {
       selectedDate: workout.starts.split('T')[0],
       planId: workout.plan_id
     }))
-    router.push('/plan')
+    router.push('/workout')
   }
 
   const handleAddWorkout = () => {
     sessionStorage.removeItem('editing_workout')
     sessionStorage.setItem('new_workout_date', date.format('YYYY-MM-DD'))
-    router.push('/plan')
+    router.push('/workout')
   }
 
   const isFutureDate = date && date.isAfter(dayjs(), 'day')

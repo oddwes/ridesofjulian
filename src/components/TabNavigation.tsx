@@ -8,6 +8,7 @@ export default function TabNavigation() {
 
   const tabs = [
     { name: "Calendar", path: "/" },
+    { name: "Workout", path: "/workout" },
     { name: "Plan", path: "/plan" },
   ];
 
