@@ -6,6 +6,7 @@ import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import Container from "@/components/ui/Container";
 import TabNavigation from "@/components/TabNavigation";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Interval {
   id: string;
@@ -31,10 +32,8 @@ export default function PlanPage() {
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<Workout[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
     const storedPlan = sessionStorage.getItem('generated_training_plan');
     const storedInputs = sessionStorage.getItem('training_plan_inputs');
     
@@ -68,6 +67,8 @@ export default function PlanPage() {
     }
 
     setIsGenerating(true);
+    setGeneratedPlan([]); // Clear existing plan
+    
     try {
       const response = await fetch("/api/generate-plan", {
         method: "POST",
@@ -87,9 +88,45 @@ export default function PlanPage() {
         throw new Error("Failed to generate plan");
       }
 
-      const data = await response.json();
-      setGeneratedPlan(data.workouts);
-      sessionStorage.setItem('generated_training_plan', JSON.stringify(data.workouts));
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      const workouts: Workout[] = [];
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            
+            if (data === '[DONE]') {
+              continue;
+            }
+            
+            try {
+              const workout = JSON.parse(data);
+              workouts.push(workout);
+              setGeneratedPlan([...workouts]);
+            } catch (e) {
+              console.error("Failed to parse workout:", e);
+            }
+          }
+        }
+      }
+
+      sessionStorage.setItem('generated_training_plan', JSON.stringify(workouts));
       sessionStorage.setItem('training_plan_inputs', JSON.stringify({
         userPrompt,
         ftp,
@@ -403,12 +440,12 @@ export default function PlanPage() {
                             ))}
                           </div>
 
-                          <button
+                          {/* <button
                             onClick={() => saveWorkout(workout)}
                             className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
                           >
                             Edit in Builder
-                          </button>
+                          </button> */}
                         </div>
                       );
                     })}
@@ -419,6 +456,15 @@ export default function PlanPage() {
           </div>
         )}
       </Container>
+
+      {isGenerating && (
+        <div className="fixed inset-0 bg-black/15 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
+            <LoadingSpinner />
+            <p className="text-lg font-medium">Generating your training plan...</p>
+          </div>
+        </div>
+      )}
     </>
   );
 }
