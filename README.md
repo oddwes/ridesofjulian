@@ -2,6 +2,19 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+TRAINING_PLAN_SYSTEM_PROMPT=  # Optional: Custom system prompt for AI training plans
+```
+
+The `OPENAI_API_KEY` is required for the AI training plan generation feature.
+
+### Running the Development Server
+
 First, run the development server:
 
 ```bash
