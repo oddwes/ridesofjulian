@@ -1,7 +1,6 @@
 'use client'
 
 import Home from '@/components/Home'
-import TabNavigation from '@/components/TabNavigation'
 import { ensureValidToken } from '@/utils/StravaUtil'
 import { ensureValidWahooToken } from '@/utils/WahooUtil'
 import { useRouter } from 'next/navigation'
@@ -35,10 +34,5 @@ export default function Page() {
     )
   }
 
-  return (
-    <>
-      <TabNavigation />
-      <Home />
-    </>
-  )
+  return <Home />
 } 

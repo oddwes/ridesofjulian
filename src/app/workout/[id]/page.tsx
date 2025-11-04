@@ -4,16 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Container from "@/components/ui/Container";
-import TabNavigation from "@/components/TabNavigation";
 import EditWorkout, { Interval } from "@/components/workouts/Edit";
 import { getStoredWahooToken, getWorkoutById, getPlanIntervals } from "@/utils/WahooUtil";
-
-interface WorkoutData {
-  id: number;
-  name: string;
-  starts: string;
-  plan_id?: number;
-}
 
 export default function EditWorkoutPage() {
   const router = useRouter();
@@ -189,19 +181,14 @@ export default function EditWorkoutPage() {
 
   if (isLoading || !workoutData || intervals.length === 0) {
     return (
-      <>
-        <TabNavigation />
-        <Container className="py-8">
-          <div className="text-center">Loading workout...</div>
-        </Container>
-      </>
+      <Container className="py-8">
+        <div className="text-center">Loading workout...</div>
+      </Container>
     );
   }
 
   return (
-    <>
-      <TabNavigation />
-      <Container className="py-8">
+    <Container className="py-8">
         <EditWorkout
           initialIntervals={intervals}
           initialTitle={workoutTitle}
@@ -210,8 +197,7 @@ export default function EditWorkoutPage() {
           onDelete={handleDelete}
           saveButtonText="Update Workout"
         />
-      </Container>
-    </>
+    </Container>
   );
 }
 

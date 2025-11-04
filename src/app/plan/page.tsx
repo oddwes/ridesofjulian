@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, memo, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import { Edit2 } from "lucide-react";
 import Container from "@/components/ui/Container";
-import TabNavigation from "@/components/TabNavigation";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import EditWorkout, { Interval as EditInterval, EditWorkoutHandle } from "@/components/workouts/Edit";
 
@@ -149,7 +147,6 @@ const WorkoutCard = memo(({ workout, onEdit }: { workout: Workout; onEdit?: (wor
 WorkoutCard.displayName = 'WorkoutCard';
 
 export default function PlanPage() {
-  const router = useRouter();
   const editWorkoutRef = useRef<EditWorkoutHandle>(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [ftp, setFtp] = useState<number>(200);
@@ -341,7 +338,6 @@ export default function PlanPage() {
 
   return (
     <>
-      <TabNavigation />
       <Container className="py-8">
         <h1 className="text-3xl font-bold mb-6">AI Training Plan Builder</h1>
 
