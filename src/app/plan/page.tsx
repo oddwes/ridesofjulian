@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
@@ -22,6 +22,121 @@ interface Workout {
   selectedDate: string;
   intervals: Interval[];
 }
+
+const getIntervalColor = (powerMin: number, powerMax: number) => {
+  const avgPower = (powerMin + powerMax) / 2;
+  if (avgPower < 100) return "rgba(156, 163, 175, 0.6)";
+  if (avgPower < 150) return "rgba(96, 165, 250, 0.6)";
+  if (avgPower < 200) return "rgba(52, 211, 153, 0.6)";
+  if (avgPower < 250) return "rgba(251, 191, 36, 0.6)";
+  if (avgPower < 300) return "rgba(251, 146, 60, 0.6)";
+  return "rgba(220, 38, 38, 0.6)";
+};
+
+const WorkoutCard = memo(({ workout }: { workout: Workout }) => {
+  const chartData = useMemo(() => {
+    let currentTime = 0;
+    const datasets = workout.intervals.map((interval, index) => {
+      const startTime = currentTime;
+      const endTime = currentTime + interval.duration / 60;
+      currentTime = endTime;
+
+      return {
+        label: `${interval.name || `Interval ${index + 1}`}`,
+        data: [
+          { x: startTime, y: 0 },
+          { x: startTime, y: interval.powerMax },
+          { x: endTime, y: interval.powerMax },
+          { x: endTime, y: 0 },
+        ],
+        borderColor: "rgba(0, 0, 0, 0.2)",
+        backgroundColor: getIntervalColor(interval.powerMin, interval.powerMax),
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        borderWidth: 1,
+        stepped: false,
+      };
+    });
+    return { datasets };
+  }, [workout.intervals]);
+
+  const chartOptions = useMemo(() => {
+    const totalDuration = workout.intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
+    const maxPower = Math.max(
+      workout.intervals.reduce((max, interval) => Math.max(max, interval.powerMax), 0),
+      300
+    );
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: { display: false },
+        tooltip: { enabled: false },
+      },
+      scales: {
+        x: {
+          type: "linear" as const,
+          min: 0,
+          max: totalDuration || 10,
+        },
+        y: {
+          min: 0,
+          max: maxPower,
+        },
+      },
+    };
+  }, [workout.intervals]);
+
+  const totalDuration = workout.intervals.reduce(
+    (sum, interval) => sum + interval.duration / 60,
+    0
+  );
+  
+  const parseLocalDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const date = parseLocalDate(workout.selectedDate);
+
+  return (
+    <div className="bg-white border border-gray-300 rounded-lg p-4">
+      <div className="mb-3">
+        <div className="flex justify-between items-start mb-1">
+          <h4 className="text-lg font-semibold">
+            {workout.workoutTitle}
+          </h4>
+        </div>
+        <p className="text-xs text-gray-600">
+          {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} | {Math.floor(totalDuration / 60)}h {Math.round(totalDuration % 60)}m
+        </p>
+      </div>
+
+      <div className="h-32 bg-gray-50 border border-gray-200 rounded p-2 mb-3">
+        <Line data={chartData} options={chartOptions} />
+      </div>
+
+      <div className="space-y-1 mb-3">
+        {workout.intervals.map((interval, intervalIdx) => (
+          <div
+            key={intervalIdx}
+            className="flex justify-between text-xs"
+          >
+            <span className="font-medium truncate mr-2">{interval.name}</span>
+            <span className="text-gray-600 whitespace-nowrap">
+              {interval.duration / 60}m | {interval.powerMin}-{interval.powerMax}W
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+WorkoutCard.displayName = 'WorkoutCard';
 
 export default function PlanPage() {
   const router = useRouter();
@@ -140,75 +255,6 @@ export default function PlanPage() {
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const getIntervalColor = (powerMin: number, powerMax: number) => {
-    const avgPower = (powerMin + powerMax) / 2;
-    if (avgPower < 100) return "rgba(156, 163, 175, 0.6)";
-    if (avgPower < 150) return "rgba(96, 165, 250, 0.6)";
-    if (avgPower < 200) return "rgba(52, 211, 153, 0.6)";
-    if (avgPower < 250) return "rgba(251, 191, 36, 0.6)";
-    if (avgPower < 300) return "rgba(251, 146, 60, 0.6)";
-    return "rgba(220, 38, 38, 0.6)";
-  };
-
-  const getChartData = (intervals: Interval[]) => {
-    if (intervals.length === 0) return null;
-
-    let currentTime = 0;
-    const datasets = intervals.map((interval, index) => {
-      const startTime = currentTime;
-      const endTime = currentTime + interval.duration / 60;
-      currentTime = endTime;
-
-      return {
-        label: `${interval.name || `Interval ${index + 1}`}`,
-        data: [
-          { x: startTime, y: 0 },
-          { x: startTime, y: interval.powerMax },
-          { x: endTime, y: interval.powerMax },
-          { x: endTime, y: 0 },
-        ],
-        borderColor: "rgba(0, 0, 0, 0.2)",
-        backgroundColor: getIntervalColor(interval.powerMin, interval.powerMax),
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        borderWidth: 1,
-        stepped: false,
-      };
-    });
-
-    return { datasets };
-  };
-
-  const getChartOptions = (intervals: Interval[]) => {
-    const totalDuration = intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
-    const maxPower = Math.max(
-      intervals.reduce((max, interval) => Math.max(max, interval.powerMax), 0),
-      300
-    );
-
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        title: { display: false },
-        tooltip: { enabled: false },
-      },
-      scales: {
-        x: {
-          type: "linear" as const,
-          min: 0,
-          max: totalDuration || 10,
-        },
-        y: {
-          min: 0,
-          max: maxPower,
-        },
-      },
-    };
   };
 
   const saveWorkout = (workout: Workout) => {
@@ -390,60 +436,9 @@ export default function PlanPage() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {workouts.map((workout, idx) => {
-                      const totalDuration = workout.intervals.reduce(
-                        (sum, interval) => sum + interval.duration / 60,
-                        0
-                      );
-                      const chartData = getChartData(workout.intervals);
-                      const chartOptions = getChartOptions(workout.intervals);
-                      const date = parseLocalDate(workout.selectedDate);
-
-                      return (
-                        <div
-                          key={idx}
-                          className="bg-white border border-gray-300 rounded-lg p-4"
-                        >
-                          <div className="mb-3">
-                            <div className="flex justify-between items-start mb-1">
-                              <h4 className="text-lg font-semibold">
-                                {workout.workoutTitle}
-                              </h4>
-                            </div>
-                            <p className="text-xs text-gray-600">
-                              {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} | {Math.floor(totalDuration / 60)}h {Math.round(totalDuration % 60)}m
-                            </p>
-                          </div>
-
-                          <div className="h-32 bg-gray-50 border border-gray-200 rounded p-2 mb-3">
-                            {chartData && (
-                              <Line data={chartData} options={chartOptions} />
-                            )}
-                          </div>
-
-                          <div className="space-y-1 mb-3">
-                            {workout.intervals.map((interval, intervalIdx) => (
-                              <div
-                                key={intervalIdx}
-                                className="flex justify-between text-xs"
-                              >
-                                <span className="font-medium truncate mr-2">{interval.name}</span>
-                                <span className="text-gray-600 whitespace-nowrap">
-                                  {interval.duration / 60}m | {interval.powerMin}-{interval.powerMax}W
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* <button
-                            onClick={() => saveWorkout(workout)}
-                            className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                          >
-                            Edit in Builder
-                          </button> */}
-                        </div>
-                      );
-                    })}
+                    {workouts.map((workout, idx) => (
+                      <WorkoutCard key={idx} workout={workout} />
+                    ))}
                   </div>
                 </div>
               );
