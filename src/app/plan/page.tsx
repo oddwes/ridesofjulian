@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, memo, useMemo } from "react";
+import { useState, useEffect, memo, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
+import { Edit2 } from "lucide-react";
 import Container from "@/components/ui/Container";
 import TabNavigation from "@/components/TabNavigation";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import EditWorkout, { Interval as EditInterval, EditWorkoutHandle } from "@/components/workouts/Edit";
 
 interface Interval {
   id: string;
@@ -33,7 +35,7 @@ const getIntervalColor = (powerMin: number, powerMax: number) => {
   return "rgba(220, 38, 38, 0.6)";
 };
 
-const WorkoutCard = memo(({ workout }: { workout: Workout }) => {
+const WorkoutCard = memo(({ workout, onEdit }: { workout: Workout; onEdit?: (workout: Workout) => void }) => {
   const chartData = useMemo(() => {
     let currentTime = 0;
     const datasets = workout.intervals.map((interval, index) => {
@@ -109,6 +111,14 @@ const WorkoutCard = memo(({ workout }: { workout: Workout }) => {
           <h4 className="text-lg font-semibold">
             {workout.workoutTitle}
           </h4>
+          {onEdit && (
+            <button
+              onClick={() => onEdit(workout)}
+              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+            >
+              <Edit2 size={16} />
+            </button>
+          )}
         </div>
         <p className="text-xs text-gray-600">
           {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} | {Math.floor(totalDuration / 60)}h {Math.round(totalDuration % 60)}m
@@ -140,6 +150,7 @@ WorkoutCard.displayName = 'WorkoutCard';
 
 export default function PlanPage() {
   const router = useRouter();
+  const editWorkoutRef = useRef<EditWorkoutHandle>(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [ftp, setFtp] = useState<number>(200);
   const [blockDuration, setBlockDuration] = useState<number>(7);
@@ -147,6 +158,7 @@ export default function PlanPage() {
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<Workout[]>([]);
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
 
   useEffect(() => {
     const storedPlan = sessionStorage.getItem('generated_training_plan');
@@ -257,13 +269,27 @@ export default function PlanPage() {
     }
   };
 
-  const saveWorkout = (workout: Workout) => {
-    localStorage.setItem('workout_builder_data', JSON.stringify({
-      intervals: workout.intervals,
-      selectedDate: workout.selectedDate,
-      workoutTitle: workout.workoutTitle,
-    }));
-    router.push('/workout');
+  const handleEditWorkout = (workout: Workout) => {
+    setEditingWorkout(workout);
+  };
+
+  const handleSaveEditedWorkout = async ({ intervals, title, date }: { intervals: EditInterval[]; title: string; date: string }) => {
+    if (!editingWorkout) return;
+    
+    const updatedWorkout: Workout = {
+      ...editingWorkout,
+      workoutTitle: title,
+      selectedDate: date,
+      intervals,
+    };
+
+    const updatedPlan = generatedPlan.map(w => 
+      w.id === editingWorkout.id ? updatedWorkout : w
+    );
+
+    setGeneratedPlan(updatedPlan);
+    sessionStorage.setItem('generated_training_plan', JSON.stringify(updatedPlan));
+    setEditingWorkout(null);
   };
 
   const clearPlan = () => {
@@ -437,7 +463,7 @@ export default function PlanPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {workouts.map((workout, idx) => (
-                      <WorkoutCard key={idx} workout={workout} />
+                      <WorkoutCard key={idx} workout={workout} onEdit={handleEditWorkout} />
                     ))}
                   </div>
                 </div>
@@ -452,6 +478,49 @@ export default function PlanPage() {
           <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
             <LoadingSpinner />
             <p className="text-lg font-medium">Generating your training plan...</p>
+          </div>
+        </div>
+      )}
+
+      {editingWorkout && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+              <h2 className="text-xl font-semibold">{editingWorkout.workoutTitle}</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {new Date(editingWorkout.selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <EditWorkout
+                ref={editWorkoutRef}
+                initialIntervals={editingWorkout.intervals}
+                initialTitle={editingWorkout.workoutTitle}
+                initialDate={editingWorkout.selectedDate}
+                onSave={handleSaveEditedWorkout}
+                hideHeader={true}
+              />
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end items-center gap-3 z-10">
+              <button
+                onClick={() => setEditingWorkout(null)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => editWorkoutRef.current?.save()}
+                disabled={editWorkoutRef.current?.isSaving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editWorkoutRef.current?.isSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       )}
