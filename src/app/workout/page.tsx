@@ -7,7 +7,6 @@ import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import { Trash2, Copy } from "lucide-react";
 import Container from "@/components/ui/Container";
-import TabNavigation from "@/components/TabNavigation";
 import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
 
 interface Interval {
@@ -17,7 +16,6 @@ interface Interval {
   powerMin: number;
   powerMax: number;
 }
-
 
 const WORKOUT_STORAGE_KEY = 'workout_builder_data';
 
@@ -359,9 +357,7 @@ export default function WorkoutPage() {
   }
 
   return (
-    <>
-      <TabNavigation />
-      <Container className="py-8">
+    <Container className="py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Workout Builder</h1>
           <button
@@ -520,8 +516,7 @@ export default function WorkoutPage() {
           Add Interval
         </button>
       </div>
-      </Container>
-    </>
+    </Container>
   );
 }
 
