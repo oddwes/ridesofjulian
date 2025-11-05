@@ -108,6 +108,17 @@ export const refreshWahooToken = async () => {
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      
+      if (errorData.error?.includes('Too many unrevoked access tokens')) {
+        const oldToken = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
+        if (oldToken) {
+          await revokeWahooToken(oldToken);
+        }
+        localStorage.clear();
+        console.warn('Too many Wahoo tokens detected during refresh. Tokens cleared.');
+      }
+      
       return null;
     }
 
