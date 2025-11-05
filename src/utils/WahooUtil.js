@@ -48,7 +48,7 @@ export const initiateWahooAuth = async (returnPath = '/') => {
     await revokeWahooToken(tokenToRevoke);
   }
   
-  localStorage.clear();
+  clearAllWahooData();
   window.location.href = getWahooAuthUrl(returnPath);
 };
 
@@ -74,8 +74,8 @@ export const exchangeWahooToken = async (authCode) => {
       const oldToken = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
       if (oldToken) {
         await revokeWahooToken(oldToken);
-        localStorage.clear();
       }
+      clearAllWahooData();
       throw new Error('TOO_MANY_TOKENS');
     }
     
@@ -115,7 +115,7 @@ export const refreshWahooToken = async () => {
         if (oldToken) {
           await revokeWahooToken(oldToken);
         }
-        localStorage.clear();
+        clearAllWahooData();
         console.warn('Too many Wahoo tokens detected during refresh. Tokens cleared.');
       }
       
