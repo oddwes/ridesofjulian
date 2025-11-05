@@ -24,7 +24,7 @@ const WahooRedirect = () => {
       } catch (error) {
         console.error('Error getting Wahoo tokens:', error);
         if (error.message === 'TOO_MANY_TOKENS') {
-          alert('Too many Wahoo tokens exist. Please:\n1. Open browser DevTools (F12)\n2. Go to Application > Local Storage\n3. Clear all wahoo_* entries\n4. Try logging in again\n\nIf this persists, contact Wahoo support to manually revoke tokens.');
+          alert('Old tokens revoked. Please try logging in again.');
         }
         router.push(returnPath);
       }

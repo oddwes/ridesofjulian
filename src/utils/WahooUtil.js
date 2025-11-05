@@ -12,6 +12,21 @@ export const getWahooAuthUrl = (returnPath = '/') => {
   return `https://api.wahooligan.com/oauth/authorize?client_id=${WAHOO_CLIENT_ID}&redirect_uri=${encodeURIComponent(WAHOO_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
 };
 
+export const revokeWahooToken = async (token) => {
+  if (!token) return;
+  
+  try {
+    await fetch('https://api.wahooligan.com/v1/permissions', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error('Error revoking Wahoo token:', error);
+  }
+};
+
 export const initiateWahooAuth = async (returnPath = '/') => {
   let tokenToRevoke = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
   
@@ -35,21 +50,6 @@ export const initiateWahooAuth = async (returnPath = '/') => {
   
   localStorage.clear();
   window.location.href = getWahooAuthUrl(returnPath);
-};
-
-export const revokeWahooToken = async (token) => {
-  if (!token) return;
-  
-  try {
-    await fetch('https://api.wahooligan.com/oauth/deauthorize', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-  } catch (error) {
-    console.error('Error revoking Wahoo token:', error);
-  }
 };
 
 export const exchangeWahooToken = async (authCode) => {
