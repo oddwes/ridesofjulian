@@ -12,6 +12,46 @@ export const getWahooAuthUrl = (returnPath = '/') => {
   return `https://api.wahooligan.com/oauth/authorize?client_id=${WAHOO_CLIENT_ID}&redirect_uri=${encodeURIComponent(WAHOO_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
 };
 
+export const initiateWahooAuth = async (returnPath = '/') => {
+  let tokenToRevoke = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
+  
+  if (!tokenToRevoke) {
+    const refreshToken = localStorage.getItem(WAHOO_REFRESH_TOKEN_KEY);
+    if (refreshToken) {
+      try {
+        const refreshed = await refreshWahooToken();
+        if (refreshed) {
+          tokenToRevoke = refreshed.access_token;
+        }
+      } catch (error) {
+        console.error('Failed to refresh token for revocation:', error);
+      }
+    }
+  }
+  
+  if (tokenToRevoke) {
+    await revokeWahooToken(tokenToRevoke);
+  }
+  
+  localStorage.clear();
+  window.location.href = getWahooAuthUrl(returnPath);
+};
+
+export const revokeWahooToken = async (token) => {
+  if (!token) return;
+  
+  try {
+    await fetch('https://api.wahooligan.com/oauth/deauthorize', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error('Error revoking Wahoo token:', error);
+  }
+};
+
 export const exchangeWahooToken = async (authCode) => {
   const response = await fetch('https://api.wahooligan.com/oauth/token', {
     method: 'POST',
@@ -28,6 +68,17 @@ export const exchangeWahooToken = async (authCode) => {
   });
 
   if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (errorData.error?.includes('Too many unrevoked access tokens')) {
+      const oldToken = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
+      if (oldToken) {
+        await revokeWahooToken(oldToken);
+        localStorage.clear();
+      }
+      throw new Error('TOO_MANY_TOKENS');
+    }
+    
     throw new Error('Failed to exchange Wahoo token');
   }
 
@@ -114,6 +165,20 @@ export const ensureValidWahooToken = async () => {
   
   return null;
 };
+
+export const clearAllWahooData = () => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.removeItem(WAHOO_ACCESS_TOKEN_KEY);
+  localStorage.removeItem(WAHOO_REFRESH_TOKEN_KEY);
+  localStorage.removeItem(WAHOO_TOKEN_EXPIRY_KEY);
+  
+  console.log('All Wahoo tokens cleared from localStorage');
+};
+
+if (typeof window !== 'undefined') {
+  window.clearWahooTokens = clearAllWahooData;
+}
 
 export const getPlannedWorkouts = async (daysAhead = 7) => {
   const token = getStoredWahooToken();
