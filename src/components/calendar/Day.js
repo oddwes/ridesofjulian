@@ -98,7 +98,6 @@ const Day = ({ activity, plannedWorkout, isToday, date }) => {
                 const width = totalDuration > 0 ? (interval.exit_trigger_value / totalDuration) * 100 : 0
                 const powerMin = interval.targets?.[0]?.low || 0
                 const powerMax = interval.targets?.[0]?.high || 0
-                const avgPower = (powerMin + powerMax) / 2
                 const maxPower = Math.max(...intervals.map(i => i.targets?.[0]?.high || 0), 300)
                 const height = maxPower > 0 ? (powerMax / maxPower) * 100 : 0
                 

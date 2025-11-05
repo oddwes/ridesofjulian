@@ -99,6 +99,7 @@ Output one workout JSON object per line. Do not wrap in an array.`;
                 } catch (e) {
                   // Not a complete JSON yet, will be in next iteration
                   buffer = trimmed + '\n' + buffer;
+                  console.error("Failed to parse workout:", e);
                 }
               }
             }

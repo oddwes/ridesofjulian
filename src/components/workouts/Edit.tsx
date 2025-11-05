@@ -27,7 +27,6 @@ interface EditWorkoutProps {
   saveButtonText?: string;
   deleteButtonText?: string;
   hideHeader?: boolean;
-  onCancel?: () => void;
 }
 
 const defaultIntervals: Interval[] = [
@@ -49,7 +48,6 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
   saveButtonText = "Save Workout",
   deleteButtonText = "Delete Workout",
   hideHeader = false,
-  onCancel,
 }, ref) => {
   const [intervals, setIntervals] = useState<Interval[]>(initialIntervals);
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
