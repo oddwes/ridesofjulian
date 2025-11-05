@@ -138,7 +138,21 @@ export const getPlannedWorkouts = async (daysAhead = 7) => {
   }
 
   const data = await response.json();
-  return data.workouts ? data.workouts.filter(w => w.plan_id) : [];
+  const workouts = data.workouts ? data.workouts.filter(w => w.plan_id) : [];
+  
+  const workoutsWithIntervals = await Promise.all(
+    workouts.map(async (workout) => {
+      try {
+        const intervals = await getPlanIntervals(workout.plan_id);
+        return { ...workout, intervals };
+      } catch (error) {
+        console.error(`Failed to fetch intervals for workout ${workout.id}:`, error);
+        return { ...workout, intervals: [] };
+      }
+    })
+  );
+  
+  return workoutsWithIntervals;
 };
 
 export const getWorkoutById = async (workoutId) => {
