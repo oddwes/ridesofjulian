@@ -3,10 +3,13 @@
 import { useState, useEffect, memo, useMemo, useRef } from "react";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
-import { Edit2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import EditWorkout, { Interval as EditInterval, EditWorkoutHandle } from "@/components/workouts/Edit";
+import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Interval {
   id: string;
@@ -33,7 +36,7 @@ const getIntervalColor = (powerMin: number, powerMax: number) => {
   return "rgba(220, 38, 38, 0.6)";
 };
 
-const WorkoutCard = memo(({ workout, onEdit }: { workout: Workout; onEdit?: (workout: Workout) => void }) => {
+const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: Workout; onEdit?: (workout: Workout) => void; onDelete?: (workout: Workout) => void }) => {
   const chartData = useMemo(() => {
     let currentTime = 0;
     const datasets = workout.intervals.map((interval, index) => {
@@ -109,14 +112,24 @@ const WorkoutCard = memo(({ workout, onEdit }: { workout: Workout; onEdit?: (wor
           <h4 className="text-lg font-semibold">
             {workout.workoutTitle}
           </h4>
-          {onEdit && (
-            <button
-              onClick={() => onEdit(workout)}
-              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-            >
-              <Edit2 size={16} />
-            </button>
-          )}
+          <div className="flex gap-1">
+            {onDelete && (
+              <button
+                onClick={() => onDelete(workout)}
+                className="p-1 text-red-600 hover:bg-red-50 rounded"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={() => onEdit(workout)}
+                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+              >
+                <Edit2 size={16} />
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-xs text-gray-600">
           {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} | {Math.floor(totalDuration / 60)}h {Math.round(totalDuration % 60)}m
@@ -147,6 +160,8 @@ const WorkoutCard = memo(({ workout, onEdit }: { workout: Workout; onEdit?: (wor
 WorkoutCard.displayName = 'WorkoutCard';
 
 export default function PlanPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const editWorkoutRef = useRef<EditWorkoutHandle>(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [ftp, setFtp] = useState<number>(200);
@@ -156,6 +171,7 @@ export default function PlanPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<Workout[]>([]);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
+  const [isPushingToWahoo, setIsPushingToWahoo] = useState(false);
 
   useEffect(() => {
     const storedPlan = sessionStorage.getItem('generated_training_plan');
@@ -270,6 +286,19 @@ export default function PlanPage() {
     setEditingWorkout(workout);
   };
 
+  const handleDeleteWorkout = (workout: Workout) => {
+    if (confirm(`Delete "${workout.workoutTitle}"?`)) {
+      const updatedPlan = generatedPlan.filter(w => w.id !== workout.id);
+      setGeneratedPlan(updatedPlan);
+      sessionStorage.setItem('generated_training_plan', JSON.stringify(updatedPlan));
+      
+      const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
+      const pushedWorkouts = JSON.parse(sessionStorage.getItem(pushedWorkoutsKey) || '[]');
+      const updatedPushedWorkouts = pushedWorkouts.filter((id: number) => id !== workout.id);
+      sessionStorage.setItem(pushedWorkoutsKey, JSON.stringify(updatedPushedWorkouts));
+    }
+  };
+
   const handleSaveEditedWorkout = async ({ intervals, title, date }: { intervals: EditInterval[]; title: string; date: string }) => {
     if (!editingWorkout) return;
     
@@ -290,14 +319,166 @@ export default function PlanPage() {
   };
 
   const clearPlan = () => {
+    const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
     sessionStorage.removeItem('generated_training_plan');
     sessionStorage.removeItem('training_plan_inputs');
+    sessionStorage.removeItem(pushedWorkoutsKey);
     setGeneratedPlan([]);
     setUserPrompt("");
     setFtp(200);
     setBlockDuration(7);
     setWeeklyHours(10);
     setStartDate(new Date().toISOString().split("T")[0]);
+  };
+
+  const pushPlanToWahoo = async () => {
+    const accessToken = getStoredWahooToken();
+    
+    if (!accessToken) {
+      if (confirm("You need to authorize with Wahoo first. Redirect to Wahoo login?")) {
+        window.location.href = getWahooAuthUrl('/plan');
+      }
+      return;
+    }
+
+    if (generatedPlan.length === 0) {
+      alert("No workouts to push");
+      return;
+    }
+
+    const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
+    const pushedWorkouts = JSON.parse(sessionStorage.getItem(pushedWorkoutsKey) || '[]');
+    
+    const workoutsToPush = generatedPlan.filter(w => !pushedWorkouts.includes(w.id));
+    
+    if (workoutsToPush.length === 0) {
+      alert("All workouts have already been pushed to Wahoo!");
+      return;
+    }
+
+    setIsPushingToWahoo(true);
+    let successCount = 0;
+    let failCount = 0;
+    let rateLimited = false;
+
+    try {
+      for (const workout of workoutsToPush) {
+        try {
+          const planIntervals = workout.intervals.map((interval, index) => ({
+            name: interval.name || `Interval ${index + 1}`,
+            exit_trigger_type: "time",
+            exit_trigger_value: interval.duration,
+            intensity_type: "tempo",
+            targets: [
+              {
+                type: "watts",
+                low: interval.powerMin,
+                high: interval.powerMax,
+              },
+            ],
+          }));
+
+          const planData = {
+            header: {
+              name: workout.workoutTitle || "Custom Workout",
+              version: "1.0.0",
+              workout_type_family: 0,
+              workout_type_location: 1,
+            },
+            intervals: planIntervals,
+          };
+
+          const planJson = JSON.stringify(planData);
+          const base64Plan = btoa(planJson);
+          const dataUri = `data:application/json;base64,${base64Plan}`;
+          
+          const externalId = `workout-${workout.id}-${Date.now()}`;
+          const providerUpdatedAt = new Date().toISOString();
+
+          const formBody = new URLSearchParams();
+          formBody.append("plan[file]", dataUri);
+          formBody.append("plan[filename]", "plan.json");
+          formBody.append("plan[external_id]", externalId);
+          formBody.append("plan[provider_updated_at]", providerUpdatedAt);
+
+          const planResponse = await fetch("https://api.wahooligan.com/v1/plans", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formBody.toString(),
+          });
+
+          if (!planResponse.ok) {
+            if (planResponse.status === 429) {
+              rateLimited = true;
+              throw new Error('Rate limited');
+            }
+            throw new Error(`Plan creation failed: ${planResponse.statusText}`);
+          }
+
+          const planResult = await planResponse.json();
+          const planId = planResult.id;
+
+          const workoutDate = new Date(workout.selectedDate + 'T12:00:00');
+          const totalMinutes = Math.ceil(workout.intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
+          
+          const workoutFormBody = new URLSearchParams();
+          workoutFormBody.append("workout[workout_token]", `workout-${workout.id}-${Date.now()}`);
+          workoutFormBody.append("workout[workout_type_id]", "1");
+          workoutFormBody.append("workout[starts]", workoutDate.toISOString());
+          workoutFormBody.append("workout[minutes]", totalMinutes.toString());
+          workoutFormBody.append("workout[name]", workout.workoutTitle || "Custom Workout");
+          workoutFormBody.append("workout[plan_id]", planId.toString());
+
+          const workoutResponse = await fetch("https://api.wahooligan.com/v1/workouts", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: workoutFormBody.toString(),
+          });
+
+          if (!workoutResponse.ok) {
+            if (workoutResponse.status === 429) {
+              rateLimited = true;
+              throw new Error('Rate limited');
+            }
+            throw new Error(`Workout creation failed: ${workoutResponse.statusText}`);
+          }
+
+          pushedWorkouts.push(workout.id);
+          sessionStorage.setItem(pushedWorkoutsKey, JSON.stringify(pushedWorkouts));
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to push workout ${workout.workoutTitle}:`, error);
+          failCount++;
+          if (rateLimited) break;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
+      
+      const totalPushed = pushedWorkouts.length;
+      const remaining = generatedPlan.length - totalPushed;
+      
+      if (failCount === 0 && remaining === 0) {
+        sessionStorage.removeItem(pushedWorkoutsKey);
+        alert(`Successfully pushed all ${successCount} workouts to Wahoo!`);
+        router.push('/');
+      } else if (rateLimited) {
+        alert(`Rate limited by Wahoo. Pushed ${successCount} workouts this attempt. ${remaining} remaining. Click "Push to Wahoo" again to continue.`);
+      } else if (remaining > 0) {
+        alert(`Pushed ${successCount} workouts. ${failCount} failed. ${remaining} remaining. Click "Push to Wahoo" to retry.`);
+      }
+    } catch (error) {
+      console.error("Error pushing plan to Wahoo:", error);
+      alert("Failed to push plan to Wahoo");
+    } finally {
+      setIsPushingToWahoo(false);
+    }
   };
 
   const parseLocalDate = (dateString: string) => {
@@ -432,12 +613,23 @@ export default function PlanPage() {
           <div className="space-y-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Your Training Plan</h2>
-              <button
-                onClick={clearPlan}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-              >
-                Clear Plan
-              </button>
+              <div className="flex gap-3">
+                {getStoredWahooToken() && (
+                  <button
+                    onClick={pushPlanToWahoo}
+                    disabled={isPushingToWahoo}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isPushingToWahoo ? "Pushing..." : "Push to Wahoo"}
+                  </button>
+                )}
+                <button
+                  onClick={clearPlan}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                  Clear Plan
+                </button>
+              </div>
             </div>
             {groupWorkoutsByWeek(generatedPlan).map(([weekKey, workouts]) => {
               const firstDate = parseLocalDate(workouts[0].selectedDate);
@@ -459,7 +651,7 @@ export default function PlanPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {workouts.map((workout, idx) => (
-                      <WorkoutCard key={idx} workout={workout} onEdit={handleEditWorkout} />
+                      <WorkoutCard key={idx} workout={workout} onEdit={handleEditWorkout} onDelete={handleDeleteWorkout} />
                     ))}
                   </div>
                 </div>
