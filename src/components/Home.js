@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAthleteActivities } from '../utils/StravaUtil'
-import { getPlannedWorkouts, hasWahooRefreshToken, getWahooAuthUrl } from '../utils/WahooUtil'
+import { getPlannedWorkouts, hasWahooRefreshToken, initiateWahooAuth } from '../utils/WahooUtil'
 import Calendar from './calendar/Calendar'
 import ReactSelect from 'react-select'
 import Totals from './Totals'
@@ -45,8 +45,8 @@ const Home = () => {
 
   const start = selectedYear === dayjs().year() ? dayjs() : dayjs(`${selectedYear}-12-31`);
 
-  const handleConnectWahoo = () => {
-    window.location.href = getWahooAuthUrl()
+  const handleConnectWahoo = async () => {
+    await initiateWahooAuth()
   }
 
   return (

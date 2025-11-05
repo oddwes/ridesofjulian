@@ -7,7 +7,7 @@ import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import { Trash2, Copy } from "lucide-react";
 import Container from "@/components/ui/Container";
-import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
+import { getStoredWahooToken, initiateWahooAuth } from "@/utils/WahooUtil";
 
 interface Interval {
   id: string;
@@ -127,7 +127,7 @@ export default function WorkoutPage() {
     
     if (!accessToken) {
       if (confirm("You need to authorize with Wahoo first. Redirect to Wahoo login?")) {
-        window.location.href = getWahooAuthUrl('/workout');
+        await initiateWahooAuth('/workout');
       }
       return;
     }
