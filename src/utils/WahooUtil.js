@@ -6,24 +6,49 @@ const WAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_WAHOO_CLIENT_ID;
 const WAHOO_CLIENT_SECRET = process.env.NEXT_PUBLIC_WAHOO_CLIENT_SECRET;
 const WAHOO_REDIRECT_URI = process.env.NEXT_PUBLIC_WAHOO_REDIRECT_URI || 'http://localhost:3000/wahoo_callback';
 
+let refreshPromise = null;
+
 export const getWahooAuthUrl = (returnPath = '/') => {
   const scopes = 'user_read workouts_read workouts_write plans_read plans_write';
   const state = encodeURIComponent(returnPath);
   return `https://api.wahooligan.com/oauth/authorize?client_id=${WAHOO_CLIENT_ID}&redirect_uri=${encodeURIComponent(WAHOO_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${state}`;
 };
 
+export const clearAllWahooData = () => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.removeItem(WAHOO_ACCESS_TOKEN_KEY);
+  localStorage.removeItem(WAHOO_REFRESH_TOKEN_KEY);
+  localStorage.removeItem(WAHOO_TOKEN_EXPIRY_KEY);
+  
+  console.log('All Wahoo tokens cleared from localStorage');
+};
+
+if (typeof window !== 'undefined') {
+  window.clearWahooTokens = clearAllWahooData;
+}
+
 export const revokeWahooToken = async (token) => {
-  if (!token) return;
+  if (!token) return false;
   
   try {
-    await fetch('https://api.wahooligan.com/v1/permissions', {
+    const response = await fetch('https://api.wahooligan.com/v1/permissions', {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
+    
+    if (response.ok) {
+      clearAllWahooData();
+      return true;
+    }
+    
+    console.error('Failed to revoke Wahoo token:', response.status);
+    return false;
   } catch (error) {
     console.error('Error revoking Wahoo token:', error);
+    return false;
   }
 };
 
@@ -48,7 +73,6 @@ export const initiateWahooAuth = async (returnPath = '/') => {
     await revokeWahooToken(tokenToRevoke);
   }
   
-  clearAllWahooData();
   window.location.href = getWahooAuthUrl(returnPath);
 };
 
@@ -75,7 +99,6 @@ export const exchangeWahooToken = async (authCode) => {
       if (oldToken) {
         await revokeWahooToken(oldToken);
       }
-      clearAllWahooData();
       throw new Error('TOO_MANY_TOKENS');
     }
     
@@ -88,47 +111,63 @@ export const exchangeWahooToken = async (authCode) => {
 };
 
 export const refreshWahooToken = async () => {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
   const refreshToken = localStorage.getItem(WAHOO_REFRESH_TOKEN_KEY);
   if (!refreshToken) {
     return null;
   }
 
-  try {
-    const response = await fetch('https://api.wahooligan.com/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: WAHOO_CLIENT_ID,
-        client_secret: WAHOO_CLIENT_SECRET,
-        refresh_token: refreshToken,
-      }),
-    });
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch('https://api.wahooligan.com/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: WAHOO_CLIENT_ID,
+          client_secret: WAHOO_CLIENT_SECRET,
+          refresh_token: refreshToken,
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      
-      if (errorData.error?.includes('Too many unrevoked access tokens')) {
-        const oldToken = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
-        if (oldToken) {
-          await revokeWahooToken(oldToken);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (errorData.error?.includes('Too many unrevoked access tokens')) {
+          const oldToken = localStorage.getItem(WAHOO_ACCESS_TOKEN_KEY);
+          if (oldToken) {
+            await revokeWahooToken(oldToken);
+            console.warn('Too many Wahoo tokens detected during refresh.');
+          }
         }
-        clearAllWahooData();
-        console.warn('Too many Wahoo tokens detected during refresh. Tokens cleared.');
+        
+        return null;
       }
-      
-      return null;
-    }
 
-    const data = await response.json();
-    storeWahooTokens(data);
-    return data;
-  } catch (error) {
-    console.error('Error refreshing Wahoo token:', error);
-    return null;
-  }
+      const data = await response.json();
+      storeWahooTokens(data);
+      
+      await fetch('https://api.wahooligan.com/v1/user', {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`,
+        },
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error refreshing Wahoo token:', error);
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 };
 
 const storeWahooTokens = (data) => {
@@ -176,20 +215,6 @@ export const ensureValidWahooToken = async () => {
   
   return null;
 };
-
-export const clearAllWahooData = () => {
-  if (typeof window === 'undefined') return;
-  
-  localStorage.removeItem(WAHOO_ACCESS_TOKEN_KEY);
-  localStorage.removeItem(WAHOO_REFRESH_TOKEN_KEY);
-  localStorage.removeItem(WAHOO_TOKEN_EXPIRY_KEY);
-  
-  console.log('All Wahoo tokens cleared from localStorage');
-};
-
-if (typeof window !== 'undefined') {
-  window.clearWahooTokens = clearAllWahooData;
-}
 
 export const getPlannedWorkouts = async (daysAhead = 7) => {
   const token = getStoredWahooToken();
