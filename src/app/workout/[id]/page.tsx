@@ -7,6 +7,15 @@ import Container from "@/components/ui/Container";
 import EditWorkout, { Interval } from "@/components/workouts/Edit";
 import { getStoredWahooToken, getWorkoutById, getPlanIntervals } from "@/utils/WahooUtil";
 
+interface PlanInterval {
+  name?: string;
+  exit_trigger_value: number;
+  targets?: Array<{
+    low?: number;
+    high?: number;
+  }>;
+}
+
 export default function EditWorkoutPage() {
   const router = useRouter();
   const params = useParams();
@@ -44,12 +53,12 @@ export default function EditWorkoutPage() {
 
   useEffect(() => {
     if (planIntervals) {
-      const fetchedIntervals: Interval[] = planIntervals.map((interval: any, idx: number) => ({
+      const fetchedIntervals: Interval[] = planIntervals.map((interval: PlanInterval, idx: number) => ({
         id: `${Date.now()}-${idx}`,
         name: interval.name || `Interval ${idx + 1}`,
         duration: interval.exit_trigger_value,
-        powerMin: interval.targets[0]?.low || 0,
-        powerMax: interval.targets[0]?.high || 0,
+        powerMin: interval.targets?.[0]?.low || 0,
+        powerMax: interval.targets?.[0]?.high || 0,
       }));
       setIntervals(fetchedIntervals);
     }
