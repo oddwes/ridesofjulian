@@ -19,7 +19,7 @@ Output each workout as a separate JSON object on its own line (JSONL format). Ea
 - intervals: array of interval objects with:
   - id: unique string identifier
   - name: interval name (e.g., "Warmup", "Z2 Endurance", "VO2 Max")
-  - duration: duration in seconds
+  - duration: duration in seconds (when converted to minutes, use at most one decimal place - e.g., 5.5 minutes = 330 seconds, 10.2 minutes = 612 seconds)
   - powerMin: minimum power in watts
   - powerMax: maximum power in watts
 
