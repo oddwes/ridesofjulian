@@ -23,6 +23,8 @@ Output each workout as a separate JSON object on its own line (JSONL format). Ea
   - powerMin: minimum power in watts
   - powerMax: maximum power in watts
 
+CRITICAL: Respect the block duration exactly. The training plan should span from the start date through (start date + block duration). For example, a 3-day block starting on Nov 6th should have workouts distributed from Nov 6th through Nov 9th (start date + 3 days). All workout dates must fall within this range.
+
 IMPORTANT: The user has specified a weekly training volume that MUST be met. Ensure the total duration of all workouts in each week adds up to approximately the requested weekly hours. Fill any remaining hours with Z2 blocks. Distribute workouts across the week with appropriate rest.
 
 The user's FTP is ${ftp}W. Calculate power zones based on these FTP percentages:
