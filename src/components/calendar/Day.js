@@ -7,13 +7,17 @@ import Col from "../ui/Col";
 import { ChevronUp, PlusCircle } from "lucide-react"
 import dayjs from "dayjs"
 
-const Day = ({ activity, plannedWorkout, isToday, date }) => {
+const Day = ({ activity, plannedWorkout, isToday, date, onWorkoutClick }) => {
   const { ftp } = useContext(FtpContext)
   const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
   
   const handleWorkoutClick = (workout) => {
-    router.push(`/workout/${workout.id}`)
+    if (onWorkoutClick) {
+      onWorkoutClick(workout)
+    } else {
+      router.push(`/workout/${workout.id}`)
+    }
   }
 
   const handleAddWorkout = () => {

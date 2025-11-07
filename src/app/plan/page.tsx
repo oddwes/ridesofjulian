@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, memo, useMemo, useRef } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import { Edit2, Trash2 } from "lucide-react";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import EditWorkout, { Interval as EditInterval, EditWorkoutHandle } from "@/components/workouts/Edit";
+import { Interval as EditInterval } from "@/components/workouts/Edit";
+import { WorkoutModal } from "@/components/workouts/Modal";
 import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -162,7 +163,6 @@ WorkoutCard.displayName = 'WorkoutCard';
 export default function PlanPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const editWorkoutRef = useRef<EditWorkoutHandle>(null);
   const [userPrompt, setUserPrompt] = useState("");
   const [ftp, setFtp] = useState<number>(200);
   const [blockDuration, setBlockDuration] = useState<number>(7);
@@ -670,48 +670,11 @@ export default function PlanPage() {
         </div>
       )}
 
-      {editingWorkout && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
-              <h2 className="text-xl font-semibold">{editingWorkout.workoutTitle}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {new Date(editingWorkout.selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              <EditWorkout
-                ref={editWorkoutRef}
-                initialIntervals={editingWorkout.intervals}
-                initialTitle={editingWorkout.workoutTitle}
-                initialDate={editingWorkout.selectedDate}
-                onSave={handleSaveEditedWorkout}
-                hideHeader={true}
-              />
-            </div>
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end items-center gap-3 z-10">
-              <button
-                onClick={() => setEditingWorkout(null)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => editWorkoutRef.current?.save()}
-                disabled={editWorkoutRef.current?.isSaving}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {editWorkoutRef.current?.isSaving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <WorkoutModal
+        workout={editingWorkout}
+        onClose={() => setEditingWorkout(null)}
+        onSave={handleSaveEditedWorkout}
+      />
     </>
   );
 }
