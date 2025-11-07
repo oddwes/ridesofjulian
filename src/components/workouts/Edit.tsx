@@ -27,6 +27,7 @@ interface EditWorkoutProps {
   saveButtonText?: string;
   deleteButtonText?: string;
   hideHeader?: boolean;
+  disabled?: boolean;
 }
 
 const defaultIntervals: Interval[] = [
@@ -48,6 +49,7 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
   saveButtonText = "Save Workout",
   deleteButtonText = "Delete Workout",
   hideHeader = false,
+  disabled = false,
 }, ref) => {
   const [intervals, setIntervals] = useState<Interval[]>(initialIntervals);
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
@@ -258,7 +260,8 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
             value={workoutTitle}
             onChange={(e) => setWorkoutTitle(e.target.value)}
             placeholder="Workout title"
-            className="px-4 py-2 border border-gray-300 rounded"
+            disabled={disabled}
+            className="px-4 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         <div className="flex flex-col">
@@ -267,7 +270,8 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded"
+            disabled={disabled}
+            className="px-4 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         <div className="flex flex-col">
@@ -297,7 +301,8 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
                 value={interval.name}
                 onChange={(e) => updateInterval(interval.id, "name", e.target.value)}
                 placeholder="Interval name"
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -311,7 +316,8 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
                   const val = e.target.value.replace(/[^0-9]/g, "");
                   updateInterval(interval.id, "duration", val ? parseInt(val) * 60 : 0);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -326,7 +332,8 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     updateInterval(interval.id, "powerMin", val ? parseInt(val) : 0);
                   }}
-                  className="w-16 px-2 py-2 border border-gray-300 rounded"
+                  disabled={disabled}
+                  className="w-16 px-2 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <span>-</span>
                 <input
@@ -337,21 +344,24 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     updateInterval(interval.id, "powerMax", val ? parseInt(val) : 0);
                   }}
-                  className="w-16 px-2 py-2 border border-gray-300 rounded"
+                  disabled={disabled}
+                  className="w-16 px-2 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             <button
               onClick={() => duplicateInterval(interval.id)}
-              className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded"
+              disabled={disabled}
+              className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Copy size={18} />
             </button>
 
             <button
               onClick={() => deleteInterval(interval.id)}
-              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded"
+              disabled={disabled}
+              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={18} />
             </button>
@@ -362,7 +372,8 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>(({
       <div className="flex justify-center mt-6">
         <button
           onClick={addInterval}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          disabled={disabled}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Add Interval
         </button>
