@@ -1,6 +1,7 @@
 "use client";
 
 import { FTPProvider } from "@/components/FTP";
+import { SupabaseProvider } from "@/contexts/SupabaseContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -18,9 +19,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <FTPProvider>
-        {children}
-      </FTPProvider>
+      <SupabaseProvider>
+        <FTPProvider>
+          {children}
+        </FTPProvider>
+      </SupabaseProvider>
     </QueryClientProvider>
   );
 }

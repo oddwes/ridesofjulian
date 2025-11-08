@@ -7,7 +7,7 @@ import Col from "../ui/Col";
 import { ChevronUp, PlusCircle } from "lucide-react"
 import dayjs from "dayjs"
 
-const Day = ({ activity, plannedWorkout, isToday, date, onWorkoutClick }) => {
+const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutClick }) => {
   const { ftp } = useContext(FtpContext)
   const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
@@ -26,48 +26,45 @@ const Day = ({ activity, plannedWorkout, isToday, date, onWorkoutClick }) => {
   }
 
   const isFutureDate = date && date.isAfter(dayjs(), 'day')
-  const showAddButton = isFutureDate && !activity && !plannedWorkout
+  const showAddButton = isFutureDate && !activity && !plannedWorkout && !gymWorkout
 
   const todayTag = (
     <Col>
-      <div className="flex flex-col justify-center items-center h-full">
+      <div className="relative w-full h-full flex flex-col justify-center items-center">
         <p>Today</p>
-      </div>
-      <div>
-        <ChevronUp className="text-[#FC5201]" />
+        <div className="absolute bottom-5">
+          <ChevronUp className="text-[#FC5201]" />
+        </div>
       </div>
     </Col>
   )
 
-  const activityCircle = (activity, isToday) => {
+  const activityCard = (activity) => {
     return (
-      <Col size="12" className="justify-between gap-2">
-        <div className='relative w-6/10 aspect-square rounded-full bg-[#FC5201] [container-type:inline-size] text-white flex flex-col justify-center items-center text-center'>
-          <Link
-            href={`https://strava.com/activities/${activity.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="text-xs font-semibold px-2 mb-1">
+      <div className='w-full'>
+        <Link
+          href={`https://strava.com/activities/${activity.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center">
+            <div className="text-sm font-semibold truncate w-full text-center text-orange-800">
               {activity.name}
             </div>
-            <div>
+            <div className="text-xs text-orange-700">
               {Math.round(activity.distance / 1000)} km
             </div>
-            <div>
+            <div className="text-xs text-orange-700">
               {Math.round(activity.total_elevation_gain)} m
             </div>
             {(ftp !== undefined && ftp !== 0) && (
-              <div>
+              <div className="text-xs text-orange-600">
                 {getTSS(activity, ftp)} TSS
               </div>
             )}
-          </Link>
-        </div>
-        {isToday && (
-          <ChevronUp className="text-[#FC5201]" />
-        )}
-      </Col>
+          </div>
+        </Link>
+      </div>
     )
   }
 
@@ -91,52 +88,108 @@ const Day = ({ activity, plannedWorkout, isToday, date, onWorkoutClick }) => {
     const totalDuration = intervals.reduce((sum, i) => sum + (i.exit_trigger_value || 0), 0)
     
     return (
-      <Col size="12" className="justify-between gap-1">
-        <div 
-          onClick={() => handleWorkoutClick(workout)}
-          className='w-full cursor-pointer hover:opacity-80 transition-opacity'
-        >
-          <div className="w-full h-16 bg-gray-50 border border-gray-300 rounded flex items-end overflow-hidden">
-            {intervals.length > 0 ? (
-              intervals.map((interval, idx) => {
-                const width = totalDuration > 0 ? (interval.exit_trigger_value / totalDuration) * 100 : 0
-                const powerMin = interval.targets?.[0]?.low || 0
-                const powerMax = interval.targets?.[0]?.high || 0
-                const maxPower = Math.max(...intervals.map(i => i.targets?.[0]?.high || 0), 300)
-                const height = maxPower > 0 ? (powerMax / maxPower) * 100 : 0
-                
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      width: `${width}%`,
-                      height: `${height}%`,
-                      backgroundColor: getIntervalColor(powerMin, powerMax),
-                      borderRight: idx < intervals.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none'
-                    }}
-                  />
-                )
-              })
-            ) : (
-              <div className="w-full h-full bg-gray-200" />
-            )}
+      <Col size="12">
+        <div className="relative w-full h-full flex justify-center items-center">
+          <div 
+            onClick={() => handleWorkoutClick(workout)}
+            className='w-full cursor-pointer hover:opacity-80 transition-opacity'
+          >
+            <div className="w-full h-16 bg-gray-50 border border-gray-300 rounded flex items-end overflow-hidden">
+              {intervals.length > 0 ? (
+                intervals.map((interval, idx) => {
+                  const width = totalDuration > 0 ? (interval.exit_trigger_value / totalDuration) * 100 : 0
+                  const powerMin = interval.targets?.[0]?.low || 0
+                  const powerMax = interval.targets?.[0]?.high || 0
+                  const maxPower = Math.max(...intervals.map(i => i.targets?.[0]?.high || 0), 300)
+                  const height = maxPower > 0 ? (powerMax / maxPower) * 100 : 0
+                  
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        width: `${width}%`,
+                        height: `${height}%`,
+                        backgroundColor: getIntervalColor(powerMin, powerMax),
+                        borderRight: idx < intervals.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    />
+                  )
+                })
+              ) : (
+                <div className="w-full h-full bg-gray-200" />
+              )}
+            </div>
+            <div className="text-xs text-center mt-1 font-semibold truncate">
+              {workout.name}
+            </div>
+            <div className="text-xs text-center">
+              {duration}
+            </div>
           </div>
-          <div className="text-xs text-center mt-1 font-semibold text-gray-700 truncate">
-            {workout.name}
-          </div>
-          <div className="text-xs text-center text-gray-600">
-            {duration}
-          </div>
+          {isToday && (
+            <div className="absolute bottom-0.5">
+              <ChevronUp className="text-[#FC5201]" />
+            </div>
+          )}
         </div>
-        {isToday && (
-          <ChevronUp className="text-[#FC5201]" />
-        )}
       </Col>
     )
   }
 
-  if (activity) {
-    return activityCircle(activity, isToday)
+  const gymWorkoutCardContent = (workout) => {
+    const exerciseCount = workout.exercises?.length || 0
+    const completedCount = workout.exercises?.filter(e => e.completed === e.sets).length || 0
+    
+    return (
+      <div 
+        onClick={() => handleWorkoutClick(workout)}
+        className='w-full cursor-pointer hover:opacity-80 transition-opacity'
+      >
+        <div className="w-full bg-purple-100 border-2 border-purple-400 rounded flex flex-col justify-center items-center py-1">
+          <div className="text-sm font-semibold text-purple-800">
+            💪 Gym
+          </div>
+          <div className="text-xs text-purple-700">
+            {exerciseCount} exercises
+          </div>
+          {completedCount > 0 && (
+            <div className="text-xs text-purple-600">
+              {completedCount}/{exerciseCount} complete
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (activity || gymWorkout) {
+    const items = []
+    
+    if (activity) {
+      items.push({ type: 'activity', time: new Date(activity.start_date), content: activityCard(activity) })
+    }
+    if (gymWorkout) {
+      items.push({ type: 'gym', time: new Date(gymWorkout.datetime), content: gymWorkoutCardContent(gymWorkout) })
+    }
+    
+    items.sort((a, b) => a.time - b.time)
+    
+    return (
+      <Col size="12">
+        <div className="relative w-full h-full flex justify-center items-center">
+          <div className="w-full flex flex-col gap-1">
+            {items.map((item, idx) => (
+              <div key={idx}>{item.content}</div>
+            ))}
+          </div>
+          {isToday && (
+            <div className="absolute bottom-0">
+              <ChevronUp className="text-[#FC5201]" />
+            </div>
+          )}
+        </div>
+      </Col>
+    )
   } else if (plannedWorkout) {
     return plannedWorkoutBar(plannedWorkout, isToday)
   } else if (isToday) {
