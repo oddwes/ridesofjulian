@@ -6,26 +6,12 @@ import "chart.js/auto";
 import { Edit2, Trash2 } from "lucide-react";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Interval as EditInterval } from "@/components/workouts/Edit";
 import { WorkoutModal } from "@/components/workouts/Modal";
 import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-
-interface Interval {
-  id: string;
-  name: string;
-  duration: number;
-  powerMin: number;
-  powerMax: number;
-}
-
-interface Workout {
-  id: number;
-  workoutTitle: string;
-  selectedDate: string;
-  intervals: Interval[];
-}
+import { RideWorkout, Interval } from "@/types/workout";
+import { Exercise } from "@/types/exercise";
 
 const getIntervalColor = (powerMin: number, powerMax: number) => {
   const avgPower = (powerMin + powerMax) / 2;
@@ -37,7 +23,7 @@ const getIntervalColor = (powerMin: number, powerMax: number) => {
   return "rgba(220, 38, 38, 0.6)";
 };
 
-const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: Workout; onEdit?: (workout: Workout) => void; onDelete?: (workout: Workout) => void }) => {
+const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout; onEdit?: (workout: RideWorkout) => void; onDelete?: (workout: RideWorkout) => void }) => {
   const chartData = useMemo(() => {
     let currentTime = 0;
     const datasets = workout.intervals.map((interval, index) => {
@@ -169,8 +155,8 @@ export default function PlanPage() {
   const [weeklyHours, setWeeklyHours] = useState<number>(10);
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState<Workout[]>([]);
-  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
+  const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
+  const [editingWorkout, setEditingWorkout] = useState<RideWorkout | null>(null);
   const [isPushingToWahoo, setIsPushingToWahoo] = useState(false);
 
   useEffect(() => {
@@ -235,7 +221,7 @@ export default function PlanPage() {
         throw new Error("No response body");
       }
 
-      const workouts: Workout[] = [];
+      const workouts: RideWorkout[] = [];
       let buffer = "";
 
       while (true) {
@@ -282,11 +268,11 @@ export default function PlanPage() {
     }
   };
 
-  const handleEditWorkout = (workout: Workout) => {
+  const handleEditWorkout = (workout: RideWorkout) => {
     setEditingWorkout(workout);
   };
 
-  const handleDeleteWorkout = (workout: Workout) => {
+  const handleDeleteWorkout = (workout: RideWorkout) => {
     if (confirm(`Delete "${workout.workoutTitle}"?`)) {
       const updatedPlan = generatedPlan.filter(w => w.id !== workout.id);
       setGeneratedPlan(updatedPlan);
@@ -299,10 +285,11 @@ export default function PlanPage() {
     }
   };
 
-  const handleSaveEditedWorkout = async ({ intervals, title, date }: { intervals: EditInterval[]; title: string; date: string }) => {
-    if (!editingWorkout) return;
+  const handleSaveEditedWorkout = async (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => {
+    const { intervals, title, date } = data;
+    if (!editingWorkout || !intervals || !title) return;
     
-    const updatedWorkout: Workout = {
+    const updatedWorkout: RideWorkout = {
       ...editingWorkout,
       workoutTitle: title,
       selectedDate: date,
@@ -500,8 +487,8 @@ export default function PlanPage() {
     return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000); // 604800000 = 7 * 24 * 3600 * 1000
   };
 
-  const groupWorkoutsByWeek = (workouts: Workout[]) => {
-    const weeks: { [key: string]: Workout[] } = {};
+  const groupWorkoutsByWeek = (workouts: RideWorkout[]) => {
+    const weeks: { [key: string]: RideWorkout[] } = {};
     
     workouts.forEach(workout => {
       const date = parseLocalDate(workout.selectedDate);
@@ -671,7 +658,7 @@ export default function PlanPage() {
       )}
 
       <WorkoutModal
-        workout={editingWorkout}
+        workout={editingWorkout ? { ...editingWorkout, type: 'ride' as const } : null}
         onClose={() => setEditingWorkout(null)}
         onSave={handleSaveEditedWorkout}
       />

@@ -18,7 +18,7 @@ const Col = ({ children, className = "", size = "auto" }) => {
   }
 
   return (
-    <div className={`flex flex-col justify-center items-center grow  ${sizeClasses[size]} ${className}`}>
+    <div className={`flex flex-col justify-center items-center grow h-full ${sizeClasses[size]} ${className}`}>
       {children}
     </div>
   )

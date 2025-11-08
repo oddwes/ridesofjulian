@@ -1,16 +1,28 @@
 import React, { useState, forwardRef, useImperativeHandle, useRef } from "react";
 import EditWorkout, { Interval, EditWorkoutHandle } from "./Edit";
+import { Exercise } from "@/types/exercise";
 import dayjs from "dayjs";
 
+type RideWorkout = {
+  type: 'ride';
+  id: number;
+  workoutTitle: string;
+  selectedDate: string;
+  intervals: Interval[];
+};
+
+type GymWorkout = {
+  type: 'gym';
+  id: string;
+  workoutTitle: string;
+  selectedDate: string;
+  exercises: Exercise[];
+};
+
 interface WorkoutModalProps {
-  workout: {
-    id: number;
-    workoutTitle: string;
-    selectedDate: string;
-    intervals: Interval[];
-  } | null;
+  workout: (RideWorkout | GymWorkout) | null;
   onClose: () => void;
-  onSave: (data: { intervals: Interval[]; title: string; date: string }) => Promise<void>;
+  onSave: (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => Promise<void>;
 }
 
 export interface WorkoutModalHandle {
@@ -26,7 +38,7 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
       save: () => editWorkoutRef.current?.save(),
     }));
 
-    const handleSave = async (data: { intervals: Interval[]; title: string; date: string }) => {
+    const handleSave = async (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => {
       setIsSaving(true);
       try {
         await onSave(data);
@@ -55,15 +67,28 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
             </p>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
-            <EditWorkout
-              ref={editWorkoutRef}
-              initialIntervals={workout.intervals}
-              initialTitle={workout.workoutTitle}
-              initialDate={workout.selectedDate}
-              onSave={handleSave}
-              hideHeader={true}
-              disabled={isSaving}
-            />
+            {workout.type === 'gym' ? (
+              <EditWorkout
+                ref={editWorkoutRef}
+                type="gym"
+                initialExercises={workout.exercises}
+                initialDate={workout.selectedDate}
+                onSave={handleSave}
+                hideHeader={true}
+                disabled={isSaving}
+              />
+            ) : (
+              <EditWorkout
+                ref={editWorkoutRef}
+                type="ride"
+                initialIntervals={workout.intervals}
+                initialTitle={workout.workoutTitle}
+                initialDate={workout.selectedDate}
+                onSave={handleSave}
+                hideHeader={true}
+                disabled={isSaving}
+              />
+            )}
           </div>
           <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end items-center gap-3 z-10">
             <button

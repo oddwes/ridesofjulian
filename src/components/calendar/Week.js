@@ -5,12 +5,13 @@ import Day from './Day'
 import dayjs from 'dayjs'
 import { RowHeader } from './RowHeader'
 
-export const Week = ({ startDate, endDate, activitiesForWeek, plannedWorkoutsForWeek = [], onWorkoutClick }) => {
+export const Week = ({ startDate, endDate, activitiesForWeek, plannedWorkoutsForWeek = [], gymWorkoutsForWeek = [], onWorkoutClick }) => {
   const days = [...Array(7).keys()].map((i) => {
     const date = startDate.add(i, 'day');
     const activity = activitiesForWeek.find((a) => dayjs(a.start_date).isSame(date, 'date'));
     const plannedWorkout = plannedWorkoutsForWeek.find((w) => dayjs(w.starts).isSame(date, 'date'));
-    return <Day activity={activity} plannedWorkout={plannedWorkout} isToday={date.isSame(dayjs(), 'date')} date={date} key={date} onWorkoutClick={onWorkoutClick} />;
+    const gymWorkout = gymWorkoutsForWeek.find((w) => dayjs(w.datetime).isSame(date, 'date'));
+    return <Day activity={activity} plannedWorkout={plannedWorkout} gymWorkout={gymWorkout} isToday={date.isSame(dayjs(), 'date')} date={date} key={date} onWorkoutClick={onWorkoutClick} />;
   })
 
   return (
