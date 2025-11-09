@@ -7,7 +7,8 @@ import { Week } from './Week';
 import Row from '../ui/Row';
 import { useState } from 'react';
 import { WorkoutModal } from '../workouts/Modal';
-import { getStoredWahooToken } from '../../utils/WahooUtil';
+import { getStoredWahooToken, deleteWahooWorkout, updateWahooWorkout } from '../../utils/WahooUtil';
+import { updateGymWorkout, deleteGymWorkout } from '../../utils/GymUtil';
 import { useQueryClient } from '@tanstack/react-query';
 
 dayjs.extend(isBetween);
@@ -49,21 +50,7 @@ const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] })
     if (editingWorkout?.type === 'gym') {
       const { exercises, date } = data;
       try {
-        const response = await fetch(`/api/workouts/${editingWorkout.id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            datetime: new Date(date).toISOString(),
-            exercises
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to update gym workout');
-        }
-
+        await updateGymWorkout(editingWorkout.id, exercises, date);
         queryClient.invalidateQueries({ queryKey: ['workouts'] });
         setEditingWorkout(null);
         alert("Successfully updated gym workout!");
@@ -79,92 +66,55 @@ const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] })
         throw new Error("Not authorized");
       }
 
-      const planIntervals = intervals.map((interval, index) => ({
-        name: interval.name || `Interval ${index + 1}`,
-        exit_trigger_type: "time",
-        exit_trigger_value: interval.duration,
-        intensity_type: "tempo",
-        targets: [
-          {
-            type: "watts",
-            low: interval.powerMin,
-            high: interval.powerMax,
-          },
-        ],
-      }));
-
-      const planData = {
-        header: {
-          name: title || "Custom Workout",
-          version: "1.0.0",
-          workout_type_family: 0,
-          workout_type_location: 1,
-        },
-        intervals: planIntervals,
-      };
-
-      const planJson = JSON.stringify(planData);
-      const base64Plan = btoa(planJson);
-      const dataUri = `data:application/json;base64,${base64Plan}`;
-      
-      const externalId = `workout-${Date.now()}`;
-      const providerUpdatedAt = new Date().toISOString();
-
-      if (editingWorkout?.plan_id) {
-        const planFormBody = new URLSearchParams();
-        planFormBody.append("plan[file]", dataUri);
-        planFormBody.append("plan[filename]", "plan.json");
-        planFormBody.append("plan[external_id]", externalId);
-        planFormBody.append("plan[provider_updated_at]", providerUpdatedAt);
-
-        const planUpdateResponse = await fetch(`https://api.wahooligan.com/v1/plans/${editingWorkout.plan_id}`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: planFormBody.toString(),
-        });
-
-        if (!planUpdateResponse.ok) {
-          throw new Error(`Plan update failed: ${planUpdateResponse.statusText}`);
+      try {
+        await updateWahooWorkout(editingWorkout.id, editingWorkout.plan_id, intervals, title, date);
+        queryClient.invalidateQueries({ queryKey: ['workout', editingWorkout.id] });
+        queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
+        if (editingWorkout?.plan_id) {
+          queryClient.invalidateQueries({ queryKey: ['planIntervals', editingWorkout.plan_id] });
         }
+        setEditingWorkout(null);
+        alert("Successfully updated workout on Wahoo!");
+      } catch (error) {
+        console.error("Error updating workout:", error);
+        alert("Failed to update workout");
+      }
+    }
+  };
+
+  const handleDeleteWorkout = async () => {
+    if (!editingWorkout) return;
+
+    if (editingWorkout.type === 'gym') {
+      try {
+        await deleteGymWorkout(editingWorkout.id);
+        queryClient.invalidateQueries({ queryKey: ['workouts'] });
+        setEditingWorkout(null);
+        alert("Successfully deleted gym workout!");
+      } catch (error) {
+        console.error("Error deleting gym workout:", error);
+        alert("Failed to delete gym workout");
+      }
+    } else {
+      const accessToken = getStoredWahooToken();
+      if (!accessToken) {
+        alert("Not authorized with Wahoo");
+        return;
       }
 
-      const workoutDate = new Date(date + 'T12:00:00');
-      const totalMinutes = Math.ceil(intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
-      
-      const workoutFormBody = new URLSearchParams();
-      workoutFormBody.append("workout[workout_token]", `workout-${Date.now()}`);
-      workoutFormBody.append("workout[workout_type_id]", "1");
-      workoutFormBody.append("workout[starts]", workoutDate.toISOString());
-      workoutFormBody.append("workout[minutes]", totalMinutes.toString());
-      workoutFormBody.append("workout[name]", title || "Custom Workout");
-      if (editingWorkout?.plan_id) {
-        workoutFormBody.append("workout[plan_id]", editingWorkout.plan_id.toString());
+      try {
+        await deleteWahooWorkout(editingWorkout.id, editingWorkout.plan_id);
+        queryClient.invalidateQueries({ queryKey: ['workout', editingWorkout.id] });
+        queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
+        if (editingWorkout.plan_id) {
+          queryClient.invalidateQueries({ queryKey: ['planIntervals', editingWorkout.plan_id] });
+        }
+        setEditingWorkout(null);
+        alert("Successfully deleted workout from Wahoo!");
+      } catch (error) {
+        console.error("Error deleting workout:", error);
+        alert("Failed to delete workout");
       }
-
-      const workoutResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${editingWorkout.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: workoutFormBody.toString(),
-      });
-
-      if (!workoutResponse.ok) {
-        throw new Error(`Workout update failed: ${workoutResponse.statusText}`);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['workout', editingWorkout.id] });
-      queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
-      if (editingWorkout?.plan_id) {
-        queryClient.invalidateQueries({ queryKey: ['planIntervals', editingWorkout.plan_id] });
-      }
-
-      setEditingWorkout(null);
-      alert("Successfully updated workout on Wahoo!");
     }
   };
 
@@ -255,6 +205,7 @@ const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] })
         workout={editingWorkout}
         onClose={() => setEditingWorkout(null)}
         onSave={handleSaveEditedWorkout}
+        onDelete={handleDeleteWorkout}
       />
     </>
   );

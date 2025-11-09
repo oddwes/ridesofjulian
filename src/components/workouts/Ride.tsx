@@ -23,10 +23,6 @@ interface EditRideWorkoutProps {
   initialTitle?: string;
   initialDate?: string;
   onSave: (data: { intervals: Interval[]; title: string; date: string }) => Promise<void>;
-  onDelete?: () => Promise<void>;
-  saveButtonText?: string;
-  deleteButtonText?: string;
-  hideHeader?: boolean;
   disabled?: boolean;
 }
 
@@ -45,10 +41,6 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
   initialTitle = "",
   initialDate = new Date().toISOString().split("T")[0],
   onSave,
-  onDelete,
-  saveButtonText = "Save Workout",
-  deleteButtonText = "Delete Workout",
-  hideHeader = false,
   disabled = false,
 }, ref) => {
   const [intervals, setIntervals] = useState<Interval[]>(initialIntervals);
@@ -214,30 +206,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
   };
 
   return (
-    <>
-      {!hideHeader && (
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Edit Workout</h1>
-          <div className="flex gap-3">
-            {onDelete && (
-              <button
-                onClick={onDelete}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                {deleteButtonText}
-              </button>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? "Saving..." : saveButtonText}
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className="text-gray-600">
       <div className="mb-6">
         <div className="relative h-64 bg-gray-50 border border-gray-200 rounded">
           {intervals.length === 0 ? (
@@ -378,7 +347,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
           Add Interval
         </button>
       </div>
-    </>
+    </div>
   );
 });
 
