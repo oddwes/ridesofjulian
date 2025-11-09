@@ -1,5 +1,3 @@
-"use client"
-
 const Col = ({ children, className = "", size = "auto" }) => {
   const sizeClasses = {
     auto: "flex-1",

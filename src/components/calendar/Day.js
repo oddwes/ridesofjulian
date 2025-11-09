@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Col from "../ui/Col";
 import { ChevronUp, PlusCircle } from "lucide-react"
 import dayjs from "dayjs"
+import Col from "../ui/Col"
 import { RideCard, PlannedRideCard } from "./RideCard"
 import { GymCard } from "./GymCard"
 

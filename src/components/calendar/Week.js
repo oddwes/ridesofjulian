@@ -1,5 +1,3 @@
-"use client"
-
 import Row from '../ui/Row'
 import Day from './Day'
 import dayjs from 'dayjs'

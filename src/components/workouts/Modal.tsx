@@ -1,7 +1,7 @@
-import React, { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import dayjs from "dayjs";
 import EditWorkout, { Interval, EditWorkoutHandle } from "./Edit";
 import { Exercise } from "@/types/exercise";
-import dayjs from "dayjs";
 
 type RideWorkout = {
   type: 'ride';

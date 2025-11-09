@@ -1,8 +1,9 @@
 "use client"
 
-import { exchangeWahooToken } from '../utils/WahooUtil';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { exchangeWahooToken } from '../utils/WahooUtil';
+import { LoadingSpinner } from './LoadingSpinner';
 
 const WahooRedirect = () => {
   const router = useRouter();
@@ -34,7 +35,7 @@ const WahooRedirect = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+      <LoadingSpinner />
     </div>
   );
 };

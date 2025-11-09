@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { Exercise } from '@/types/exercise';
-import { PlusIcon } from '@heroicons/react/24/solid';
 import { formatISO, parseISO } from 'date-fns';
+import { PlusIcon } from '@heroicons/react/24/solid';
+import { Exercise } from '@/types/exercise';
 import { ExerciseList } from '@/components/ExerciseList';
 
 export interface EditWorkoutHandle {

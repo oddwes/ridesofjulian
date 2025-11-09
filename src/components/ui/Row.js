@@ -1,5 +1,3 @@
-"use client"
-
 const Row = ({ header, columns, className = "" }) => {
   return (
     <div className={`flex items-center mx-4 w-full ${className}`}>
