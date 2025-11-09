@@ -2,9 +2,11 @@ import { useContext } from "react"
 import Link from "next/link"
 import { ChevronUp } from "lucide-react"
 import { getTSS } from "../../utils/StravaUtil"
-import { getIntervalColor } from "../../utils/ColorUtil"
+import { formatDuration } from "../../utils/TimeUtil"
+import { formatDistance, formatElevation } from "../../utils/FormatUtil"
 import { FtpContext } from "../FTP"
 import Col from "../ui/Col"
+import { SimplifiedChart } from "../workouts/RideWorkoutChart"
 
 interface Activity {
   id: number
@@ -52,8 +54,8 @@ export const RideCard = ({
               {emoji} {activity.name}
             </div>
             <div className="flex gap-2 text-[11px] text-orange-700 whitespace-nowrap">
-              <span>{Math.round(activity.distance / 1000)} km</span>
-              <span>{Math.round(activity.total_elevation_gain)} m</span>
+              <span>{formatDistance(activity.distance)}</span>
+              <span>{formatElevation(activity.total_elevation_gain)}</span>
             </div>
           </div>
         </div>
@@ -73,10 +75,10 @@ export const RideCard = ({
             {emoji} {activity.name}
           </div>
           <div className="text-xs text-orange-700">
-            {Math.round(activity.distance / 1000)} km
+            {formatDistance(activity.distance)}
           </div>
           <div className="text-xs text-orange-700">
-            {Math.round(activity.total_elevation_gain)} m
+            {formatElevation(activity.total_elevation_gain)}
           </div>
           {(ftp !== undefined && ftp !== 0) && (
             <div className="text-xs text-orange-600">
@@ -100,46 +102,15 @@ export const PlannedRideCard = ({
   isToday?: boolean
   onClick?: () => void 
 }) => {
-  const minutes = workout.minutes || 0
-  const hours = Math.floor(minutes / 60)
-  const remainingMins = minutes % 60
-  const duration = hours > 0 ? `${hours}h ${remainingMins}m` : `${remainingMins}m`
-  
+  const duration = formatDuration(workout.minutes || 0)
   const intervals = workout.intervals || []
-  const totalDuration = intervals.reduce((sum, i) => sum + (i.exit_trigger_value || 0), 0)
-  
-  const chartContent = (
-    <div className={`w-full bg-gray-50 ${variant === 'mobile' ? 'border border-gray-300 h-12' : 'border border-gray-300 h-16'} rounded flex items-end overflow-hidden`}>
-      {intervals.length > 0 ? (
-        intervals.map((interval, idx) => {
-          const width = totalDuration > 0 ? (interval.exit_trigger_value! / totalDuration) * 100 : 0
-          const powerMin = interval.targets?.[0]?.low || 0
-          const powerMax = interval.targets?.[0]?.high || 0
-          const maxPower = Math.max(...intervals.map(i => i.targets?.[0]?.high || 0), 300)
-          const height = maxPower > 0 ? (powerMax / maxPower) * 100 : 0
-          
-          return (
-            <div
-              key={idx}
-              style={{
-                width: `${width}%`,
-                height: `${height}%`,
-                backgroundColor: getIntervalColor(powerMin, powerMax),
-                borderRight: idx < intervals.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none'
-              }}
-            />
-          )
-        })
-      ) : (
-        <div className="w-full h-full bg-gray-200" />
-      )}
-    </div>
-  )
 
   if (variant === 'mobile') {
     return (
       <div className="bg-white border border-gray-300 rounded-lg p-2">
-        <div className="mb-1">{chartContent}</div>
+        <div className="mb-1">
+          <SimplifiedChart intervals={intervals} height="h-12" />
+        </div>
         <div className="flex justify-between items-center gap-2 text-[11px]">
           <div className="font-semibold text-gray-800 truncate">
             {workout.name}
@@ -159,7 +130,7 @@ export const PlannedRideCard = ({
           onClick={onClick}
           className='w-full cursor-pointer hover:opacity-80 transition-opacity'
         >
-          {chartContent}
+          <SimplifiedChart intervals={intervals} height="h-16" />
           <div className="text-xs text-center mt-1 font-semibold truncate">
             {workout.name}
           </div>

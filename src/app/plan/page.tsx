@@ -1,85 +1,18 @@
 "use client";
 
-import { useState, useEffect, memo, useMemo } from "react";
-import { Line } from "react-chartjs-2";
-import "chart.js/auto";
+import { useState, useEffect, memo } from "react";
 import { Edit2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { WorkoutModal } from "@/components/workouts/Modal";
-import { getStoredWahooToken, getWahooAuthUrl } from "@/utils/WahooUtil";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { DetailedChart } from "@/components/workouts/RideWorkoutChart";
+import { getStoredWahooToken, getWahooAuthUrl, createWahooWorkout } from "@/utils/WahooUtil";
 import { RideWorkout, Interval } from "@/types/workout";
 import { Exercise } from "@/types/exercise";
 
-const getIntervalColor = (powerMin: number, powerMax: number) => {
-  const avgPower = (powerMin + powerMax) / 2;
-  if (avgPower < 100) return "rgba(156, 163, 175, 0.6)";
-  if (avgPower < 150) return "rgba(96, 165, 250, 0.6)";
-  if (avgPower < 200) return "rgba(52, 211, 153, 0.6)";
-  if (avgPower < 250) return "rgba(251, 191, 36, 0.6)";
-  if (avgPower < 300) return "rgba(251, 146, 60, 0.6)";
-  return "rgba(220, 38, 38, 0.6)";
-};
-
 const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout; onEdit?: (workout: RideWorkout) => void; onDelete?: (workout: RideWorkout) => void }) => {
-  const chartData = useMemo(() => {
-    let currentTime = 0;
-    const datasets = workout.intervals.map((interval, index) => {
-      const startTime = currentTime;
-      const endTime = currentTime + interval.duration / 60;
-      currentTime = endTime;
-
-      return {
-        label: `${interval.name || `Interval ${index + 1}`}`,
-        data: [
-          { x: startTime, y: 0 },
-          { x: startTime, y: interval.powerMax },
-          { x: endTime, y: interval.powerMax },
-          { x: endTime, y: 0 },
-        ],
-        borderColor: "rgba(0, 0, 0, 0.2)",
-        backgroundColor: getIntervalColor(interval.powerMin, interval.powerMax),
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        borderWidth: 1,
-        stepped: false,
-      };
-    });
-    return { datasets };
-  }, [workout.intervals]);
-
-  const chartOptions = useMemo(() => {
-    const totalDuration = workout.intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
-    const maxPower = Math.max(
-      workout.intervals.reduce((max, interval) => Math.max(max, interval.powerMax), 0),
-      300
-    );
-
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        title: { display: false },
-        tooltip: { enabled: false },
-      },
-      scales: {
-        x: {
-          type: "linear" as const,
-          min: 0,
-          max: totalDuration || 10,
-        },
-        y: {
-          min: 0,
-          max: maxPower,
-        },
-      },
-    };
-  }, [workout.intervals]);
-
   const totalDuration = workout.intervals.reduce(
     (sum, interval) => sum + interval.duration / 60,
     0
@@ -123,8 +56,8 @@ const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout;
         </p>
       </div>
 
-      <div className="h-32 bg-gray-50 border border-gray-200 rounded p-2 mb-3">
-        <Line data={chartData} options={chartOptions} />
+      <div className="mb-3">
+        <DetailedChart intervals={workout.intervals} height="h-32" showEmptyState={false} />
       </div>
 
       <div className="space-y-1 mb-3">
@@ -351,96 +284,16 @@ export default function PlanPage() {
     try {
       for (const workout of workoutsToPush) {
         try {
-          const planIntervals = workout.intervals.map((interval, index) => ({
-            name: interval.name || `Interval ${index + 1}`,
-            exit_trigger_type: "time",
-            exit_trigger_value: interval.duration,
-            intensity_type: "tempo",
-            targets: [
-              {
-                type: "watts",
-                low: interval.powerMin,
-                high: interval.powerMax,
-              },
-            ],
-          }));
-
-          const planData = {
-            header: {
-              name: workout.workoutTitle || "Custom Workout",
-              version: "1.0.0",
-              workout_type_family: 0,
-              workout_type_location: 1,
-            },
-            intervals: planIntervals,
-          };
-
-          const planJson = JSON.stringify(planData);
-          const base64Plan = btoa(planJson);
-          const dataUri = `data:application/json;base64,${base64Plan}`;
+          await createWahooWorkout(workout);
           
-          const externalId = `workout-${workout.id}-${Date.now()}`;
-          const providerUpdatedAt = new Date().toISOString();
-
-          const formBody = new URLSearchParams();
-          formBody.append("plan[file]", dataUri);
-          formBody.append("plan[filename]", "plan.json");
-          formBody.append("plan[external_id]", externalId);
-          formBody.append("plan[provider_updated_at]", providerUpdatedAt);
-
-          const planResponse = await fetch("https://api.wahooligan.com/v1/plans", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: formBody.toString(),
-          });
-
-          if (!planResponse.ok) {
-            if (planResponse.status === 429) {
-              rateLimited = true;
-              throw new Error('Rate limited');
-            }
-            throw new Error(`Plan creation failed: ${planResponse.statusText}`);
-          }
-
-          const planResult = await planResponse.json();
-          const planId = planResult.id;
-
-          const workoutDate = new Date(workout.selectedDate + 'T12:00:00');
-          const totalMinutes = Math.ceil(workout.intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
-          
-          const workoutFormBody = new URLSearchParams();
-          workoutFormBody.append("workout[workout_token]", `workout-${workout.id}-${Date.now()}`);
-          workoutFormBody.append("workout[workout_type_id]", "1");
-          workoutFormBody.append("workout[starts]", workoutDate.toISOString());
-          workoutFormBody.append("workout[minutes]", totalMinutes.toString());
-          workoutFormBody.append("workout[name]", workout.workoutTitle || "Custom Workout");
-          workoutFormBody.append("workout[plan_id]", planId.toString());
-
-          const workoutResponse = await fetch("https://api.wahooligan.com/v1/workouts", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: workoutFormBody.toString(),
-          });
-
-          if (!workoutResponse.ok) {
-            if (workoutResponse.status === 429) {
-              rateLimited = true;
-              throw new Error('Rate limited');
-            }
-            throw new Error(`Workout creation failed: ${workoutResponse.statusText}`);
-          }
-
           pushedWorkouts.push(workout.id);
           sessionStorage.setItem(pushedWorkoutsKey, JSON.stringify(pushedWorkouts));
           successCount++;
         } catch (error) {
           console.error(`Failed to push workout ${workout.workoutTitle}:`, error);
+          if (error instanceof Error && error.message === 'RATE_LIMITED') {
+            rateLimited = true;
+          }
           failCount++;
           if (rateLimited) break;
         }
@@ -506,8 +359,8 @@ export default function PlanPage() {
 
   return (
     <>
-      <Container className="py-8">
-        <h1 className="text-3xl font-bold mb-6">AI Training Plan Builder</h1>
+      <Container className="py-8 text-gray-600">
+        <h1 className="text-3xl font-bold mb-6 text-white">AI Training Plan Builder</h1>
 
         <div className="bg-white border border-gray-300 rounded-lg p-6 mb-6">
           <div className="space-y-4">
@@ -599,7 +452,7 @@ export default function PlanPage() {
         {generatedPlan.length > 0 && (
           <div className="space-y-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Your Training Plan</h2>
+              <h2 className="text-2xl font-bold text-white">Your Training Plan</h2>
               <div className="flex gap-3">
                 {getStoredWahooToken() && (
                   <button
@@ -627,11 +480,11 @@ export default function PlanPage() {
 
               return (
                 <div key={weekKey} className="space-y-4">
-                  <div className="flex justify-between items-baseline">
+                  <div className="flex justify-between items-baseline text-white">
                     <h3 className="text-xl font-semibold">
                       {weekKey} ({firstDate.toLocaleDateString()} - {lastDate.toLocaleDateString()})
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm">
                       Total: {Math.floor(weekTotal / 60)}h {Math.round(weekTotal % 60)}m
                     </p>
                   </div>
@@ -650,7 +503,7 @@ export default function PlanPage() {
 
       {isGenerating && (
         <div className="fixed inset-0 bg-black/15 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl text-gray-600">
             <LoadingSpinner />
             <p className="text-lg font-medium">Generating your training plan...</p>
           </div>

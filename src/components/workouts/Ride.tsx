@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Line } from "react-chartjs-2";
-import "chart.js/auto";
 import { Trash2, Copy } from "lucide-react";
-import { getIntervalColor } from "@/utils/ColorUtil";
+import { DetailedChart } from "./RideWorkoutChart";
 
 export interface Interval {
   id: string;
@@ -136,80 +134,14 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
     setDraggedIndex(null);
   };
 
-  const chartData = useMemo(() => {
-    if (intervals.length === 0) return null;
-
-    let currentTime = 0;
-    const datasets = intervals.map((interval, index) => {
-      const startTime = currentTime;
-      const endTime = currentTime + interval.duration / 60;
-      currentTime = endTime;
-
-      return {
-        label: `${interval.name || `Interval ${index + 1}`}`,
-        data: [
-          { x: startTime, y: 0 },
-          { x: startTime, y: interval.powerMax },
-          { x: endTime, y: interval.powerMax },
-          { x: endTime, y: 0 },
-        ],
-        borderColor: "rgba(0, 0, 0, 0.2)",
-        backgroundColor: getIntervalColor(interval.powerMin, interval.powerMax),
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        borderWidth: 1,
-        stepped: false,
-      };
-    });
-
-    return { datasets };
-  }, [intervals.map(i => `${i.duration}-${i.powerMin}-${i.powerMax}`).join("|")]);
-
   const totalDuration = useMemo(() => {
     return intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
-  }, [intervals.map(i => i.duration).join("|")]);
-
-  const maxPower = useMemo(() => {
-    const highest = intervals.reduce((max, interval) => Math.max(max, interval.powerMax), 0);
-    return Math.max(highest, 300);
-  }, [intervals.map(i => i.powerMax).join("|")]);
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: { display: false },
-      tooltip: { enabled: false },
-    },
-    scales: {
-      x: {
-        type: "linear" as const,
-        min: 0,
-        max: totalDuration || 10,
-      },
-      y: {
-        min: 0,
-        max: maxPower,
-      },
-    },
-  };
+  }, [intervals]);
 
   return (
     <div className="text-gray-600">
       <div className="mb-6">
-        <div className="relative h-64 bg-gray-50 border border-gray-200 rounded">
-          {intervals.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-              No intervals configured
-            </div>
-          ) : (
-            <div className="h-full p-4">
-              <Line data={chartData!} options={chartOptions} />
-            </div>
-          )}
-        </div>
+        <DetailedChart intervals={intervals} />
       </div>
 
       <div className="mb-6 flex justify-center gap-6">
