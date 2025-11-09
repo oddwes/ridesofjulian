@@ -34,7 +34,7 @@ type EditWorkoutProps = (RideWorkoutData | GymWorkoutData) & {
 
 const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>((props, ref) => {
   if (props.type === 'gym') {
-    const { initialExercises, initialDate, onSave, onDelete, disabled } = props;
+    const { initialExercises, initialDate, onSave, disabled } = props;
     return (
       <EditGymWorkout
         ref={ref}
@@ -45,7 +45,7 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>((props, ref)
       />
     );
   } else {
-    const { initialIntervals, initialTitle, initialDate, onSave, onDelete, saveButtonText, deleteButtonText, disabled } = props;
+    const { initialIntervals, initialTitle, initialDate, onSave, disabled } = props;
     return (
       <EditRideWorkout
         ref={ref}

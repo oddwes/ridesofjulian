@@ -1,4 +1,6 @@
-export const updateGymWorkout = async (workoutId: string, exercises: any[], date: string) => {
+import { Exercise } from "@/types/exercise";
+
+export const updateGymWorkout = async (workoutId: string, exercises: Exercise[], date: string) => {
   const response = await fetch(`/api/workouts/${workoutId}`, {
     method: 'POST',
     headers: {
