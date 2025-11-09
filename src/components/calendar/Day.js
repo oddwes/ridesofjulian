@@ -49,7 +49,7 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
         >
           <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center">
             <div className="text-sm font-semibold truncate w-full text-center text-orange-800">
-              {activity.name}
+              🚴 {activity.name}
             </div>
             <div className="text-xs text-orange-700">
               {Math.round(activity.distance / 1000)} km

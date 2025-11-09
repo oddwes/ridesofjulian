@@ -38,18 +38,18 @@ export function ProfileButton() {
   return (
     <button
       onClick={handleProfileClick}
-      className="flex items-center gap-2 bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm border"
+      className="flex items-center gap-2 sm:bg-gray-50 text-gray-700 font-medium sm:py-2 sm:px-4 sm:rounded-lg sm:shadow-sm sm:border"
     >
       {session.user?.user_metadata?.avatar_url && (
         <Image
           src={session.user.user_metadata.avatar_url}
           alt={`${session.user.user_metadata.full_name || "User"}'s profile`}
-          width={32}
-          height={32}
-          className="rounded-full"
+          width={40}
+          height={40}
+          className="rounded-full sm:w-8 sm:h-8"
         />
       )}
-      {firstName}
+      <span className="hidden sm:inline">{firstName}</span>
     </button>
   );
 }
