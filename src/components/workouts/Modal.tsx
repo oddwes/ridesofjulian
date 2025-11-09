@@ -23,6 +23,7 @@ interface WorkoutModalProps {
   workout: (RideWorkout | GymWorkout) | null;
   onClose: () => void;
   onSave: (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => Promise<void>;
+  onDelete?: () => Promise<void>;
 }
 
 export interface WorkoutModalHandle {
@@ -30,7 +31,7 @@ export interface WorkoutModalHandle {
 }
 
 export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
-  ({ workout, onClose, onSave }, ref) => {
+  ({ workout, onClose, onSave, onDelete }, ref) => {
     const [isSaving, setIsSaving] = useState(false);
     const editWorkoutRef = useRef<EditWorkoutHandle>(null);
 
@@ -55,16 +56,39 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
       }
     };
 
+    const handleDelete = async () => {
+      if (!onDelete || isSaving) return;
+      setIsSaving(true);
+      try {
+        await onDelete();
+      } catch (error) {
+        console.error("Delete failed:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
     if (!workout) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 rounded-lg">
         <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
-            <h2 className="text-xl font-semibold">{workout.workoutTitle}</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {dayjs(workout.selectedDate).format('dddd, MMMM D, YYYY')}
-            </p>
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-600">{workout.workoutTitle}</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {dayjs(workout.selectedDate).format('dddd, MMMM D, YYYY')}
+              </p>
+            </div>
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                disabled={isSaving}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete
+              </button>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             {workout.type === 'gym' ? (
@@ -74,7 +98,6 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
                 initialExercises={workout.exercises}
                 initialDate={workout.selectedDate}
                 onSave={handleSave}
-                hideHeader={true}
                 disabled={isSaving}
               />
             ) : (
@@ -85,7 +108,6 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
                 initialTitle={workout.workoutTitle}
                 initialDate={workout.selectedDate}
                 onSave={handleSave}
-                hideHeader={true}
                 disabled={isSaving}
               />
             )}
@@ -103,7 +125,7 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
               disabled={isSaving}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>

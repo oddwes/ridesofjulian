@@ -15,8 +15,6 @@ interface EditGymWorkoutProps {
   initialExercises?: Exercise[];
   initialDate?: string;
   onSave: (data: { exercises: Exercise[]; date: string }) => Promise<void>;
-  onDelete?: () => Promise<void>;
-  hideHeader?: boolean;
   disabled?: boolean;
 }
 
@@ -24,8 +22,6 @@ const EditGymWorkout = forwardRef<EditWorkoutHandle, EditGymWorkoutProps>(({
   initialExercises = [],
   initialDate = new Date().toISOString(),
   onSave,
-  onDelete,
-  hideHeader = false,
   disabled = false,
 }, ref) => {
   const [workoutDateTime, setWorkoutDateTime] = useState("");
@@ -93,30 +89,7 @@ const EditGymWorkout = forwardRef<EditWorkoutHandle, EditGymWorkoutProps>(({
   };
 
   return (
-    <>
-      {!hideHeader && (
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Edit Gym Workout</h1>
-          <div className="flex gap-3">
-            {onDelete && (
-              <button
-                onClick={onDelete}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Workout
-              </button>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={isSaving || disabled}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? "Saving..." : "Save Workout"}
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className="text-gray-600">
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-2">Workout Date & Time</label>
@@ -146,7 +119,7 @@ const EditGymWorkout = forwardRef<EditWorkoutHandle, EditGymWorkoutProps>(({
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 });
 

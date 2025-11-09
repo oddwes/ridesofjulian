@@ -29,26 +29,23 @@ type EditWorkoutProps = (RideWorkoutData | GymWorkoutData) & {
   onDelete?: () => Promise<void>;
   saveButtonText?: string;
   deleteButtonText?: string;
-  hideHeader?: boolean;
   disabled?: boolean;
 };
 
 const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>((props, ref) => {
   if (props.type === 'gym') {
-    const { initialExercises, initialDate, onSave, onDelete, hideHeader, disabled } = props;
+    const { initialExercises, initialDate, onSave, onDelete, disabled } = props;
     return (
       <EditGymWorkout
         ref={ref}
         initialExercises={initialExercises}
         initialDate={initialDate}
         onSave={onSave}
-        onDelete={onDelete}
-        hideHeader={hideHeader}
         disabled={disabled}
       />
     );
   } else {
-    const { initialIntervals, initialTitle, initialDate, onSave, onDelete, saveButtonText, deleteButtonText, hideHeader, disabled } = props;
+    const { initialIntervals, initialTitle, initialDate, onSave, onDelete, saveButtonText, deleteButtonText, disabled } = props;
     return (
       <EditRideWorkout
         ref={ref}
@@ -56,10 +53,6 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>((props, ref)
         initialTitle={initialTitle}
         initialDate={initialDate}
         onSave={onSave}
-        onDelete={onDelete}
-        saveButtonText={saveButtonText}
-        deleteButtonText={deleteButtonText}
-        hideHeader={hideHeader}
         disabled={disabled}
       />
     );

@@ -310,3 +310,124 @@ export const getPlanIntervals = async (planId) => {
   return planJson.intervals || [];
 };
 
+export const deleteWahooWorkout = async (workoutId, planId) => {
+  const token = getStoredWahooToken();
+  if (!token) {
+    throw new Error('No Wahoo token available');
+  }
+
+  if (planId) {
+    const planResponse = await fetch(`https://api.wahooligan.com/v1/plans/${planId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!planResponse.ok) {
+      throw new Error(`Failed to delete plan: ${planResponse.statusText}`);
+    }
+  }
+
+  const workoutResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!workoutResponse.ok) {
+    throw new Error(`Failed to delete workout: ${workoutResponse.statusText}`);
+  }
+
+  return true;
+};
+
+export const updateWahooWorkout = async (workoutId, planId, intervals, title, date) => {
+  const token = getStoredWahooToken();
+  if (!token) {
+    throw new Error('No Wahoo token available');
+  }
+
+  const planIntervals = intervals.map((interval, index) => ({
+    name: interval.name || `Interval ${index + 1}`,
+    exit_trigger_type: "time",
+    exit_trigger_value: interval.duration,
+    intensity_type: "tempo",
+    targets: [
+      {
+        type: "watts",
+        low: interval.powerMin,
+        high: interval.powerMax,
+      },
+    ],
+  }));
+
+  const planData = {
+    header: {
+      name: title || "Custom Workout",
+      version: "1.0.0",
+      workout_type_family: 0,
+      workout_type_location: 1,
+    },
+    intervals: planIntervals,
+  };
+
+  const planJson = JSON.stringify(planData);
+  const base64Plan = btoa(planJson);
+  const dataUri = `data:application/json;base64,${base64Plan}`;
+  
+  const externalId = `workout-${Date.now()}`;
+  const providerUpdatedAt = new Date().toISOString();
+
+  if (planId) {
+    const planFormBody = new URLSearchParams();
+    planFormBody.append("plan[file]", dataUri);
+    planFormBody.append("plan[filename]", "plan.json");
+    planFormBody.append("plan[external_id]", externalId);
+    planFormBody.append("plan[provider_updated_at]", providerUpdatedAt);
+
+    const planUpdateResponse = await fetch(`https://api.wahooligan.com/v1/plans/${planId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: planFormBody.toString(),
+    });
+
+    if (!planUpdateResponse.ok) {
+      throw new Error(`Plan update failed: ${planUpdateResponse.statusText}`);
+    }
+  }
+
+  const workoutDate = new Date(date + 'T12:00:00');
+  const totalMinutes = Math.ceil(intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
+  
+  const workoutFormBody = new URLSearchParams();
+  workoutFormBody.append("workout[workout_token]", `workout-${Date.now()}`);
+  workoutFormBody.append("workout[workout_type_id]", "1");
+  workoutFormBody.append("workout[starts]", workoutDate.toISOString());
+  workoutFormBody.append("workout[minutes]", totalMinutes.toString());
+  workoutFormBody.append("workout[name]", title || "Custom Workout");
+  if (planId) {
+    workoutFormBody.append("workout[plan_id]", planId.toString());
+  }
+
+  const workoutResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: workoutFormBody.toString(),
+  });
+
+  if (!workoutResponse.ok) {
+    throw new Error(`Workout update failed: ${workoutResponse.statusText}`);
+  }
+
+  return true;
+};
+
+

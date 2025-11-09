@@ -162,11 +162,14 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
     )
   }
 
-  if (activity || gymWorkout) {
+  if (activity || gymWorkout || plannedWorkout) {
     const items = []
     
     if (activity) {
       items.push({ type: 'activity', time: new Date(activity.start_date), content: activityCard(activity) })
+    }
+    if (plannedWorkout && !activity) {
+      items.push({ type: 'planned', time: date.toDate(), content: plannedWorkoutBar(plannedWorkout, false) })
     }
     if (gymWorkout) {
       items.push({ type: 'gym', time: new Date(gymWorkout.datetime), content: gymWorkoutCardContent(gymWorkout) })
@@ -190,8 +193,6 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
         </div>
       </Col>
     )
-  } else if (plannedWorkout) {
-    return plannedWorkoutBar(plannedWorkout, isToday)
   } else if (isToday) {
     return todayTag
   } else if (showAddButton) {
