@@ -240,9 +240,10 @@ const MobileHome = () => {
         {dayCards.map((dayCard) => {
           const { date, workouts, key } = dayCard
           const hasWorkouts = workouts.length > 0
+          const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
 
           return (
-            <div key={key} className={`rounded-lg p-3 ${hasWorkouts ? 'bg-white shadow-md' : 'bg-gray-300'}`}>
+            <div key={key} className={`rounded-lg p-3 ${hasWorkouts ? 'bg-white shadow-md' : 'bg-gray-300'} ${isToday ? 'border-l-4 border-blue-500' : ''}`}>
               <h2 className={`text-base font-bold ${hasWorkouts ? 'mb-2' : ''}`}>
                 {format(date, 'MMMM do, yyyy')}
                 {!hasWorkouts && <span className="font-normal text-gray-400"> - Rest</span>}
