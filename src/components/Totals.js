@@ -1,5 +1,3 @@
-"use client"
-
 import { getTotalDistance, getTotalElevation, getTotalTime } from '../utils/StravaUtil'
 import dayjs from 'dayjs'
 

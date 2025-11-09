@@ -1,9 +1,9 @@
 "use client";
 
 import { forwardRef } from "react";
+import { Exercise } from "@/types/exercise";
 import EditRideWorkout, { Interval } from "./Ride";
 import EditGymWorkout from "./Gym";
-import { Exercise } from "@/types/exercise";
 
 export interface EditWorkoutHandle {
   save: () => Promise<void>;

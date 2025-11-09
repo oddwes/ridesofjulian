@@ -1,8 +1,9 @@
 "use client"
 
-import { getAccessToken } from '../utils/StravaUtil';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getAccessToken } from '../utils/StravaUtil';
+import { LoadingSpinner } from './LoadingSpinner';
 
 const StravaRedirect = () => {
   const router = useRouter()
@@ -29,7 +30,7 @@ const StravaRedirect = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FC4C02]"></div>
+      <LoadingSpinner />
     </div>
   )
 }

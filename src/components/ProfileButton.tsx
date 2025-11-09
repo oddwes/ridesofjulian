@@ -1,10 +1,10 @@
 "use client";
 
-import { useSupabase } from "@/contexts/SupabaseContext"
-import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Session } from '@supabase/supabase-js';
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Session } from '@supabase/supabase-js';
+import { useSupabase } from "@/contexts/SupabaseContext";
 
 export function ProfileButton() {
   const [session, setSession] = useState<Session | null>(null);

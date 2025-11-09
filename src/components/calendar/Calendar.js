@@ -1,5 +1,3 @@
-"use client"
-
 import { getBeginningOfWeek, getEndOfWeek } from '../../utils/TimeUtil';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Exercise } from '@/types/exercise';
+import { useEffect, useState, useRef } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import EditableLabel from 'react-inline-editing';
+import { Exercise } from '@/types/exercise';
 
 interface ExerciseListProps {
   workoutId?: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import { ProfileButton } from './ProfileButton';
 import Link from 'next/link';
+import { ProfileButton } from './ProfileButton';
 
 const Header = () => {
   return (
