@@ -23,3 +23,9 @@ export const getEndOfWeek = (date) => {
   const beginningOfWeek = getBeginningOfWeek(date)
   return beginningOfWeek.add(6, 'day').endOf('day')
 }
+
+export const formatDuration = (minutes) => {
+  const hours = Math.floor(minutes / 60)
+  const remainingMins = minutes % 60
+  return hours > 0 ? `${hours}h ${remainingMins}m` : `${remainingMins}m`
+}

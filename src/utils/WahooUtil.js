@@ -343,6 +343,99 @@ export const deleteWahooWorkout = async (workoutId, planId) => {
   return true;
 };
 
+export const createWahooWorkout = async (workout) => {
+  const token = getStoredWahooToken();
+  if (!token) {
+    throw new Error('No Wahoo token available');
+  }
+
+  const planIntervals = workout.intervals.map((interval, index) => ({
+    name: interval.name || `Interval ${index + 1}`,
+    exit_trigger_type: "time",
+    exit_trigger_value: interval.duration,
+    intensity_type: "tempo",
+    targets: [
+      {
+        type: "watts",
+        low: interval.powerMin,
+        high: interval.powerMax,
+      },
+    ],
+  }));
+
+  const planData = {
+    header: {
+      name: workout.workoutTitle || "Custom Workout",
+      version: "1.0.0",
+      workout_type_family: 0,
+      workout_type_location: 1,
+    },
+    intervals: planIntervals,
+  };
+
+  const planJson = JSON.stringify(planData);
+  const base64Plan = btoa(planJson);
+  const dataUri = `data:application/json;base64,${base64Plan}`;
+  
+  const externalId = `workout-${workout.id}-${Date.now()}`;
+  const providerUpdatedAt = new Date().toISOString();
+
+  const planFormBody = new URLSearchParams();
+  planFormBody.append("plan[file]", dataUri);
+  planFormBody.append("plan[filename]", "plan.json");
+  planFormBody.append("plan[external_id]", externalId);
+  planFormBody.append("plan[provider_updated_at]", providerUpdatedAt);
+
+  const planResponse = await fetch("https://api.wahooligan.com/v1/plans", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: planFormBody.toString(),
+  });
+
+  if (!planResponse.ok) {
+    if (planResponse.status === 429) {
+      throw new Error('RATE_LIMITED');
+    }
+    throw new Error(`Plan creation failed: ${planResponse.statusText}`);
+  }
+
+  const planResult = await planResponse.json();
+  const planId = planResult.id;
+
+  const workoutDate = new Date(workout.selectedDate + 'T12:00:00');
+  const totalMinutes = Math.ceil(workout.intervals.reduce((sum, i) => sum + i.duration, 0) / 60);
+  
+  const workoutFormBody = new URLSearchParams();
+  workoutFormBody.append("workout[workout_token]", `workout-${workout.id}-${Date.now()}`);
+  workoutFormBody.append("workout[workout_type_id]", "1");
+  workoutFormBody.append("workout[starts]", workoutDate.toISOString());
+  workoutFormBody.append("workout[minutes]", totalMinutes.toString());
+  workoutFormBody.append("workout[name]", workout.workoutTitle || "Custom Workout");
+  workoutFormBody.append("workout[plan_id]", planId.toString());
+
+  const workoutResponse = await fetch("https://api.wahooligan.com/v1/workouts", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: workoutFormBody.toString(),
+  });
+
+  if (!workoutResponse.ok) {
+    if (workoutResponse.status === 429) {
+      throw new Error('RATE_LIMITED');
+    }
+    throw new Error(`Workout creation failed: ${workoutResponse.statusText}`);
+  }
+
+  const workoutResult = await workoutResponse.json();
+  return { planId, workoutId: workoutResult.id };
+};
+
 export const updateWahooWorkout = async (workoutId, planId, intervals, title, date) => {
   const token = getStoredWahooToken();
   if (!token) {

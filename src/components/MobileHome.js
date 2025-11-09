@@ -1,9 +1,10 @@
 "use client"
 
 import { format, subDays, parseISO, startOfDay } from 'date-fns'
+import dayjs from 'dayjs'
 import { useWorkoutData } from '../hooks/useWorkoutData'
 import { LoadingSpinner } from './LoadingSpinner'
-import dayjs from 'dayjs'
+import { formatDateKey, isDateMatch } from '../utils/DateUtil'
 import { RideCard, PlannedRideCard } from './calendar/RideCard'
 import { GymCard } from './calendar/GymCard'
 
@@ -19,9 +20,9 @@ const MobileHome = () => {
   }
 
   const today = startOfDay(new Date())
-  const todayStr = format(today, 'yyyy-MM-dd')
+  const todayStr = formatDateKey(today)
   const fourDaysFromNow = startOfDay(new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000))
-  const fourDaysFromNowStr = format(fourDaysFromNow, 'yyyy-MM-dd')
+  const fourDaysFromNowStr = formatDateKey(fourDaysFromNow)
   
   let earliestDate = today
   
@@ -55,23 +56,23 @@ const MobileHome = () => {
   let currentDate = latestDate
 
   while (currentDate >= earliestDate) {
-    const dateKey = format(currentDate, 'yyyy-MM-dd')
+    const dateKey = formatDateKey(currentDate)
     const dayWorkouts = []
 
     gymWorkouts.forEach(workout => {
-      if (format(startOfDay(parseISO(workout.datetime)), 'yyyy-MM-dd') === dateKey) {
+      if (isDateMatch(workout.datetime, dateKey)) {
         dayWorkouts.push({ type: 'gym', workout, time: new Date(workout.datetime) })
       }
     })
 
     activities.forEach(activity => {
-      if (format(startOfDay(parseISO(activity.start_date)), 'yyyy-MM-dd') === dateKey) {
+      if (isDateMatch(activity.start_date, dateKey)) {
         dayWorkouts.push({ type: 'ride', workout: activity, time: new Date(activity.start_date) })
       }
     })
 
     plannedWorkouts.forEach(planned => {
-      const plannedDate = format(startOfDay(parseISO(planned.starts)), 'yyyy-MM-dd')
+      const plannedDate = formatDateKey(startOfDay(parseISO(planned.starts)))
       if (plannedDate === dateKey && plannedDate >= todayStr && plannedDate <= fourDaysFromNowStr) {
         const hasRide = dayWorkouts.some(w => w.type === 'ride')
         if (!hasRide) {
@@ -100,7 +101,7 @@ const MobileHome = () => {
         {dayCards.map((dayCard) => {
           const { date, workouts, key } = dayCard
           const hasWorkouts = workouts.length > 0
-          const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+          const isToday = formatDateKey(date) === formatDateKey(new Date())
 
           return (
             <div key={key} className={`rounded-lg p-3 ${hasWorkouts ? 'bg-white shadow-md' : 'bg-gray-300'} ${isToday ? 'border-l-4 border-blue-500' : ''}`}>
