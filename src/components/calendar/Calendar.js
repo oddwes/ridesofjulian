@@ -119,7 +119,7 @@ const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] })
   const printHeaderRow = () => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return (
-      <div className="font-bold">
+      <div className="font-bold h-full grow">
         <Row header={dayjs(start).year()} columns={
           days.map((day, index) => (
             <div key={index} className="text-center w-full">

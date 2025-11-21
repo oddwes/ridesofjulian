@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronUp, PlusCircle } from "lucide-react"
+import { PlusCircle } from "lucide-react"
 import dayjs from "dayjs"
 import Col from "../ui/Col"
 import { RideCard, PlannedRideCard } from "./RideCard"
@@ -28,11 +28,8 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
 
   const todayTag = (
     <Col>
-      <div className="relative w-full h-full flex flex-col justify-center items-center">
+      <div className="relative w-full h-full flex flex-col justify-center items-center border-2 border-blue-600 rounded">
         <p>Today</p>
-        <div className="absolute bottom-5">
-          <ChevronUp className="text-[#FC5201]" />
-        </div>
       </div>
     </Col>
   )
@@ -55,17 +52,12 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
     
     return (
       <Col size="12">
-        <div className="relative w-full h-full flex justify-center items-center">
+        <div className={`relative w-full h-full grow flex justify-center items-center ${isToday ? 'border-2 border-blue-600 rounded' : ''}`}>
           <div className="w-full flex flex-col gap-1">
             {items.map((item, idx) => (
               <div key={idx}>{item.content}</div>
             ))}
           </div>
-          {isToday && (
-            <div className="absolute bottom-0">
-              <ChevronUp className="text-[#FC5201]" />
-            </div>
-          )}
         </div>
       </Col>
     )
