@@ -70,21 +70,17 @@ export const RideCard = ({
         target="_blank"
         rel="noopener noreferrer"
       >
-        <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center">
+        <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center py-1 px-2">
           <div className="text-sm font-semibold truncate w-full text-center text-orange-800">
             {emoji} {activity.name}
           </div>
-          <div className="text-xs text-orange-700">
-            {formatDistance(activity.distance)}
+          <div className="flex gap-2 text-xs text-orange-700">
+            <span>{formatDistance(activity.distance)}</span>
+            <span>{formatElevation(activity.total_elevation_gain)}</span>
+            {(ftp !== undefined && ftp !== 0) && (
+              <span>{getTSS(activity, ftp)} TSS</span>
+            )}
           </div>
-          <div className="text-xs text-orange-700">
-            {formatElevation(activity.total_elevation_gain)}
-          </div>
-          {(ftp !== undefined && ftp !== 0) && (
-            <div className="text-xs text-orange-600">
-              {getTSS(activity, ftp)} TSS
-            </div>
-          )}
         </div>
       </Link>
     </div>
