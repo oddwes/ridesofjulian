@@ -31,7 +31,10 @@ export const GymCard = ({
     const column3 = exercises.slice(itemsPerColumn * 2)
     
     return (
-      <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-2">
+      <div 
+        onClick={onClick}
+        className="bg-purple-100 border-2 border-purple-400 rounded-lg p-2 cursor-pointer active:opacity-70 transition-opacity"
+      >
         <div className="flex flex-col">
           <div className="text-sm font-semibold text-purple-800 mb-2">
             💪 Gym

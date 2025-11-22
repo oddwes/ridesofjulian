@@ -13,8 +13,12 @@ interface Activity {
   name: string
   distance: number
   total_elevation_gain: number
+  moving_time?: number
   type?: string
   sport_type?: string
+  average_watts?: number
+  kilojoules?: number
+  average_heartrate?: number
 }
 
 interface PlannedWorkout {
@@ -39,6 +43,7 @@ export const RideCard = ({
 }) => {
   const { ftp } = useContext(FtpContext)
   const emoji = activity.type === 'Run' || activity.sport_type === 'Run' ? '🏃' : '🚴'
+  const isCycling = activity.type !== 'Run' && activity.sport_type !== 'Run'
   
   if (variant === 'mobile') {
     return (
@@ -49,14 +54,30 @@ export const RideCard = ({
         className="block"
       >
         <div className="bg-orange-100 border-2 border-orange-500 rounded-lg p-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1">
             <div className="text-sm font-semibold text-orange-800 truncate">
               {emoji} {activity.name}
             </div>
-            <div className="flex gap-2 text-[11px] text-orange-700 whitespace-nowrap">
+            <div className="flex gap-1 text-[11px] text-orange-700 whitespace-nowrap">
               <span>{formatDistance(activity.distance)}</span>
               <span>{formatElevation(activity.total_elevation_gain)}</span>
+              {activity.moving_time && (
+                <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
+              )}
             </div>
+            {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (
+              <div className="flex gap-2 text-[11px] text-orange-700 whitespace-nowrap">
+                {isCycling && activity.average_watts && (
+                  <span>{Math.round(activity.average_watts)}W</span>
+                )}
+                {activity.average_heartrate && (
+                  <span>{Math.round(activity.average_heartrate)}bpm</span>
+                )}
+                {isCycling && activity.kilojoules && (
+                  <span>{Math.round(activity.kilojoules)}kJ</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </a>
@@ -74,13 +95,29 @@ export const RideCard = ({
           <div className="text-sm font-semibold truncate w-full text-center text-orange-800">
             {emoji} {activity.name}
           </div>
-          <div className="flex gap-2 text-xs text-orange-700">
+          <div className="flex gap-1 text-xs text-orange-700">
             <span>{formatDistance(activity.distance)}</span>
             <span>{formatElevation(activity.total_elevation_gain)}</span>
+            {activity.moving_time && (
+              <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
+            )}
             {(ftp !== undefined && ftp !== 0) && (
-              <span>{getTSS(activity, ftp)} TSS</span>
+              <span>{getTSS(activity, ftp)}TSS</span>
             )}
           </div>
+          {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (
+            <div className="flex gap-2 text-xs text-orange-700">
+              {isCycling && activity.average_watts && (
+                <span>{Math.round(activity.average_watts)}W</span>
+              )}
+              {activity.average_heartrate && (
+                <span>{Math.round(activity.average_heartrate)}bpm</span>
+              )}
+              {isCycling && activity.kilojoules && (
+                <span>{Math.round(activity.kilojoules)}kJ</span>
+              )}
+            </div>
+          )}
         </div>
       </Link>
     </div>
