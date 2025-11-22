@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Exercise } from '@/types/exercise';
 import Link from 'next/link';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/solid';
@@ -16,6 +17,7 @@ import { Button } from '@/components/Button';
 export default function WorkoutFormPage() {
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const workoutIdParam = params.id as string;
 
   const { data: workout, isLoading, error: fetchError } = useWorkout(workoutIdParam);
@@ -152,6 +154,8 @@ export default function WorkoutFormPage() {
     try {
       await updateWorkoutAPI(workoutIdParam, { datetime: isoDateTime, exercises: exercises });
       localStorage.removeItem(`workout_${workoutIdParam}`);
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      queryClient.invalidateQueries({ queryKey: ['workout', workoutIdParam] });
       setPageError(null);
       router.push('/');
     } catch (err) {
@@ -166,6 +170,8 @@ export default function WorkoutFormPage() {
     if (confirm(`Are you sure you want to delete this workout?`)) {
       try {
         await deleteWorkoutAPI(workout.id);
+        queryClient.invalidateQueries({ queryKey: ['workouts'] });
+        queryClient.invalidateQueries({ queryKey: ['workout', workout.id] });
         router.push('/');
       } catch (err) {
         console.error("Error deleting workout:", err);
