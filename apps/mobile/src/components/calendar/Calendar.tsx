@@ -7,7 +7,11 @@ import { LoadingSpinner } from '../LoadingSpinner';
 
 dayjs.extend(advancedFormat);
 
-export function Calendar() {
+interface CalendarProps {
+  onWorkoutPress?: (workoutId: string) => void;
+}
+
+export function Calendar({ onWorkoutPress }: CalendarProps) {
   const { data: workouts = [], isLoading } = useWorkouts();
   const today = dayjs().startOf('day');
   const yearStart = dayjs().startOf('year');
@@ -39,6 +43,7 @@ export function Calendar() {
               date={date} 
               isToday={isToday} 
               workouts={dayWorkouts}
+              onWorkoutPress={onWorkoutPress}
             />
           );
         })}

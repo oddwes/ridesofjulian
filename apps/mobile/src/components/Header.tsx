@@ -4,16 +4,17 @@ import { useAuth } from '../contexts/AuthContext';
 
 type HeaderProps = {
   onProfilePress?: () => void;
+  onAddWorkoutPress?: () => void;
 };
 
-export function Header({ onProfilePress }: HeaderProps) {
+export function Header({ onProfilePress, onAddWorkoutPress }: HeaderProps) {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const profilePicUrl = session?.user?.user_metadata?.avatar_url;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <Pressable style={styles.addButton}>
+      <Pressable style={styles.addButton} onPress={onAddWorkoutPress}>
         <View style={styles.plusIcon}>
           <Text style={styles.plusText}>+</Text>
         </View>

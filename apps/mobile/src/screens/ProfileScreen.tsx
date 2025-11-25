@@ -24,6 +24,8 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.modalHandle} />
+      
       <View style={styles.header}>
         <Pressable onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>✕</Text>
@@ -75,6 +77,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111827',
+  },
+  modalHandle: {
+    width: 36,
+    height: 5,
+    backgroundColor: '#4b5563',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
   },
   header: {
     flexDirection: 'row',
