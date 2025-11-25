@@ -1,10 +1,13 @@
-import { useContext } from "react"
+import { useContext, useMemo } from "react"
 import Link from "next/link"
 import { ChevronUp } from "lucide-react"
 import { getTSS } from "../../utils/StravaUtil"
 import { formatDuration } from "../../utils/TimeUtil"
 import { formatDistance, formatElevation } from "../../utils/FormatUtil"
 import { FtpContext } from "../FTP"
+import { useSupabase } from "@/contexts/SupabaseContext"
+import { useQuery } from "@tanstack/react-query"
+import { getFtp, getFtpForDate } from "@/utils/FtpUtil"
 import Col from "../ui/Col"
 import { SimplifiedChart } from "../workouts/RideWorkoutChart"
 
@@ -14,6 +17,7 @@ interface Activity {
   distance: number
   total_elevation_gain: number
   moving_time?: number
+  start_date?: string
   type?: string
   sport_type?: string
   average_watts?: number
@@ -42,6 +46,20 @@ export const RideCard = ({
   variant?: 'mobile' | 'desktop'
 }) => {
   const { ftp } = useContext(FtpContext)
+  const { supabase, user } = useSupabase()
+  const { data: ftpHistory } = useQuery({
+    queryKey: ['ftpHistory', user?.id],
+    queryFn: async () => {
+      if (!user) return null
+      return await getFtp(supabase, user.id)
+    },
+    enabled: !!user,
+  })
+
+  const ftpForActivity = useMemo(
+    () => getFtpForDate(ftpHistory || null, activity.start_date, ftp),
+    [ftpHistory, activity.start_date, ftp]
+  )
   const emoji = activity.type === 'Run' || activity.sport_type === 'Run' ? '🏃' : '🚴'
   const isCycling = activity.type !== 'Run' && activity.sport_type !== 'Run'
   
@@ -64,6 +82,9 @@ export const RideCard = ({
               {activity.moving_time && (
                 <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
               )}
+            {(ftpForActivity !== undefined && ftpForActivity !== 0) && (
+              <span>{getTSS(activity, ftpForActivity)}TSS</span>
+            )}
             </div>
             {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (
               <div className="flex gap-2 text-[11px] text-orange-700 whitespace-nowrap">
@@ -101,8 +122,8 @@ export const RideCard = ({
             {activity.moving_time && (
               <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
             )}
-            {(ftp !== undefined && ftp !== 0) && (
-              <span>{getTSS(activity, ftp)}TSS</span>
+            {(ftpForActivity !== undefined && ftpForActivity !== 0) && (
+              <span>{getTSS(activity, ftpForActivity)}TSS</span>
             )}
           </div>
           {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (

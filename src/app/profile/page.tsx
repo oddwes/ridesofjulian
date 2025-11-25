@@ -8,6 +8,7 @@ import Image from "next/image";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { login, ensureValidToken } from "@/utils/StravaUtil";
 import { hasWahooRefreshToken, initiateWahooAuth } from "@/utils/WahooUtil";
+import { FTPInput } from "@/components/FTP";
 
 export default function ProfilePage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -86,6 +87,10 @@ export default function ProfilePage() {
             </h2>
             <p>{session.user?.email}</p>
           </div>
+        </div>
+        
+        <div className="pt-4">
+          <FTPInput />
         </div>
 
         <div className="py-6 border-t border-b space-y-4">
