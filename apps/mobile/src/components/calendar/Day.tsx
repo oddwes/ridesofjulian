@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Dayjs } from 'dayjs';
 import { Workout } from '@ridesofjulian/shared';
 
@@ -6,9 +6,10 @@ interface DayProps {
   date: Dayjs;
   isToday: boolean;
   workouts?: Workout[];
+  onWorkoutPress?: (workoutId: string) => void;
 }
 
-export function Day({ date, isToday, workouts = [] }: DayProps) {
+export function Day({ date, isToday, workouts = [], onWorkoutPress }: DayProps) {
   const hasWorkouts = workouts.length > 0;
   const formattedDate = date.format('MMMM Do, YYYY');
 
@@ -25,12 +26,16 @@ export function Day({ date, isToday, workouts = [] }: DayProps) {
       {hasWorkouts && (
         <View style={styles.workoutsContainer}>
           {workouts.map((workout) => (
-            <View key={workout.id} style={styles.gymWorkout}>
+            <TouchableOpacity 
+              key={workout.id} 
+              style={styles.gymWorkout}
+              onPress={() => onWorkoutPress?.(workout.id)}
+            >
               <Text style={styles.gymTitle}>💪 Gym</Text>
               <Text style={styles.exerciseText}>
                 {workout.exercises.map(e => e.name).join(', ')}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
