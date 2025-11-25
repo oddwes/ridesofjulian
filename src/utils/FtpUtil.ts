@@ -52,7 +52,8 @@ export const updateFtp = async (
   const existing = await getFtp(supabase, userId);
   
   const existingFtp = existing?.ftp || {};
-  const { [date]: _, ...rest } = existingFtp;
+  const { [date]: removed, ...rest } = existingFtp;
+  void removed;
   
   const ftpData: FtpData = {
     ftp: {
