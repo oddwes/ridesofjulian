@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { fetchWorkouts, createWorkout } from '@ridesofjulian/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,46 +8,13 @@ export async function GET() {
   const supabase = await createSupabaseServerClient();
 
   try {
-    const { data, error: userError } = await supabase.auth.getSession();
-
-    if (userError || !data.session) {
-      console.error('Auth error:', userError);
-      return NextResponse.json({ error: 'Unauthorized', details: userError?.message || 'No valid session' }, { status: 401 });
-    }
-
-    const user = data.session.user;
-
-    const { data: workoutsData, error: workoutsError } = await supabase
-      .from('workouts')
-      .select('id, datetime')
-      .eq('user_id', user.id);
-
-    if (workoutsError) {
-      throw workoutsError;
-    }
-
-    const workoutsWithExercises = await Promise.all(
-      workoutsData.map(async (workout) => {
-        const { data: exercisesData, error: exercisesError } = await supabase
-          .from('exercises')
-          .select('id, name, weight, sets, reps, completed')
-          .eq('workout_id', workout.id);
-
-        if (exercisesError) {
-          throw exercisesError;
-        }
-
-        return {
-          ...workout,
-          exercises: exercisesData || [],
-        };
-      })
-    );
-
-    return NextResponse.json(workoutsWithExercises);
+    const workouts = await fetchWorkouts(supabase);
+    return NextResponse.json(workouts);
   } catch (error) {
     console.error('Error fetching workouts:', error);
-    return NextResponse.json({ error: 'Failed to fetch workouts' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to fetch workouts';
+    const status = message === 'Unauthorized' ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -55,33 +23,13 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-
-    const { data, error: userError } = await supabase.auth.getSession();
-
-    if (userError || !data.session) {
-      console.error('Auth error:', userError);
-      return NextResponse.json({ error: 'Unauthorized', details: userError?.message || 'No valid session' }, { status: 401 });
-    }
-
-    const user = data.session.user;
-
-    const { data: workoutData, error } = await supabase
-      .from('workouts')
-      .insert({
-        datetime: body.datetime,
-        user_id: user.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return NextResponse.json(workoutData);
+    const workout = await createWorkout(supabase, body.datetime);
+    return NextResponse.json(workout);
   } catch (error) {
     console.error('Error creating workout:', error);
-    return NextResponse.json({ error: 'Failed to create workout' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create workout';
+    const status = message === 'Unauthorized' ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

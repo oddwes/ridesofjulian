@@ -1,5 +1,4 @@
-import { Exercise } from "@/types/exercise";
-import { Workout } from "@/types/workout";
+import { Exercise, Workout } from '@ridesofjulian/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createServerAction = async (url: string, data: any) => {

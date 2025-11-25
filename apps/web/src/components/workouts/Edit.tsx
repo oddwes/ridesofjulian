@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { Exercise } from "@/types/exercise";
+import { Exercise } from '@ridesofjulian/shared';
 import EditRideWorkout, { Interval } from "./Ride";
 import EditGymWorkout from "./Gym";
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { formatISO, parseISO } from 'date-fns';
 import { PlusIcon } from '@heroicons/react/24/solid';
-import { Exercise } from '@/types/exercise';
+import { Exercise } from '@ridesofjulian/shared';
 import { ExerciseList } from '@/components/ExerciseList';
 
 export interface EditWorkoutHandle {
