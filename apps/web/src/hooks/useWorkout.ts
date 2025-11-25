@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Workout } from '@/types/workout';
+import { Workout } from '@ridesofjulian/shared';
 
 const fetchWorkoutById = async (workoutId: string): Promise<Workout> => {
   if (!workoutId) {

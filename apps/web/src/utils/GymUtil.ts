@@ -1,4 +1,4 @@
-import { Exercise } from "@/types/exercise";
+import { Exercise } from '@ridesofjulian/shared';
 
 export const updateGymWorkout = async (workoutId: string, exercises: Exercise[], date: string) => {
   const response = await fetch(`/api/workouts/${workoutId}`, {

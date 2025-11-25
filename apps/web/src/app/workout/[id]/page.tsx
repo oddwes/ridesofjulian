@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { Exercise } from '@/types/exercise';
+import { Exercise } from '@ridesofjulian/shared';
 import Link from 'next/link';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/solid';
 import { formatISO, parseISO } from 'date-fns';

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Workout } from '@/types/workout';
+import { Workout } from '@ridesofjulian/shared';
 
-const fetchWorkouts = async (): Promise<Workout[]> => {
+const fetchWorkoutsFromAPI = async (): Promise<Workout[]> => {
   const response = await fetch(`/api/workouts`);
   if (!response.ok) {
     if (response.status === 404) {
@@ -16,7 +16,7 @@ const fetchWorkouts = async (): Promise<Workout[]> => {
 export const useWorkouts = () => {
   return useQuery<Workout[], Error>({
     queryKey: ['workouts'],
-    queryFn: () => fetchWorkouts(),
+    queryFn: () => fetchWorkoutsFromAPI(),
     enabled: true,
     retry: false,
   });

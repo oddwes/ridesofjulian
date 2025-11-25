@@ -4,12 +4,17 @@
   "version": "0.1.0",
   "workspaces": [
     "apps/web",
-    "apps/mobile"
+    "apps/mobile",
+    "packages/shared"
   ],
   "scripts": {
     "dev:web": "cd apps/web && npm run dev",
     "build:web": "cd apps/web && npm run build",
-    "start:web": "cd apps/web && npm run start"
+    "start:web": "cd apps/web && npm run start",
+    "dev:mobile": "cd apps/mobile && npm start",
+    "android": "cd apps/mobile && npm run android",
+    "ios": "cd apps/mobile && npm run ios",
+    "mobile:web": "cd apps/mobile && npm run web"
   }
 }
 
