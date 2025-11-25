@@ -5,7 +5,6 @@ import { useWorkoutData } from '../hooks/useWorkoutData'
 import Calendar from './calendar/Calendar'
 import ReactSelect from 'react-select'
 import dayjs from 'dayjs'
-import { FTPInput } from './FTP'
 import { LoadingSpinner } from './LoadingSpinner'
 
 const DesktopHome = () => {
@@ -34,9 +33,8 @@ const DesktopHome = () => {
         value={yearOptions.find(option => option.value === selectedYear)}
         onChange={(option) => setSelectedYear(option.value)}
         options={yearOptions}
-        className="w-48"
+        className="w-48 text-gray-800"
       />
-      <FTPInput />
       <Calendar 
         start={start} 
         activities={activities} 
