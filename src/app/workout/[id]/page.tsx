@@ -26,6 +26,43 @@ export default function WorkoutFormPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [focusExerciseId, setFocusExerciseId] = useState<string | undefined>();
   const [pageError, setPageError] = useState<string | null>(null);
+  const [restMinutes, setRestMinutes] = useState<number>(2);
+  const [restInput, setRestInput] = useState<string>("2");
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem('rest_timer_minutes');
+    const n = saved ? parseInt(saved, 10) : NaN;
+    const effective = !Number.isNaN(n) && n > 0 ? n : 2;
+    setRestMinutes(effective);
+    setRestInput(String(effective));
+  }, []);
+
+  const handleRestInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRestInput(e.target.value);
+  };
+
+  const handleRestInputBlur = () => {
+    const trimmed = restInput.trim();
+    if (!trimmed) {
+      setRestMinutes(2);
+      setRestInput("2");
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('rest_timer_minutes', "2");
+      }
+      return;
+    }
+    const value = parseInt(trimmed, 10);
+    if (Number.isNaN(value) || value <= 0) {
+      setRestInput(String(restMinutes));
+      return;
+    }
+    setRestMinutes(value);
+    setRestInput(String(value));
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('rest_timer_minutes', String(value));
+    }
+  };
 
   useEffect(() => {
     if (workout) {
@@ -183,10 +220,25 @@ export default function WorkoutFormPage() {
 
   return (
     <div className="min-h-screen overflow-y-auto max-w-2xl mx-auto p-4">
-      <Button variant="primary" className="flex items-center gap-2" onClick={() => router.push('/')}>
-        <ArrowLeftIcon className="h-4 w-4" />
-        Back
-      </Button>
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="primary" className="flex items-center gap-2" onClick={() => router.push('/')}>
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-300">Rest Timer</span>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={1}
+              value={restInput}
+              onChange={handleRestInputChange}
+              onBlur={handleRestInputBlur}
+              className="w-8 p-1 border border-gray-500 rounded bg-gray-800 text-sm text-gray-100 text-right"
+            />
+          </div>
+        </div>
+      </div>
 
       {pageError && (
         <div className="mt-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded-md">
@@ -213,6 +265,7 @@ export default function WorkoutFormPage() {
             onExercisesChange={handleExercisesChange}
             focusExerciseId={focusExerciseId}
             onFocusRequest={setFocusExerciseId}
+            restDurationSeconds={restMinutes * 60}
           />}
           <Button
             variant="primary"

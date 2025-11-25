@@ -9,9 +9,10 @@ interface ExerciseListProps {
   onExercisesChange: (updatedExercises: Exercise[]) => void;
   focusExerciseId?: string;
   onFocusRequest: (exerciseId: string | undefined) => void;
+  restDurationSeconds: number;
 }
 
-export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercisesChange, focusExerciseId, onFocusRequest }) => {
+export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercisesChange, focusExerciseId, onFocusRequest, restDurationSeconds }) => {
   const [localExercises, setLocalExercises] = useState<Exercise[]>(exercises);
   const [editingExerciseId, setEditingExerciseId] = useState<string | undefined>(undefined);
   const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,7 +48,8 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
   }, [timerSeconds, timerExerciseId]);
 
   const startTimer = (exerciseId: string) => {
-    setTimerSeconds(60);
+    const duration = restDurationSeconds && restDurationSeconds > 0 ? restDurationSeconds : 120;
+    setTimerSeconds(duration);
     setTimerExerciseId(exerciseId);
   };
 
@@ -66,9 +68,15 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
   };
 
   const localIncrementCompleted = (exerciseId: string) => {
+    const target = localExercises.find(ex => ex.id === exerciseId);
+    if (!target) return;
+    const sets = target.sets || 0;
+    const completed = target.completed || 0;
+    if (sets === 0 || completed >= sets) return;
+
     const updatedExercises = localExercises.map(ex =>
-      ex.id === exerciseId && (ex.completed < (ex.sets || 0))
-        ? { ...ex, completed: ex.completed + 1 }
+      ex.id === exerciseId
+        ? { ...ex, completed: (ex.completed || 0) + 1 }
         : ex
     );
     setLocalExercises(updatedExercises);
@@ -84,7 +92,6 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
     );
     setLocalExercises(updatedExercises);
     onExercisesChange(updatedExercises);
-    startTimer(exerciseId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
