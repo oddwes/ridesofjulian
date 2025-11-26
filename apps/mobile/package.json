@@ -17,7 +17,6 @@
     "dayjs": "^1.11.19",
     "expo": "~54.0.25",
     "expo-auth-session": "^7.0.9",
-    "expo-dev-client": "~6.0.18",
     "expo-linking": "^8.0.9",
     "expo-status-bar": "~3.0.8",
     "expo-web-browser": "^15.0.9",

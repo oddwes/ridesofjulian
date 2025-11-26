@@ -9,7 +9,7 @@ WebBrowser.maybeCompleteAuthSession();
 export function AuthScreen() {
   const signInWithGoogle = async () => {
     try {
-      const redirectTo = 'trainhard://auth/callback';
+      const redirectTo = 'ridesofjulian://auth/callback';
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

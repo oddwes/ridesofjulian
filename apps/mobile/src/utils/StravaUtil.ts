@@ -66,7 +66,7 @@ export const connectStrava = async () => {
   }
 
   const redirectUri = makeRedirectUri({
-    scheme: 'trainhard',
+    scheme: 'ridesofjulian',
     path: 'strava_redirect',
   });
 
