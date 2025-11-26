@@ -1,9 +1,12 @@
 import { ScrollView, View, StyleSheet } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { Day } from './Day';
 import { useWorkouts } from '../../hooks/useWorkouts';
 import { useStravaActivities } from '../../hooks/useStravaActivities';
+import { getFtp } from '../../utils/ftpUtil';
+import { supabase } from '../../config/supabase';
 
 dayjs.extend(advancedFormat);
 
@@ -14,6 +17,24 @@ interface CalendarProps {
 export function Calendar({ onWorkoutPress }: CalendarProps) {
   const { data: workouts = [] } = useWorkouts();
   const { data: activities = [] } = useStravaActivities(dayjs().year());
+  
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      return data.user;
+    },
+  });
+
+  const { data: ftpHistory } = useQuery({
+    queryKey: ['ftpHistory', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      return await getFtp(supabase, user.id);
+    },
+    enabled: !!user,
+  });
+
   const today = dayjs().startOf('day');
   const yearStart = dayjs().startOf('year');
   
@@ -44,6 +65,7 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
               isToday={isToday} 
               workouts={dayWorkouts}
               activities={dayActivities}
+              ftpHistory={ftpHistory}
               onWorkoutPress={onWorkoutPress}
             />
           );
