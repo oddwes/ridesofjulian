@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import { useWorkoutData } from '../hooks/useWorkoutData'
 import { LoadingSpinner } from './LoadingSpinner'
 import { formatDateKey, isDateMatch } from '../utils/DateUtil'
-import { RideCard, PlannedRideCard } from './calendar/RideCard'
-import { GymCard } from './calendar/GymCard'
+import { PlannedRideCard } from './calendar/RideCard'
+import { RideCardWeb } from './calendar/RideCardWeb'
+import { GymCardWeb } from './calendar/GymCardWeb'
 
 const MobileHome = () => {
   const router = useRouter()
@@ -116,8 +117,8 @@ const MobileHome = () => {
                 <div className="flex flex-col gap-1.5">
                   {workouts.map((item, idx) => (
                     <div key={idx}>
-                      {item.type === 'gym' && <GymCard workout={item.workout} variant="mobile" onClick={() => router.push(`/workout/${item.workout.id}`)} />}
-                      {item.type === 'ride' && <RideCard activity={item.workout} variant="mobile" />}
+                      {item.type === 'gym' && <GymCardWeb workout={item.workout} />}
+                      {item.type === 'ride' && <RideCardWeb activity={item.workout} />}
                       {item.type === 'planned' && <PlannedRideCard workout={item.workout} variant="mobile" />}
                     </div>
                   ))}
