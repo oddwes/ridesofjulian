@@ -303,8 +303,6 @@ export function WorkoutEditScreen({
 
   return (
     <View style={styles.container}>
-      <View style={styles.modalHandle} />
-      
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.headerButton}>
           <Text style={styles.headerButtonText}>← Back</Text>
@@ -433,15 +431,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1e293b',
-  },
-  modalHandle: {
-    width: 36,
-    height: 5,
-    backgroundColor: '#4b5563',
-    borderRadius: 3,
-    alignSelf: 'center',
-    marginTop: 16,
-    marginBottom: 16,
   },
   centerContainer: {
     flex: 1,

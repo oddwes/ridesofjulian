@@ -12,16 +12,20 @@ import { supabase } from '../config/supabase';
 export function HomeScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
+  const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const queryClient = useQueryClient();
 
   const handleAddWorkout = async () => {
     try {
+      setIsCreatingWorkout(true);
       const now = new Date().toISOString();
       const workout = await createWorkout(supabase, now);
       queryClient.invalidateQueries({ queryKey: ['workouts'] });
       setEditingWorkoutId(workout.id);
     } catch (error) {
       console.error('Error creating workout:', error);
+    } finally {
+      setIsCreatingWorkout(false);
     }
   };
 
@@ -31,6 +35,7 @@ export function HomeScreen() {
       <Header 
         onProfilePress={() => setShowProfile(true)}
         onAddWorkoutPress={handleAddWorkout}
+        isCreatingWorkout={isCreatingWorkout}
       />
       
       <Calendar onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} />

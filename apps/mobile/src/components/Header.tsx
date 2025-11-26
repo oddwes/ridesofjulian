@@ -1,22 +1,31 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 
 type HeaderProps = {
   onProfilePress?: () => void;
   onAddWorkoutPress?: () => void;
+  isCreatingWorkout?: boolean;
 };
 
-export function Header({ onProfilePress, onAddWorkoutPress }: HeaderProps) {
+export function Header({ onProfilePress, onAddWorkoutPress, isCreatingWorkout }: HeaderProps) {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const profilePicUrl = session?.user?.user_metadata?.avatar_url;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <Pressable style={styles.addButton} onPress={onAddWorkoutPress}>
-        <View style={styles.plusIcon}>
-          <Text style={styles.plusText}>+</Text>
+      <Pressable 
+        style={styles.addButton} 
+        onPress={onAddWorkoutPress}
+        disabled={isCreatingWorkout}
+      >
+        <View style={[styles.plusIcon, isCreatingWorkout && styles.plusIconDisabled]}>
+          {isCreatingWorkout ? (
+            <ActivityIndicator size="small" color="#3b82f6" />
+          ) : (
+            <Text style={styles.plusText}>+</Text>
+          )}
         </View>
       </Pressable>
 
@@ -56,6 +65,9 @@ const styles = StyleSheet.create({
     borderColor: '#3b82f6',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  plusIconDisabled: {
+    opacity: 0.5,
   },
   plusText: {
     color: '#3b82f6',
