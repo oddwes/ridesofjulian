@@ -1,5 +1,9 @@
 {
   "ios": {
-    "bundleIdentifier": "com.burlin777.ridesofjulian-monorepo"
+    "bundleIdentifier": "com.burlin777.mobile",
+    "icon": "./assets/icon.png",
+    "infoPlist": {
+      "ITSAppUsesNonExemptEncryption": false
+    }
   }
 }
