@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthRequest, makeRedirectUri } from 'expo-auth-session';
+import dayjs from 'dayjs';
 import {
   STRAVA_ACCESS_TOKEN_KEY,
   STRAVA_REFRESH_TOKEN_KEY,
@@ -64,8 +65,6 @@ export const connectStrava = async () => {
     return false;
   }
 
-  // Must match: oddwes-style docs but with your scheme and Strava "Authorization Callback Domain"
-  // Strava domain: `redirect` → URI here: trainhard://redirect
   const redirectUri = makeRedirectUri({
     scheme: 'trainhard',
     path: 'strava_redirect',
@@ -97,6 +96,55 @@ export const connectStrava = async () => {
   const data = (await res.json()) as StravaTokenResponse;
   await storeStravaTokens(data);
   return true;
+};
+
+export interface StravaActivity {
+  id: number;
+  name: string;
+  distance: number;
+  total_elevation_gain: number;
+  moving_time: number;
+  start_date: string;
+  type?: string;
+  sport_type?: string;
+  average_watts?: number;
+  kilojoules?: number;
+  average_heartrate?: number;
+}
+
+const stravaApiGet = async (url: string, params: Record<string, any> = {}) => {
+  const accessToken = await AsyncStorage.getItem(STRAVA_ACCESS_TOKEN_KEY);
+  if (!accessToken) throw new Error('No Strava access token');
+
+  const queryString = new URLSearchParams(params).toString();
+  const fullUrl = queryString ? `${url}?${queryString}` : url;
+
+  const res = await fetch(fullUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) throw new Error('Strava API request failed');
+  return res.json();
+};
+
+export const getAthleteActivities = async (year: number, page = 1): Promise<StravaActivity[]> => {
+  const perPage = 100;
+  const firstDayOfYear = dayjs(`${year}-01-01`).valueOf() / 1000;
+  const lastDayOfYear = dayjs(`${year}-12-31`).valueOf() / 1000;
+
+  const activities = await stravaApiGet('https://www.strava.com/api/v3/athlete/activities', {
+    after: firstDayOfYear,
+    before: lastDayOfYear,
+    page,
+    per_page: perPage,
+  });
+
+  if (activities.length === perPage) {
+    const nextPage = await getAthleteActivities(year, page + 1);
+    return activities.concat(nextPage);
+  }
+
+  return activities;
 };
 
 
