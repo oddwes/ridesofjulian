@@ -23,7 +23,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const email = user?.email;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container]}>
       <View style={styles.modalHandle} />
       
       <View style={styles.header}>
@@ -76,7 +76,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#1e293b',
   },
   modalHandle: {
     width: 36,

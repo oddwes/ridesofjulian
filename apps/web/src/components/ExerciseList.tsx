@@ -10,9 +10,10 @@ interface ExerciseListProps {
   focusExerciseId?: string;
   onFocusRequest: (exerciseId: string | undefined) => void;
   restDurationSeconds: number;
+  weightUnit?: 'kg' | 'lb';
 }
 
-export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercisesChange, focusExerciseId, onFocusRequest, restDurationSeconds }) => {
+export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercisesChange, focusExerciseId, onFocusRequest, restDurationSeconds, weightUnit = 'lb' }) => {
   const [localExercises, setLocalExercises] = useState<Exercise[]>(exercises);
   const [editingExerciseId, setEditingExerciseId] = useState<string | undefined>(undefined);
   const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -171,7 +172,7 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
           <div className="grid grid-cols-3 items-center gap-4 mb-4">
             <div>
               <label htmlFor={`weight-${exercise.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Weight (lbs)
+                Weight ({weightUnit})
               </label>
               <input
                 id={`weight-${exercise.id}`}
