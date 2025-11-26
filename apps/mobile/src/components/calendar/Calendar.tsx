@@ -1,5 +1,6 @@
-import { ScrollView, View, StyleSheet } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { ScrollView, View, StyleSheet, Animated, Dimensions } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { Day } from './Day';
@@ -10,13 +11,60 @@ import { supabase } from '../../config/supabase';
 
 dayjs.extend(advancedFormat);
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const PULL_THRESHOLD = -SCREEN_HEIGHT / 6;
+
 interface CalendarProps {
   onWorkoutPress?: (workoutId: string) => void;
 }
 
 export function Calendar({ onWorkoutPress }: CalendarProps) {
-  const { data: workouts = [] } = useWorkouts();
-  const { data: activities = [] } = useStravaActivities(dayjs().year());
+  const queryClient = useQueryClient();
+  const { data: workouts = [], isLoading: workoutsLoading } = useWorkouts();
+  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivities(dayjs().year());
+  const isLoading = workoutsLoading || activitiesLoading;
+  const [refreshing, setRefreshing] = useState(false);
+  const scrollY = useRef(0);
+  const isRefreshing = useRef(false);
+  
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+  const showLoadingPill = isLoading || refreshing;
+
+  useEffect(() => {
+    if (showLoadingPill) {
+      slideAnim.setValue(-100);
+      Animated.loop(
+        Animated.timing(slideAnim, {
+          toValue: 400,
+          duration: 1500,
+          useNativeDriver: true,
+        })
+      ).start();
+    }
+  }, [showLoadingPill, slideAnim]);
+
+  const onRefresh = async () => {
+    if (isRefreshing.current) return;
+    isRefreshing.current = true;
+    setRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['workouts'] }),
+      queryClient.invalidateQueries({ queryKey: ['stravaActivities'] }),
+    ]);
+    setRefreshing(false);
+    isRefreshing.current = false;
+  };
+
+  const handleScroll = (event: any) => {
+    scrollY.current = event.nativeEvent.contentOffset.y;
+  };
+
+  const handleScrollEndDrag = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    if (offsetY < PULL_THRESHOLD && !isRefreshing.current) {
+      onRefresh();
+    }
+  };
   
   const { data: user } = useQuery({
     queryKey: ['user'],
@@ -48,7 +96,24 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      {showLoadingPill && (
+        <View style={styles.loadingContainer}>
+          <Animated.View 
+            style={[
+              styles.loadingPill,
+              { transform: [{ translateX: slideAnim }] }
+            ]} 
+          />
+        </View>
+      )}
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.content}
+        onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+        bounces={true}
+      >
         {days.map((date) => {
           const isToday = date.isSame(today, 'day');
           const dateStr = date.format('YYYY-MM-DD');
@@ -79,6 +144,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1e293b',
+  },
+  loadingContainer: {
+    height: 5,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    overflow: 'hidden',
+  },
+  loadingPill: {
+    width: 36,
+    height: 5,
+    backgroundColor: '#4b5563',
+    borderRadius: 3,
   },
   scrollView: {
     flex: 1,
