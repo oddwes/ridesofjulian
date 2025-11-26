@@ -5,5 +5,8 @@
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false
     }
+  },
+  "android": {
+    "package": "com.burlin777.mobile"
   }
 }
