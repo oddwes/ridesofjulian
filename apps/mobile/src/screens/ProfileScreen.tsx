@@ -1,8 +1,9 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { useEffect, useState } from 'react';
+import { Feather } from '@expo/vector-icons';
 
 type ProfileScreenProps = {
   onClose: () => void;
@@ -11,7 +12,12 @@ type ProfileScreenProps = {
 export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-  const [ftp, setFtp] = useState<number | null>(null);
+  const [ftp, setFtp] = useState<string>('');
+  const [ftpInput, setFtpInput] = useState<string>('');
+  const [ftpInputFocused, setFtpInputFocused] = useState(false);
+  const [ftpIsDirty, setFtpIsDirty] = useState(false);
+  const [ftpIsSaving, setFtpIsSaving] = useState(false);
+  const [ftpShowSuccess, setFtpShowSuccess] = useState(false);
 
   useEffect(() => {
     const fetchFtp = async () => {
@@ -29,13 +35,107 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         if (entries.length > 0) {
-          setFtp(entries[0].value);
+          const ftpValue = String(entries[0].value);
+          setFtp(ftpValue);
+          setFtpInput(ftpValue);
         }
       }
     };
 
     fetchFtp();
   }, [session?.user?.id]);
+
+  const handleFtpInputChange = (text: string) => {
+    setFtpInput(text);
+    if (!ftpIsDirty && text !== ftp) {
+      setFtpIsDirty(true);
+    }
+  };
+
+  const handleFtpInputBlur = () => {
+    const trimmed = ftpInput.trim();
+    if (!trimmed) {
+      setFtpInput(ftp);
+      setFtpIsDirty(false);
+      return;
+    }
+    const value = parseInt(trimmed, 10);
+    if (Number.isNaN(value) || value <= 0) {
+      setFtpInput(ftp);
+      setFtpIsDirty(false);
+      return;
+    }
+    
+    const ftpValue = String(value);
+    setFtpInput(ftpValue);
+    
+    if (ftpValue !== ftp) {
+      setFtpIsDirty(true);
+    } else {
+      setFtpIsDirty(false);
+    }
+  };
+
+  const handleSaveFtp = async () => {
+    if (!session?.user?.id || !ftpIsDirty) return;
+    
+    const value = parseInt(ftpInput, 10);
+    if (Number.isNaN(value) || value <= 0) return;
+    
+    setFtpIsSaving(true);
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: existing } = await supabase
+        .from('stats')
+        .select('data')
+        .eq('user_id', session.user.id)
+        .single();
+
+      const existingFtp = existing?.data?.ftp || {};
+      const ftpData = {
+        ftp: {
+          [today]: value,
+          ...existingFtp
+        }
+      };
+
+      if (existing) {
+        await supabase
+          .from('stats')
+          .update({ data: ftpData })
+          .eq('user_id', session.user.id);
+      } else {
+        await supabase
+          .from('stats')
+          .insert({
+            user_id: session.user.id,
+            data: ftpData
+          });
+      }
+      
+      setFtp(String(value));
+      setFtpIsDirty(false);
+      setFtpIsSaving(false);
+      setFtpShowSuccess(true);
+      
+      setTimeout(() => {
+        setFtpShowSuccess(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to save FTP:', error);
+      setFtpIsSaving(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFtpIsDirty(false);
+    setFtpIsSaving(false);
+    setFtpShowSuccess(false);
+    setFtpInput(ftp);
+    onClose();
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -53,7 +153,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
       <View style={styles.modalHandle} />
       
       <View style={styles.header}>
-        <Pressable onPress={onClose} style={styles.closeButton}>
+        <Pressable onPress={handleClose} style={styles.closeButton}>
           <Text style={styles.closeText}>✕</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Profile</Text>
@@ -75,7 +175,37 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
           <Text style={styles.sectionTitle}>FTP</Text>
           <View style={styles.ftpContainer}>
             <Text style={styles.ftpLabel}>Functional Threshold Power</Text>
-            <Text style={styles.ftpValue}>{ftp ? `${ftp} W` : 'Not set'}</Text>
+            <View style={styles.ftpInputContainer}>
+              {ftpIsDirty && !ftpIsSaving && !ftpShowSuccess && (
+                <Pressable onPress={handleSaveFtp} style={styles.ftpSaveButton}>
+                  <Feather name="save" size={20} color="#3b82f6" />
+                </Pressable>
+              )}
+              {ftpIsSaving && (
+                <View style={styles.ftpSaveButton}>
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                </View>
+              )}
+              {ftpShowSuccess && (
+                <View style={styles.ftpSaveButton}>
+                  <Feather name="check" size={20} color="#10b981" />
+                </View>
+              )}
+              <TextInput
+                style={[styles.ftpInput, ftpInputFocused && styles.ftpInputFocused]}
+                value={ftpInput}
+                onChangeText={handleFtpInputChange}
+                onBlur={() => {
+                  handleFtpInputBlur();
+                  setFtpInputFocused(false);
+                }}
+                onFocus={() => setFtpInputFocused(true)}
+                keyboardType="numeric"
+                placeholder="--"
+                placeholderTextColor="#6b7280"
+              />
+              <Text style={styles.ftpUnit}>W</Text>
+            </View>
           </View>
         </View>
 
@@ -194,10 +324,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
   },
-  ftpValue: {
+  ftpInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ftpInput: {
+    minWidth: 40,
+    padding: 4,
+    borderWidth: 0,
+    borderRadius: 6,
+    backgroundColor: 'transparent',
+    color: '#f3f4f6',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  ftpInputFocused: {
+    backgroundColor: '#374151',
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+  },
+  ftpUnit: {
     fontSize: 18,
     fontWeight: '600',
     color: '#3b82f6',
+  },
+  ftpSaveButton: {
+    marginRight: 2,
+    padding: 4,
   },
   serviceButton: {
     flexDirection: 'row',
