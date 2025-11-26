@@ -1,18 +1,20 @@
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Dayjs } from 'dayjs';
 import { Workout } from '@ridesofjulian/shared';
-import { StravaActivity } from '../../utils/StravaUtil';
+import { StravaActivity, getTSS } from '../../utils/StravaUtil';
 import { formatDistance, formatElevation, formatDuration } from '../../utils/formatUtil';
+import { FtpData, getFtpForDate } from '../../utils/ftpUtil';
 
 interface DayProps {
   date: Dayjs;
   isToday: boolean;
   workouts?: Workout[];
   activities?: StravaActivity[];
+  ftpHistory?: FtpData | null;
   onWorkoutPress?: (workoutId: string) => void;
 }
 
-export function Day({ date, isToday, workouts = [], activities = [], onWorkoutPress }: DayProps) {
+export function Day({ date, isToday, workouts = [], activities = [], ftpHistory, onWorkoutPress }: DayProps) {
   const hasWorkouts = workouts.length > 0 || activities.length > 0;
   const formattedDate = date.format('MMMM Do, YYYY');
 
@@ -35,7 +37,9 @@ export function Day({ date, isToday, workouts = [], activities = [], onWorkoutPr
           {activities.map((activity) => {
             const emoji = activity.type === 'Run' || activity.sport_type === 'Run' ? '🏃' : '🚴';
             const isCycling = activity.type !== 'Run' && activity.sport_type !== 'Run';
-            const hasSecondaryStats = (isCycling && (activity.average_watts || activity.kilojoules)) || activity.average_heartrate;
+            const ftpForActivity = getFtpForDate(ftpHistory, activity.start_date);
+            const tss = ftpForActivity && activity.weighted_average_watts ? getTSS(activity, ftpForActivity) : 0;
+            const hasSecondaryStats = (isCycling && (activity.average_watts || activity.kilojoules)) || activity.average_heartrate || tss > 0;
             
             return (
               <TouchableOpacity 
@@ -61,6 +65,9 @@ export function Day({ date, isToday, workouts = [], activities = [], onWorkoutPr
                       )}
                       {isCycling && activity.kilojoules && (
                         <Text style={styles.statText}>{Math.round(activity.kilojoules)}kJ</Text>
+                      )}
+                      {tss > 0 && (
+                        <Text style={styles.statText}>{tss}TSS</Text>
                       )}
                     </>
                   )}

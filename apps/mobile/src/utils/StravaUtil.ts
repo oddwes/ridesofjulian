@@ -108,6 +108,7 @@ export interface StravaActivity {
   type?: string;
   sport_type?: string;
   average_watts?: number;
+  weighted_average_watts?: number;
   kilojoules?: number;
   average_heartrate?: number;
 }
@@ -145,6 +146,16 @@ export const getAthleteActivities = async (year: number, page = 1): Promise<Stra
   }
 
   return activities;
+};
+
+export const getTSS = (activity: StravaActivity, ftp: number): number => {
+  if (!activity.weighted_average_watts) {
+    return 0;
+  }
+  const intensityFactor = activity.weighted_average_watts / ftp;
+  return Math.round(
+    ((activity.moving_time * activity.weighted_average_watts * intensityFactor) / (ftp * 3600)) * 100
+  );
 };
 
 
