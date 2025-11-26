@@ -6,7 +6,7 @@ import Col from "../ui/Col"
 import { RideCard, PlannedRideCard } from "./RideCard"
 import { GymCard } from "./GymCard"
 
-const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutClick }) => {
+const Day = ({ activities = [], plannedWorkouts = [], gymWorkouts = [], isToday, date, onWorkoutClick }) => {
   const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
   
@@ -24,7 +24,7 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
   }
 
   const isFutureDate = date && date.isAfter(dayjs(), 'day')
-  const showAddButton = isFutureDate && !activity && !plannedWorkout && !gymWorkout
+  const showAddButton = isFutureDate && activities.length === 0 && plannedWorkouts.length === 0 && gymWorkouts.length === 0
 
   const todayTag = (
     <Col>
@@ -35,18 +35,22 @@ const Day = ({ activity, plannedWorkout, gymWorkout, isToday, date, onWorkoutCli
   )
 
 
-  if (activity || gymWorkout || plannedWorkout) {
+  if (activities.length > 0 || gymWorkouts.length > 0 || plannedWorkouts.length > 0) {
     const items = []
     
-    if (activity) {
+    activities.forEach((activity) => {
       items.push({ type: 'activity', time: new Date(activity.start_date), content: <RideCard activity={activity} variant="desktop" /> })
+    })
+    
+    if (plannedWorkouts.length > 0 && activities.length === 0) {
+      plannedWorkouts.forEach((plannedWorkout) => {
+        items.push({ type: 'planned', time: date.toDate(), content: <PlannedRideCard workout={plannedWorkout} variant="desktop" isToday={false} onClick={() => handleWorkoutClick(plannedWorkout)} /> })
+      })
     }
-    if (plannedWorkout && !activity) {
-      items.push({ type: 'planned', time: date.toDate(), content: <PlannedRideCard workout={plannedWorkout} variant="desktop" isToday={false} onClick={() => handleWorkoutClick(plannedWorkout)} /> })
-    }
-    if (gymWorkout) {
+    
+    gymWorkouts.forEach((gymWorkout) => {
       items.push({ type: 'gym', time: new Date(gymWorkout.datetime), content: <GymCard workout={gymWorkout} variant="desktop" onClick={() => handleWorkoutClick(gymWorkout)} /> })
-    }
+    })
     
     items.sort((a, b) => a.time - b.time)
     
