@@ -1,6 +1,6 @@
 'use client';
 
-import { WorkoutEditScreen } from '@ridesofjulian/shared/src/mobile';
+import { WorkoutEditScreen } from '@ridesofjulian/shared/mobile';
 import { ExerciseList } from './ExerciseList';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useSupabase } from '@/contexts/SupabaseContext';
