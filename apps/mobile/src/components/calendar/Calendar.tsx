@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { Day } from './Day';
 import { useWorkouts } from '../../hooks/useWorkouts';
-import { LoadingSpinner } from '../LoadingSpinner';
+import { useStravaActivities } from '../../hooks/useStravaActivities';
 
 dayjs.extend(advancedFormat);
 
@@ -12,13 +12,10 @@ interface CalendarProps {
 }
 
 export function Calendar({ onWorkoutPress }: CalendarProps) {
-  const { data: workouts = [], isLoading } = useWorkouts();
+  const { data: workouts = [] } = useWorkouts();
+  const { data: activities = [] } = useStravaActivities(dayjs().year());
   const today = dayjs().startOf('day');
   const yearStart = dayjs().startOf('year');
-  
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
   
   const days = [];
   let currentDate = today;
@@ -37,12 +34,16 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
           const dayWorkouts = workouts.filter(w => 
             dayjs(w.datetime).format('YYYY-MM-DD') === dateStr
           );
+          const dayActivities = activities.filter(a => 
+            dayjs(a.start_date).format('YYYY-MM-DD') === dateStr
+          );
           return (
             <Day 
               key={date.format()} 
               date={date} 
               isToday={isToday} 
               workouts={dayWorkouts}
+              activities={dayActivities}
               onWorkoutPress={onWorkoutPress}
             />
           );
