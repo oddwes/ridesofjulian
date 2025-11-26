@@ -18,8 +18,20 @@ export function Day({ date, isToday, workouts = [], activities = [], ftpHistory,
   const hasWorkouts = workouts.length > 0 || activities.length > 0;
   const formattedDate = date.format('MMMM Do, YYYY');
 
-  const handleActivityPress = (activityId: number) => {
-    Linking.openURL(`https://strava.com/activities/${activityId}`);
+  const handleActivityPress = async (activityId: number) => {
+    const appUrl = `strava://activities/${activityId}`;
+    const webUrl = `https://strava.com/activities/${activityId}`;
+    
+    try {
+      const canOpen = await Linking.canOpenURL(appUrl);
+      if (canOpen) {
+        await Linking.openURL(appUrl);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch (error) {
+      await Linking.openURL(webUrl);
+    }
   };
 
   return (
@@ -46,6 +58,7 @@ export function Day({ date, isToday, workouts = [], activities = [], ftpHistory,
                 key={activity.id} 
                 style={styles.stravaActivity}
                 onPress={() => handleActivityPress(activity.id)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.stravaTitle}>
                   {emoji} {activity.name}
