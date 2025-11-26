@@ -2,6 +2,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
+import { useEffect, useState } from 'react';
 
 type ProfileScreenProps = {
   onClose: () => void;
@@ -10,6 +11,31 @@ type ProfileScreenProps = {
 export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  const [ftp, setFtp] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchFtp = async () => {
+      if (!session?.user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('stats')
+        .select('data')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (!error && data?.data?.ftp) {
+        const entries = Object.entries(data.data.ftp as Record<string, number>)
+          .map(([date, value]) => ({ date, value }))
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        if (entries.length > 0) {
+          setFtp(entries[0].value);
+        }
+      }
+    };
+
+    fetchFtp();
+  }, [session?.user?.id]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -49,7 +75,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
           <Text style={styles.sectionTitle}>FTP</Text>
           <View style={styles.ftpContainer}>
             <Text style={styles.ftpLabel}>Functional Threshold Power</Text>
-            <Text style={styles.ftpValue}>200 W</Text>
+            <Text style={styles.ftpValue}>{ftp ? `${ftp} W` : 'Not set'}</Text>
           </View>
         </View>
 
