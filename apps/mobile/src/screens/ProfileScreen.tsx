@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { useEffect, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
+import { connectStrava, ensureValidStravaToken } from '../utils/StravaUtil';
 
 type ProfileScreenProps = {
   onClose: () => void;
@@ -18,6 +19,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const [ftpIsDirty, setFtpIsDirty] = useState(false);
   const [ftpIsSaving, setFtpIsSaving] = useState(false);
   const [ftpShowSuccess, setFtpShowSuccess] = useState(false);
+  const [stravaConnected, setStravaConnected] = useState(false);
 
   useEffect(() => {
     const fetchFtp = async () => {
@@ -44,6 +46,14 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
     fetchFtp();
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    const checkStrava = async () => {
+      const hasValidToken = await ensureValidStravaToken();
+      setStravaConnected(hasValidToken);
+    };
+    checkStrava();
+  }, []);
 
   const handleFtpInputChange = (text: string) => {
     setFtpInput(text);
@@ -137,6 +147,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     onClose();
   };
 
+  const handleStravaConnect = async () => {
+    const ok = await connectStrava();
+    if (ok) {
+      setStravaConnected(true);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
@@ -211,9 +228,15 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Connected Services</Text>
-          
-          <Pressable style={[styles.serviceButton, styles.stravaButton]}>
-            <Text style={styles.serviceButtonText}>Connect to Strava</Text>
+
+          <Pressable
+            style={[styles.serviceButton, styles.stravaButton, stravaConnected && styles.serviceButtonDisabled]}
+            onPress={handleStravaConnect}
+            disabled={stravaConnected}
+          >
+            <Text style={styles.serviceButtonText}>
+              {stravaConnected ? 'Connected to Strava' : 'Connect to Strava'}
+            </Text>
           </Pressable>
 
           <Pressable style={[styles.serviceButton, styles.wahooButton]}>
@@ -361,6 +384,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  serviceButtonDisabled: {
+    opacity: 0.6,
   },
   stravaButton: {
     backgroundColor: '#FC4C02',

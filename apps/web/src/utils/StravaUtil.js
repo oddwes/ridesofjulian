@@ -1,10 +1,10 @@
 import { getBeginningOfYear, getEndOfYear } from './TimeUtil';
-
 import axios from 'axios';
-
-export const ACCESS_TOKEN_KEY = 'strava_access_token';
-export const REFRESH_TOKEN_KEY = 'strava_refresh_token';
-export const TOKEN_EXPIRY_KEY = 'strava_token_expiry';
+import {
+  STRAVA_ACCESS_TOKEN_KEY as ACCESS_TOKEN_KEY,
+  STRAVA_REFRESH_TOKEN_KEY as REFRESH_TOKEN_KEY,
+  STRAVA_TOKEN_EXPIRY_KEY as TOKEN_EXPIRY_KEY,
+} from '@ridesofjulian/shared/src/utils/StravaUtil';
 
 export const login = () => {
   const redirectUrl = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URL;
