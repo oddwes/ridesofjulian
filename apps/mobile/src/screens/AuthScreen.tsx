@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../config/supabase';
@@ -60,6 +60,10 @@ export function AuthScreen() {
       <StatusBar style="light" />
       <Text style={styles.title}>TRAINHARD</Text>
       <Pressable style={styles.button} onPress={signInWithGoogle}>
+        <Image
+          source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+          style={styles.buttonIcon}
+        />
         <Text style={styles.buttonText}>Sign in with Google</Text>
       </Pressable>
     </View>
@@ -86,11 +90,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#111827',
+  },
+  buttonIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
   },
 });
 
