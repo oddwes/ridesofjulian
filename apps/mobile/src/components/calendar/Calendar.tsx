@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { Day } from './Day';
+import { WeeklySummary } from '../WeeklySummary';
 import { useWorkouts } from '../../hooks/useWorkouts';
 import { useStravaActivities } from '../../hooks/useStravaActivities';
 import { getFtp } from '../../utils/ftpUtil';
@@ -87,27 +88,28 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
 
   const today = dayjs().startOf('day');
   const yearStart = dayjs().startOf('year');
+  const weekEnd = today.endOf('week');
   
   const days = [];
-  let currentDate = today;
-  
+
+  let currentDate = weekEnd;
+  while (currentDate.isAfter(today, 'day')) {
+    days.push(currentDate);
+    currentDate = currentDate.subtract(1, 'day');
+  }
+
+  days.push(today);
+
+  currentDate = today.subtract(1, 'day');
   while (currentDate.isAfter(yearStart) || currentDate.isSame(yearStart, 'day')) {
     days.push(currentDate);
     currentDate = currentDate.subtract(1, 'day');
   }
 
+  let lastWeekKey: string | null = null;
+
   return (
     <View style={styles.container}>
-      {showLoadingPill && (
-        <View style={styles.loadingContainer}>
-          <Animated.View 
-            style={[
-              styles.loadingPill,
-              { transform: [{ translateX: slideAnim }] }
-            ]} 
-          />
-        </View>
-      )}
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={styles.content}
@@ -116,7 +118,22 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
         scrollEventThrottle={16}
         bounces={true}
       >
+        {showLoadingPill && (
+          <View style={styles.loadingContainer}>
+            <Animated.View 
+              style={[
+                styles.loadingPill,
+                { transform: [{ translateX: slideAnim }] }
+              ]} 
+            />
+          </View>
+        )}
         {days.map((date) => {
+          const weekStart = date.startOf('week');
+          const weekKey = weekStart.format('YYYY-MM-DD');
+          const isNewWeek = weekKey !== lastWeekKey;
+          lastWeekKey = weekKey;
+
           const isToday = date.isSame(today, 'day');
           const dateStr = date.format('YYYY-MM-DD');
           const dayWorkouts = workouts.filter(w => 
@@ -125,16 +142,25 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
           const dayActivities = activities.filter(a => 
             dayjs(a.start_date).format('YYYY-MM-DD') === dateStr
           );
+
           return (
-            <Day 
-              key={date.format()} 
-              date={date} 
-              isToday={isToday} 
-              workouts={dayWorkouts}
-              activities={dayActivities}
-              ftpHistory={ftpHistory}
-              onWorkoutPress={onWorkoutPress}
-            />
+            <View key={date.format()}>
+              {isNewWeek && (
+                <WeeklySummary
+                  activities={activities}
+                  ftpHistory={ftpHistory}
+                  weekStart={weekStart}
+                />
+              )}
+              <Day 
+                date={date} 
+                isToday={isToday} 
+                workouts={dayWorkouts}
+                activities={dayActivities}
+                ftpHistory={ftpHistory}
+                onWorkoutPress={onWorkoutPress}
+              />
+            </View>
           );
         })}
       </ScrollView>
