@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { useEffect, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
-import { connectStrava, ensureValidStravaToken } from '../utils/StravaUtil';
+import { connectStrava, disconnectStrava, ensureValidStravaToken } from '../utils/StravaUtil';
+import { StravaIcon } from '../components/StravaIcon';
 
 type ProfileScreenProps = {
   onClose: () => void;
@@ -147,10 +148,15 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     onClose();
   };
 
-  const handleStravaConnect = async () => {
+  const handleStravaPress = async () => {
+    if (stravaConnected) {
+      await disconnectStrava();
+      setStravaConnected(false);
+    } else {
     const ok = await connectStrava();
     if (ok) {
       setStravaConnected(true);
+      }
     }
   };
 
@@ -230,17 +236,22 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
           <Text style={styles.sectionTitle}>Connected Services</Text>
 
           <Pressable
-            style={[styles.serviceButton, styles.stravaButton, stravaConnected && styles.serviceButtonDisabled]}
-            onPress={handleStravaConnect}
-            disabled={stravaConnected}
+            style={[styles.serviceButton, styles.stravaButton]}
+            onPress={handleStravaPress}
           >
             <Text style={styles.serviceButtonText}>
-              {stravaConnected ? 'Connected to Strava' : 'Connect to Strava'}
+              {stravaConnected ? 'Disconnect from ' : 'Connect to '}
             </Text>
+            <StravaIcon size={20} />
           </Pressable>
 
           <Pressable style={[styles.serviceButton, styles.wahooButton]}>
-            <Text style={styles.serviceButtonText}>Connect to Wahoo</Text>
+            <Text style={styles.serviceButtonText}>Connect to</Text>
+            <Image
+              source={require('../../assets/wahoo.png')}
+              style={styles.wahooIcon}
+              resizeMode="contain"
+            />
           </Pressable>
         </View>
 
@@ -393,6 +404,12 @@ const styles = StyleSheet.create({
   },
   wahooButton: {
     backgroundColor: '#3b82f6',
+  },
+  wahooIcon: {
+    height: 16,
+    width: 70,
+    marginLeft: -8,
+    marginBottom: 2,
   },
   serviceButtonText: {
     fontSize: 16,

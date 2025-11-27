@@ -16,6 +16,14 @@ export const storeStravaTokens = async (data: StravaTokenResponse) => {
   ]);
 };
 
+export const disconnectStrava = async () => {
+  await AsyncStorage.multiRemove([
+    STRAVA_ACCESS_TOKEN_KEY,
+    STRAVA_REFRESH_TOKEN_KEY,
+    STRAVA_TOKEN_EXPIRY_KEY,
+  ]);
+};
+
 export const hasStravaRefreshToken = async () => {
   const token = await AsyncStorage.getItem(STRAVA_REFRESH_TOKEN_KEY);
   return !!token;
@@ -65,10 +73,7 @@ export const connectStrava = async () => {
     return false;
   }
 
-  const redirectUri = makeRedirectUri({
-    scheme: 'ridesofjulian',
-    path: 'strava_redirect',
-  });
+  const redirectUri = 'ridesofjulian://strava_redirect';
 
   const request = new AuthRequest({
     clientId,
@@ -82,7 +87,7 @@ export const connectStrava = async () => {
   });
 
   const result = await request.promptAsync(
-    { authorizationEndpoint: 'https://www.strava.com/oauth/mobile/authorize' } as any
+    { authorizationEndpoint: 'https://www.strava.com/oauth/authorize' } as any
   );
   if (result.type !== 'success' || !result.params?.code) return false;
 
