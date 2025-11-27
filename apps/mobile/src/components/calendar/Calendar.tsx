@@ -20,8 +20,9 @@ interface CalendarProps {
 
 export function Calendar({ onWorkoutPress }: CalendarProps) {
   const queryClient = useQueryClient();
+  const currentYear = dayjs().year();
   const { data: workouts = [], isLoading: workoutsLoading } = useWorkouts();
-  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivities(dayjs().year());
+  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivities(currentYear);
   const isLoading = workoutsLoading || activitiesLoading;
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useRef(0);
@@ -47,6 +48,7 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
     if (isRefreshing.current) return;
     isRefreshing.current = true;
     setRefreshing(true);
+    queryClient.setQueryData(['stravaActivities', currentYear], []);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['workouts'] }),
       queryClient.invalidateQueries({ queryKey: ['stravaActivities'] }),
