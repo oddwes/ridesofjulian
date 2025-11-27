@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -52,6 +52,7 @@ export function WorkoutEditScreen({
   const [weightUnit, setWeightUnit] = useState<'kg' | 'lb'>('lb');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const scrollViewRef = useRef<any>(null);
 
   useEffect(() => {
     const loadWorkout = async () => {
@@ -360,7 +361,11 @@ export function WorkoutEditScreen({
         </View>
       )}
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        ref={scrollViewRef}
+      >
         <View style={styles.form}>
           <View style={styles.dateTimeContainer}>
             <Text style={styles.dateTimeLabel}>Workout Date & Time</Text>
@@ -378,6 +383,9 @@ export function WorkoutEditScreen({
                 onFocusRequest={setFocusExerciseId}
                 restDurationSeconds={restMinutes * 60}
                 weightUnit={weightUnit}
+                onRequestScrollToEnd={() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }}
               />
             )}
             
@@ -552,6 +560,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 60,
   },
   form: {
     gap: 16,

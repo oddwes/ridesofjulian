@@ -10,6 +10,7 @@ interface ExerciseListProps {
   onFocusRequest: (exerciseId: string | undefined) => void;
   restDurationSeconds: number;
   weightUnit?: 'kg' | 'lb';
+  onRequestScrollToEnd?: () => void;
 }
 
 export function ExerciseList({ 
@@ -18,7 +19,8 @@ export function ExerciseList({
   focusExerciseId, 
   onFocusRequest, 
   restDurationSeconds,
-  weightUnit = 'lb'
+  weightUnit = 'lb',
+  onRequestScrollToEnd,
 }: ExerciseListProps) {
   const [localExercises, setLocalExercises] = useState<Exercise[]>(exercises);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -26,6 +28,7 @@ export function ExerciseList({
   const [timerEndTime, setTimerEndTime] = useState<number | null>(null);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
@@ -33,6 +36,10 @@ export function ExerciseList({
   useEffect(() => {
     setLocalExercises(exercises);
   }, [exercises]);
+
+  useEffect(() => {
+    setWeightInputs({});
+  }, [weightUnit]);
 
   useEffect(() => {
     if (timerExerciseId && timerEndTime) {
@@ -216,10 +223,30 @@ export function ExerciseList({
                     styles.input,
                     focusedInput === `${exerciseId}-weight` && styles.inputFocused
                   ]}
-                  value={exercise.weight ? getDisplayWeight(exercise.weight).toString() : ''}
-                  onChangeText={(text) => handleExerciseChange(exerciseId, 'weight', parseFloat(text) || 0)}
-                  onFocus={() => setFocusedInput(`${exerciseId}-weight`)}
-                  onBlur={() => setFocusedInput(null)}
+                  value={
+                    weightInputs[exerciseId] ??
+                    (exercise.weight ? getDisplayWeight(exercise.weight).toString() : '')
+                  }
+                  onChangeText={(text) => {
+                    setWeightInputs(prev => ({ ...prev, [exerciseId]: text }));
+                    const numeric = parseFloat(text);
+                    if (!Number.isNaN(numeric)) {
+                      handleExerciseChange(exerciseId, 'weight', numeric);
+                    }
+                  }}
+                  onFocus={() => {
+                    setFocusedInput(`${exerciseId}-weight`);
+                    onRequestScrollToEnd?.();
+                  }}
+                  onBlur={() => {
+                    if (!exercise.weight) {
+                      setWeightInputs(prev => {
+                        const { [exerciseId]: _, ...rest } = prev;
+                        return rest;
+                      });
+                    }
+                    setFocusedInput(null);
+                  }}
                   keyboardType="decimal-pad"
                   placeholder="0"
                   placeholderTextColor="#9ca3af"
@@ -238,7 +265,10 @@ export function ExerciseList({
                   ]}
                   value={exercise.sets?.toString() || ''}
                   onChangeText={(text) => handleExerciseChange(exerciseId, 'sets', parseInt(text) || 0)}
-                  onFocus={() => setFocusedInput(`${exerciseId}-sets`)}
+                  onFocus={() => {
+                    setFocusedInput(`${exerciseId}-sets`);
+                    onRequestScrollToEnd?.();
+                  }}
                   onBlur={() => setFocusedInput(null)}
                   keyboardType="numeric"
                   placeholder="0"
@@ -258,7 +288,10 @@ export function ExerciseList({
                   ]}
                   value={exercise.reps?.toString() || ''}
                   onChangeText={(text) => handleExerciseChange(exerciseId, 'reps', parseInt(text) || 0)}
-                  onFocus={() => setFocusedInput(`${exerciseId}-reps`)}
+                  onFocus={() => {
+                    setFocusedInput(`${exerciseId}-reps`);
+                    onRequestScrollToEnd?.();
+                  }}
                   onBlur={() => setFocusedInput(null)}
                   keyboardType="numeric"
                   placeholder="0"

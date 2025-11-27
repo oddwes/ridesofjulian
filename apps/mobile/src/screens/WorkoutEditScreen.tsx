@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { WorkoutEditScreen as SharedWorkoutEditScreen } from '@ridesofjulian/shared/mobile';
 import { ExerciseList } from '../components/ExerciseList';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -13,7 +13,11 @@ interface WorkoutEditScreenProps {
 
 export function WorkoutEditScreen({ workoutId, onClose }: WorkoutEditScreenProps) {
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={32}
+    >
       <StatusBar style="light" />
       <View style={styles.modalHandle} />
       <SharedWorkoutEditScreen
@@ -24,7 +28,7 @@ export function WorkoutEditScreen({ workoutId, onClose }: WorkoutEditScreenProps
         LoadingSpinner={LoadingSpinner}
         AsyncStorage={AsyncStorage}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
