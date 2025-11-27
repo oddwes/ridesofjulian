@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.burlin777.mobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": ["strava"]
       }
     },
     "android": {
