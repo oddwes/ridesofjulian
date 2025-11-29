@@ -103,14 +103,15 @@ export function HomeScreen() {
         </Pressable>
       </View>
 
-      <Pressable 
-        style={styles.pickerContainer}
-        onPress={() => setShowDateRangePicker(true)}
-      >
-        <Text style={styles.pickerLabel}>Date Range:</Text>
-        <Text style={styles.pickerSelectedValue}>{currentDateRange.label}</Text>
-        <Text style={styles.chevron}>›</Text>
-      </Pressable>
+      <View style={styles.pickerSection}>
+        <Pressable 
+          style={styles.pickerContainer}
+          onPress={() => setShowDateRangePicker(true)}
+        >
+          <Text style={styles.pickerSelectedValue}>{currentDateRange.label}</Text>
+          <Text style={styles.chevron}>⌄</Text>
+        </Pressable>
+      </View>
 
       {activeTab === 'calendar' ? (
         <Calendar 
@@ -222,25 +223,28 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: '#f9fafb',
   },
+  pickerSection: {
+    alignItems: 'center',
+  },
   pickerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#020617',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: '#1f2937',
   },
   pickerLabel: {
     color: '#9ca3af',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   pickerSelectedValue: {
-    flex: 1,
     color: '#f9fafb',
     fontSize: 14,
     fontWeight: '600',
@@ -248,8 +252,9 @@ const styles = StyleSheet.create({
   },
   chevron: {
     color: '#9ca3af',
-    fontSize: 24,
-    fontWeight: '300',
+    fontSize: 18,
+    lineHeight: 12,
+    paddingLeft: 8,
   },
   modalOverlay: {
     flex: 1,
