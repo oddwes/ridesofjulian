@@ -57,24 +57,32 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
   );
 
   const weeklyData = useMemo(() => {
-    if (!cyclingActivities.length) return [];
-
     const byWeek: Record<
       string,
       { start: dayjs.Dayjs; timeSeconds: number; tss: number }
     > = {};
 
+    // Generate all weeks in the date range
+    let current = dayjs(dateRange.start).startOf('week');
+    const end = dayjs(dateRange.end).endOf('week');
+    
+    while (current.isBefore(end) || current.isSame(end, 'week')) {
+      const key = current.format('YYYY-MM-DD');
+      byWeek[key] = { start: current, timeSeconds: 0, tss: 0 };
+      current = current.add(1, 'week');
+    }
+
+    // Fill in data for weeks with activities
     for (const a of cyclingActivities) {
       const d = dayjs(a.start_date);
       const weekStart = d.startOf('week');
       const key = weekStart.format('YYYY-MM-DD');
-      if (!byWeek[key]) {
-        byWeek[key] = { start: weekStart, timeSeconds: 0, tss: 0 };
-      }
-      byWeek[key].timeSeconds += a.moving_time || 0;
-      const ftpForActivity = getFtpForDate(ftpHistory ?? null, a.start_date);
-      if (ftpForActivity) {
-        byWeek[key].tss += getTSS(a, ftpForActivity);
+      if (byWeek[key]) {
+        byWeek[key].timeSeconds += a.moving_time || 0;
+        const ftpForActivity = getFtpForDate(ftpHistory ?? null, a.start_date);
+        if (ftpForActivity) {
+          byWeek[key].tss += getTSS(a, ftpForActivity);
+        }
       }
     }
 
@@ -87,37 +95,44 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
         tss: w.tss,
       }))
       .sort((a, b) => a.start.valueOf() - b.start.valueOf());
-  }, [cyclingActivities, ftpHistory]);
+  }, [cyclingActivities, ftpHistory, dateRange]);
 
-  const recentWeeks = weeklyData.slice(-16);
   const maxTime = useMemo(
-    () => Math.max(1, ...recentWeeks.map((w) => w.timeHours || 0)),
-    [recentWeeks]
+    () => Math.max(1, ...weeklyData.map((w) => w.timeHours || 0)),
+    [weeklyData]
   );
   const maxTss = useMemo(
-    () => Math.max(1, ...recentWeeks.map((w) => w.tss || 0)),
-    [recentWeeks]
+    () => Math.max(1, ...weeklyData.map((w) => w.tss || 0)),
+    [weeklyData]
   );
 
   const loading = activitiesLoading || ftpLoading;
 
   const gymWeeklyData = useMemo(() => {
-    if (!workouts.length) return [];
-
     const byWeek: Record<
       string,
       { start: dayjs.Dayjs; workouts: number; exercises: number }
     > = {};
 
+    // Generate all weeks in the date range
+    let current = dayjs(dateRange.start).startOf('week');
+    const end = dayjs(dateRange.end).endOf('week');
+    
+    while (current.isBefore(end) || current.isSame(end, 'week')) {
+      const key = current.format('YYYY-MM-DD');
+      byWeek[key] = { start: current, workouts: 0, exercises: 0 };
+      current = current.add(1, 'week');
+    }
+
+    // Fill in data for weeks with workouts
     for (const w of workouts) {
       const d = dayjs(w.datetime);
       const weekStart = d.startOf('week');
       const key = weekStart.format('YYYY-MM-DD');
-      if (!byWeek[key]) {
-        byWeek[key] = { start: weekStart, workouts: 0, exercises: 0 };
+      if (byWeek[key]) {
+        byWeek[key].workouts += 1;
+        byWeek[key].exercises += w.exercises?.length || 0;
       }
-      byWeek[key].workouts += 1;
-      byWeek[key].exercises += w.exercises?.length || 0;
     }
 
     return Object.entries(byWeek)
@@ -129,16 +144,15 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
         avgExercises: v.workouts ? v.exercises / v.workouts : 0,
       }))
       .sort((a, b) => a.start.valueOf() - b.start.valueOf());
-  }, [workouts]);
+  }, [workouts, dateRange]);
 
-  const recentGymWeeks = gymWeeklyData.slice(-16);
   const maxGymWorkouts = useMemo(
-    () => Math.max(1, ...recentGymWeeks.map((w) => w.workouts || 0)),
-    [recentGymWeeks]
+    () => Math.max(1, ...gymWeeklyData.map((w) => w.workouts || 0)),
+    [gymWeeklyData]
   );
   const maxGymExercises = useMemo(
-    () => Math.max(1, ...recentGymWeeks.map((w) => w.avgExercises || 0)),
-    [recentGymWeeks]
+    () => Math.max(1, ...gymWeeklyData.map((w) => w.avgExercises || 0)),
+    [gymWeeklyData]
   );
 
   const gymLoading = workoutsLoading;
@@ -146,25 +160,25 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>FTP History</Text>
           <View style={styles.card}>
             <FTPGraph ftpHistory={ftpHistory} isLoading={ftpLoading} />
           </View>
-        </View>
+        </View> */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cycling</Text>
           <View style={styles.card}>
             {loading ? (
               <Text style={styles.mutedText}>Loading cycling stats...</Text>
-            ) : !recentWeeks.length ? (
+            ) : !weeklyData.length ? (
               <Text style={styles.mutedText}>No cycling data for this year.</Text>
             ) : (
               <>
                 <Text style={styles.metricTitle}>Time (h per week)</Text>
                 <View style={styles.chartRow}>
-                  {recentWeeks.map((w) => (
+                  {weeklyData.map((w) => (
                     <View key={w.key} style={styles.barContainer}>
                       <View
                         style={[
@@ -181,7 +195,7 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
                   TSS (per week)
                 </Text>
                 <View style={styles.chartRow}>
-                  {recentWeeks.map((w) => (
+                  {weeklyData.map((w) => (
                     <View key={w.key} style={styles.barContainer}>
                       <View
                         style={[
@@ -203,13 +217,13 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
           <View style={styles.card}>
             {gymLoading ? (
               <Text style={styles.mutedText}>Loading gym stats...</Text>
-            ) : !recentGymWeeks.length ? (
+            ) : !gymWeeklyData.length ? (
               <Text style={styles.mutedText}>No gym workouts for this year.</Text>
             ) : (
               <>
                 <Text style={styles.metricTitle}>Workouts (per week)</Text>
                 <View style={styles.chartRow}>
-                  {recentGymWeeks.map((w) => (
+                  {gymWeeklyData.map((w) => (
                     <View key={w.key} style={styles.barContainer}>
                       <View
                         style={[
@@ -226,7 +240,7 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
                   Exercises per workout (avg)
                 </Text>
                 <View style={styles.chartRow}>
-                  {recentGymWeeks.map((w) => (
+                  {gymWeeklyData.map((w) => (
                     <View key={w.key} style={styles.barContainer}>
                       <View
                         style={[
@@ -295,13 +309,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginTop: 6,
     height: 80,
+    gap: 3,
   },
   barContainer: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   bar: {
-    width: 10,
+    width: '80%',
+    maxWidth: 12,
     borderRadius: 4,
   },
   timeBar: {
