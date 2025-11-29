@@ -7,6 +7,7 @@ import { useWorkouts } from '../hooks/useWorkouts';
 import { getFtp, type FtpData, getFtpForDate } from '../utils/ftpUtil';
 import { supabase } from '../config/supabase';
 import { getTSS, type StravaActivity } from '../utils/StravaUtil';
+import { FTPGraph } from '../components/FTPGraph';
 
 export function StatsScreen() {
   const currentYear = dayjs().year();
@@ -130,6 +131,13 @@ export function StatsScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>FTP History</Text>
+          <View style={styles.card}>
+            <FTPGraph ftpHistory={ftpHistory} isLoading={ftpLoading} />
+          </View>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cycling</Text>
           <View style={styles.card}>
