@@ -8,6 +8,7 @@ import { getFtp, type FtpData, getFtpForDate } from '../utils/ftpUtil';
 import { supabase } from '../config/supabase';
 import { getTSS, type StravaActivity } from '../utils/StravaUtil';
 import { FTPGraph } from '../components/FTPGraph';
+import { SlidingLoadingIndicator } from '../components/SlidingLoadingIndicator';
 import type { DateRange } from './HomeScreen';
 
 interface StatsScreenProps {
@@ -106,7 +107,7 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
     [weeklyData]
   );
 
-  const loading = activitiesLoading || ftpLoading;
+  const loading = activitiesLoading || ftpLoading || workoutsLoading;
 
   const gymWeeklyData = useMemo(() => {
     const byWeek: Record<
@@ -155,10 +156,9 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
     [gymWeeklyData]
   );
 
-  const gymLoading = workoutsLoading;
-
   return (
     <View style={styles.container}>
+      <SlidingLoadingIndicator isLoading={loading} />
       <ScrollView contentContainerStyle={styles.content}>
         {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>FTP History</Text>
@@ -170,9 +170,7 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cycling</Text>
           <View style={styles.card}>
-            {loading ? (
-              <Text style={styles.mutedText}>Loading cycling stats...</Text>
-            ) : !weeklyData.length ? (
+            {!weeklyData.length ? (
               <Text style={styles.mutedText}>No cycling data for this year.</Text>
             ) : (
               <>
@@ -215,9 +213,7 @@ export function StatsScreen({ dateRange }: StatsScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Gym</Text>
           <View style={styles.card}>
-            {gymLoading ? (
-              <Text style={styles.mutedText}>Loading gym stats...</Text>
-            ) : !gymWeeklyData.length ? (
+            {!gymWeeklyData.length ? (
               <Text style={styles.mutedText}>No gym workouts for this year.</Text>
             ) : (
               <>

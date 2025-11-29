@@ -1,10 +1,11 @@
-import { ScrollView, View, StyleSheet, Animated, Dimensions } from 'react-native';
+import { ScrollView, View, StyleSheet, Dimensions } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { Day } from './Day';
 import { WeeklySummary } from '../WeeklySummary';
+import { SlidingLoadingIndicator } from '../SlidingLoadingIndicator';
 import { useWorkouts } from '../../hooks/useWorkouts';
 import { useStravaActivitiesForDateRange } from '../../hooks/useStravaActivitiesForDateRange';
 import { getFtp } from '../../utils/ftpUtil';
@@ -44,22 +45,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useRef(0);
   const isRefreshing = useRef(false);
-  
-  const slideAnim = useRef(new Animated.Value(-100)).current;
   const showLoadingPill = isLoading || refreshing || isLoadingDateRange;
-
-  useEffect(() => {
-    if (showLoadingPill) {
-      slideAnim.setValue(-100);
-      Animated.loop(
-        Animated.timing(slideAnim, {
-          toValue: 400,
-          duration: 1500,
-          useNativeDriver: true,
-        })
-      ).start();
-    }
-  }, [showLoadingPill, slideAnim]);
 
   const onRefresh = async () => {
     if (isRefreshing.current) return;
@@ -137,16 +123,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
         scrollEventThrottle={16}
         bounces={true}
       >
-        {showLoadingPill && (
-          <View style={styles.loadingContainer}>
-            <Animated.View 
-              style={[
-                styles.loadingPill,
-                { transform: [{ translateX: slideAnim }] }
-              ]} 
-            />
-          </View>
-        )}
+        <SlidingLoadingIndicator isLoading={!!showLoadingPill} />
         {days.map((date) => {
           const weekStart = date.startOf('week');
           const weekKey = weekStart.format('YYYY-MM-DD');
@@ -191,18 +168,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1e293b',
-  },
-  loadingContainer: {
-    height: 5,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    overflow: 'hidden',
-  },
-  loadingPill: {
-    width: 36,
-    height: 5,
-    backgroundColor: '#4b5563',
-    borderRadius: 3,
   },
   scrollView: {
     flex: 1,
