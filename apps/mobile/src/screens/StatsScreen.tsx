@@ -2,17 +2,33 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { useStravaActivities } from '../hooks/useStravaActivities';
+import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange';
 import { useWorkouts } from '../hooks/useWorkouts';
 import { getFtp, type FtpData, getFtpForDate } from '../utils/ftpUtil';
 import { supabase } from '../config/supabase';
 import { getTSS, type StravaActivity } from '../utils/StravaUtil';
 import { FTPGraph } from '../components/FTPGraph';
+import type { DateRange } from './HomeScreen';
 
-export function StatsScreen() {
-  const currentYear = dayjs().year();
-  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivities(currentYear);
-  const { data: workouts = [], isLoading: workoutsLoading } = useWorkouts();
+interface StatsScreenProps {
+  dateRange: DateRange;
+}
+
+export function StatsScreen({ dateRange }: StatsScreenProps) {
+  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
+    dateRange.start,
+    dateRange.end
+  );
+
+  const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();
+  const workouts = useMemo(() => 
+    allWorkouts.filter(w => {
+      const date = dayjs(w.datetime);
+      return date.isAfter(dayjs(dateRange.start).subtract(1, 'day')) && 
+             date.isBefore(dayjs(dateRange.end).add(1, 'day'));
+    }),
+    [allWorkouts, dateRange]
+  );
 
   const { data: user } = useQuery({
     queryKey: ['user'],
@@ -95,7 +111,6 @@ export function StatsScreen() {
 
     for (const w of workouts) {
       const d = dayjs(w.datetime);
-      if (d.year() !== currentYear) continue;
       const weekStart = d.startOf('week');
       const key = weekStart.format('YYYY-MM-DD');
       if (!byWeek[key]) {
@@ -114,7 +129,7 @@ export function StatsScreen() {
         avgExercises: v.workouts ? v.exercises / v.workouts : 0,
       }))
       .sort((a, b) => a.start.valueOf() - b.start.valueOf());
-  }, [workouts, currentYear]);
+  }, [workouts]);
 
   const recentGymWeeks = gymWeeklyData.slice(-16);
   const maxGymWorkouts = useMemo(

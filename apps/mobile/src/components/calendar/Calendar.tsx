@@ -1,14 +1,15 @@
 import { ScrollView, View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { Day } from './Day';
 import { WeeklySummary } from '../WeeklySummary';
 import { useWorkouts } from '../../hooks/useWorkouts';
-import { useStravaActivities } from '../../hooks/useStravaActivities';
+import { useStravaActivitiesForDateRange } from '../../hooks/useStravaActivitiesForDateRange';
 import { getFtp } from '../../utils/ftpUtil';
 import { supabase } from '../../config/supabase';
+import type { DateRange } from '../../screens/HomeScreen';
 
 dayjs.extend(advancedFormat);
 
@@ -17,20 +18,35 @@ const PULL_THRESHOLD = -SCREEN_HEIGHT / 6;
 
 interface CalendarProps {
   onWorkoutPress?: (workoutId: string) => void;
+  dateRange: DateRange;
+  isLoadingDateRange?: boolean;
 }
 
-export function Calendar({ onWorkoutPress }: CalendarProps) {
+export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: CalendarProps) {
   const queryClient = useQueryClient();
-  const currentYear = dayjs().year();
-  const { data: workouts = [], isLoading: workoutsLoading } = useWorkouts();
-  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivities(currentYear);
+
+  const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();
+  const workouts = useMemo(() => 
+    allWorkouts.filter(w => {
+      const date = dayjs(w.datetime);
+      return date.isAfter(dayjs(dateRange.start).subtract(1, 'day')) && 
+             date.isBefore(dayjs(dateRange.end).add(1, 'day'));
+    }),
+    [allWorkouts, dateRange]
+  );
+
+  const { data: activities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
+    dateRange.start,
+    dateRange.end
+  );
+
   const isLoading = workoutsLoading || activitiesLoading;
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useRef(0);
   const isRefreshing = useRef(false);
   
   const slideAnim = useRef(new Animated.Value(-100)).current;
-  const showLoadingPill = isLoading || refreshing;
+  const showLoadingPill = isLoading || refreshing || isLoadingDateRange;
 
   useEffect(() => {
     if (showLoadingPill) {
@@ -49,7 +65,6 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
     if (isRefreshing.current) return;
     isRefreshing.current = true;
     setRefreshing(true);
-    queryClient.setQueryData(['stravaActivities', currentYear], []);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['workouts'] }),
       queryClient.invalidateQueries({ queryKey: ['stravaActivities'] }),
@@ -87,21 +102,25 @@ export function Calendar({ onWorkoutPress }: CalendarProps) {
   });
 
   const today = dayjs().startOf('day');
-  const yearStart = dayjs().startOf('year');
-  const weekEnd = today.endOf('week');
+  const rangeStart = dayjs(dateRange.start);
+  const rangeEnd = dayjs(dateRange.end);
   
   const days = [];
-
-  let currentDate = weekEnd;
+  let currentDate = rangeEnd.isAfter(today) ? today.endOf('week') : rangeEnd;
+  
   while (currentDate.isAfter(today, 'day')) {
     days.push(currentDate);
     currentDate = currentDate.subtract(1, 'day');
   }
 
-  days.push(today);
+  if (!rangeEnd.isBefore(today, 'day')) {
+    days.push(today);
+    currentDate = today.subtract(1, 'day');
+  } else {
+    currentDate = rangeEnd;
+  }
 
-  currentDate = today.subtract(1, 'day');
-  while (currentDate.isAfter(yearStart) || currentDate.isSame(yearStart, 'day')) {
+  while (currentDate.isAfter(rangeStart) || currentDate.isSame(rangeStart, 'day')) {
     days.push(currentDate);
     currentDate = currentDate.subtract(1, 'day');
   }
