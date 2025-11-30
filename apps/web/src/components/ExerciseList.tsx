@@ -9,18 +9,18 @@ interface ExerciseListProps {
   onExercisesChange: (updatedExercises: Exercise[]) => void;
   focusExerciseId?: string;
   onFocusRequest: (exerciseId: string | undefined) => void;
-  restDurationSeconds: number;
+  restDurationSeconds?: number;
   weightUnit?: 'kg' | 'lb';
 }
 
 export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercisesChange, focusExerciseId, onFocusRequest, restDurationSeconds, weightUnit = 'lb' }) => {
   const [localExercises, setLocalExercises] = useState<Exercise[]>(exercises);
   const [editingExerciseId, setEditingExerciseId] = useState<string | undefined>(undefined);
-  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLongPress, setIsLongPress] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerExerciseId, setTimerExerciseId] = useState<string | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setLocalExercises(exercises);
@@ -87,8 +87,8 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
 
   const localDecrementCompleted = (exerciseId: string) => {
     const updatedExercises = localExercises.map(ex =>
-      ex.id === exerciseId && ex.completed > 0
-        ? { ...ex, completed: ex.completed - 1 }
+      ex.id === exerciseId && (ex.completed ?? 0) > 0
+        ? { ...ex, completed: (ex.completed ?? 0) - 1 }
         : ex
     );
     setLocalExercises(updatedExercises);
@@ -149,19 +149,21 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
         <div key={exercise.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center mb-2">
             <div onKeyDown={handleKeyDown}>
-              <EditableLabel
-                text={exercise.name}
-                labelClassName="font-semibold text-lg text-gray-800 dark:text-gray-200"
-                inputClassName="bg-gray-100 dark:bg-gray-600 px-1 rounded font-semibold text-lg"
-                onFocusOut={(name: string) => {
-                  handleExerciseChange(exercise.id, 'name', name);
-                  onFocusRequest(undefined);
-                }}
-                isEditing={editingExerciseId === exercise.id}
-              />
+              {exercise.id && (
+                <EditableLabel
+                  text={exercise.name}
+                  labelClassName="font-semibold text-lg text-gray-800 dark:text-gray-200"
+                  inputClassName="bg-gray-100 dark:bg-gray-600 px-1 rounded font-semibold text-lg"
+                  onFocusOut={(name: string) => {
+                    handleExerciseChange(exercise.id!, 'name', name);
+                    onFocusRequest(undefined);
+                  }}
+                  isEditing={editingExerciseId === exercise.id}
+                />
+              )}
             </div>
             <button
-              onClick={() => localDeleteExercise(exercise.id)}
+              onClick={() => localDeleteExercise(exercise.id!)}
               className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
               aria-label="Delete exercise"
             >
@@ -179,7 +181,7 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
                 type="number"
                 min="0"
                 value={exercise.weight || ''}
-                onChange={(e) => handleExerciseChange(exercise.id, 'weight', parseInt(e.target.value))}
+                onChange={(e) => handleExerciseChange(exercise.id!, 'weight', parseInt(e.target.value))}
                 className="w-full p-1.5 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -192,7 +194,7 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
                 type="number"
                 min="0"
                 value={exercise.sets || ''}
-                onChange={(e) => handleExerciseChange(exercise.id, 'sets', parseInt(e.target.value))}
+                onChange={(e) => handleExerciseChange(exercise.id!, 'sets', parseInt(e.target.value))}
                 className="w-full p-1.5 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -205,7 +207,7 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
                 type="number"
                 min="0"
                 value={exercise.reps || ''}
-                onChange={(e) => handleExerciseChange(exercise.id, 'reps', parseInt(e.target.value))}
+                onChange={(e) => handleExerciseChange(exercise.id!, 'reps', parseInt(e.target.value))}
                 className="w-full p-1.5 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -213,11 +215,11 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
           {(exercise.sets || 0) > 0 && (
             <div
               className="flex flex-col justify-center items-center space-y-2 border rounded-lg p-2 cursor-pointer"
-              onMouseDown={() => handleMouseDown(exercise.id)}
-              onMouseUp={() => handleMouseUp(exercise.id)}
+              onMouseDown={() => handleMouseDown(exercise.id!)}
+              onMouseUp={() => handleMouseUp(exercise.id!)}
               onMouseLeave={handleMouseLeave}
-              onTouchStart={(e) => handleTouchStart(e, exercise.id)}
-              onTouchEnd={(e) => handleTouchEnd(e, exercise.id)}
+              onTouchStart={(e) => handleTouchStart(e, exercise.id!)}
+              onTouchEnd={(e) => handleTouchEnd(e, exercise.id!)}
               onTouchCancel={handleMouseLeave}
             >
               <div className="flex items-center m-2">

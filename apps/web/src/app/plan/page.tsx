@@ -9,8 +9,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { WorkoutModal } from "@/components/workouts/Modal";
 import { DetailedChart } from "@/components/workouts/RideWorkoutChart";
 import { getStoredWahooToken, getWahooAuthUrl, createWahooWorkout } from "@/utils/WahooUtil";
-import { RideWorkout, Interval } from '@ridesofjulian/shared';
-import { Exercise } from '@ridesofjulian/shared';
+import { RideWorkout, Interval } from "@/types/workout";
+import { Exercise } from "@ridesofjulian/shared";
 
 const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout; onEdit?: (workout: RideWorkout) => void; onDelete?: (workout: RideWorkout) => void }) => {
   const totalDuration = workout.intervals.reduce(
