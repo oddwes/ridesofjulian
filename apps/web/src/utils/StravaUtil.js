@@ -4,7 +4,7 @@ import {
   STRAVA_ACCESS_TOKEN_KEY as ACCESS_TOKEN_KEY,
   STRAVA_REFRESH_TOKEN_KEY as REFRESH_TOKEN_KEY,
   STRAVA_TOKEN_EXPIRY_KEY as TOKEN_EXPIRY_KEY,
-} from '@ridesofjulian/shared/src/utils/StravaUtil';
+} from '@ridesofjulian/shared/utils/StravaUtil';
 
 export const login = () => {
   const redirectUrl = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URL;

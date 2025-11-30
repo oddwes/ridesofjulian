@@ -31,7 +31,8 @@
     "react-dom": "^19.0.0",
     "react-inline-editing": "^1.0.10",
     "react-native-web": "^0.21.2",
-    "react-select": "^5.10.1"
+    "react-select": "^5.10.1",
+    "@ridesofjulian/shared": "file:../../packages/shared"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -45,5 +46,8 @@
     "lint-staged": "^16.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "1.30.1"
   }
 }
