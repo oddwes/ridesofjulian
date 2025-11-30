@@ -2,7 +2,6 @@
 
 import { format, subDays, parseISO, startOfDay } from 'date-fns'
 import dayjs from 'dayjs'
-import { useRouter } from 'next/navigation'
 import { useWorkoutData } from '../hooks/useWorkoutData'
 import { LoadingSpinner } from './LoadingSpinner'
 import { formatDateKey, isDateMatch } from '../utils/DateUtil'
@@ -11,7 +10,6 @@ import { RideCardWeb } from './calendar/RideCardWeb'
 import { GymCardWeb } from './calendar/GymCardWeb'
 
 const MobileHome = () => {
-  const router = useRouter()
   const { activities, plannedWorkouts, gymWorkouts, loading } = useWorkoutData(dayjs().year())
 
   if (loading) {
