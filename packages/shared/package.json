@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./mobile": "./src/mobile.ts"
+    "./mobile": "./src/mobile.ts",
+    "./utils/StravaUtil": "./src/utils/StravaUtil.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",
