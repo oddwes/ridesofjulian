@@ -1,4 +1,4 @@
-import { ScrollView, View, StyleSheet, Dimensions } from 'react-native';
+import { ScrollView, View, StyleSheet, Dimensions, Text } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
@@ -11,6 +11,21 @@ import { useStravaActivitiesForDateRange } from '../../hooks/useStravaActivities
 import { getFtp } from '../../utils/ftpUtil';
 import { supabase } from '../../config/supabase';
 import type { DateRange } from '../../screens/HomeScreen';
+
+type Interval = {
+  id: string;
+  name: string;
+  duration: number;
+  powerMin: number;
+  powerMax: number;
+};
+
+type RideWorkout = {
+  id: number;
+  workoutTitle: string;
+  selectedDate: string;
+  intervals: Interval[];
+};
 
 dayjs.extend(advancedFormat);
 
@@ -87,24 +102,56 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
     enabled: !!user,
   });
 
+  const { data: scheduleRows = [] } = useQuery({
+    queryKey: ['schedule', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('schedule')
+        .select('date, plan, type')
+        .eq('user_id', user.id)
+        .eq('type', 'cycling')
+        .order('date', { ascending: true });
+      if (error) throw error;
+      return data as { date: string; plan: RideWorkout[]; type: string }[];
+    },
+    enabled: !!user,
+  });
+
+  const formatDurationMinutes = (intervals: Interval[]) =>
+    intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
+
+  const getIntervalColor = (powerMin: number, powerMax: number) => {
+    const avgPower = (powerMin + powerMax) / 2;
+    if (avgPower < 100) return 'rgba(156, 163, 175, 0.8)';
+    if (avgPower < 150) return 'rgba(96, 165, 250, 0.8)';
+    if (avgPower < 200) return 'rgba(52, 211, 153, 0.8)';
+    if (avgPower < 250) return 'rgba(251, 191, 36, 0.8)';
+    if (avgPower < 300) return 'rgba(251, 146, 60, 0.8)';
+    return 'rgba(220, 38, 38, 0.85)';
+  };
+
   const today = dayjs().startOf('day');
   const rangeStart = dayjs(dateRange.start);
   const rangeEnd = dayjs(dateRange.end);
+  const futureLimit = today.add(7, 'day');
+
+  const scheduledByDate: Record<string, RideWorkout[]> = {};
+
+  scheduleRows.forEach((row) => {
+    if (!row.plan) return;
+    row.plan.forEach((workout) => {
+      const d = dayjs(workout.selectedDate);
+      if (d.isBefore(today, 'day') || d.isAfter(futureLimit, 'day')) return;
+      const key = d.format('YYYY-MM-DD');
+      if (!scheduledByDate[key]) scheduledByDate[key] = [];
+      scheduledByDate[key].push(workout);
+    });
+  });
   
   const days = [];
-  let currentDate = rangeEnd.isAfter(today) ? today.endOf('week') : rangeEnd;
-  
-  while (currentDate.isAfter(today, 'day')) {
-    days.push(currentDate);
-    currentDate = currentDate.subtract(1, 'day');
-  }
-
-  if (!rangeEnd.isBefore(today, 'day')) {
-    days.push(today);
-    currentDate = today.subtract(1, 'day');
-  } else {
-    currentDate = rangeEnd;
-  }
+  const endForDays = rangeEnd.isBefore(today, 'day') ? rangeEnd : futureLimit;
+  let currentDate = endForDays;
 
   while (currentDate.isAfter(rangeStart) || currentDate.isSame(rangeStart, 'day')) {
     days.push(currentDate);
@@ -132,6 +179,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
 
           const isToday = date.isSame(today, 'day');
           const dateStr = date.format('YYYY-MM-DD');
+          const scheduledWorkouts = scheduledByDate[dateStr] ?? [];
           const dayWorkouts = workouts.filter(w => 
             dayjs(w.datetime).format('YYYY-MM-DD') === dateStr
           );
@@ -148,14 +196,90 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
                   weekStart={weekStart}
                 />
               )}
-              <Day 
-                date={date} 
-                isToday={isToday} 
-                workouts={dayWorkouts}
-                activities={dayActivities}
-                ftpHistory={ftpHistory}
-                onWorkoutPress={onWorkoutPress}
-              />
+              {scheduledWorkouts.map((workout) => {
+                const totalMinutes = formatDurationMinutes(workout.intervals);
+                const maxPower =
+                  workout.intervals.length > 0
+                    ? Math.max(
+                        300,
+                        ...workout.intervals.map((i) => i.powerMax || 0)
+                      )
+                    : 0;
+
+                return (
+                  <View
+                    key={`scheduled-${workout.id}`}
+                    style={styles.workoutCard}
+                  >
+                    <View style={styles.workoutHeader}>
+                      <Text style={styles.workoutTitle}>
+                        {workout.workoutTitle}
+                      </Text>
+                    </View>
+                    <Text style={styles.workoutMeta}>
+                      {dayjs(workout.selectedDate).format('YYYY-MM-DD')} |{' '}
+                      {Math.floor(totalMinutes / 60)}h{' '}
+                      {Math.round(totalMinutes % 60)}m
+                    </Text>
+
+                    {workout.intervals.length > 0 && maxPower > 0 && (
+                      <View style={styles.workoutChart}>
+                        <View style={styles.workoutChartRow}>
+                          {workout.intervals.map((interval) => {
+                            if (!interval.duration) return null;
+                            const barHeight =
+                              (interval.powerMax / maxPower) * 72 || 4;
+                            return (
+                              <View
+                                key={interval.id}
+                                style={[
+                                  styles.workoutChartSegment,
+                                  { flex: interval.duration },
+                                ]}
+                              >
+                                <View
+                                  style={[
+                                    styles.workoutChartBar,
+                                    {
+                                      height: Math.max(barHeight, 4),
+                                      backgroundColor: getIntervalColor(
+                                        interval.powerMin,
+                                        interval.powerMax
+                                      ),
+                                    },
+                                  ]}
+                                />
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    )}
+
+                    {workout.intervals.map((interval) => (
+                      <View key={interval.id} style={styles.intervalRow}>
+                        <Text style={styles.intervalName}>{interval.name}</Text>
+                        <Text style={styles.intervalMeta}>
+                          {interval.duration / 60}m | {interval.powerMin}-
+                          {interval.powerMax}W
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })}
+              {!(scheduledWorkouts.length > 0 &&
+                dayWorkouts.length === 0 &&
+                dayActivities.length === 0) && (
+                <Day
+                  date={date}
+                  isToday={isToday}
+                  workouts={dayWorkouts}
+                  activities={dayActivities}
+                  ftpHistory={ftpHistory}
+                  onWorkoutPress={onWorkoutPress}
+                />
+              )}
             </View>
           );
         })}
@@ -175,6 +299,67 @@ const styles = StyleSheet.create({
   content: {
     padding: 12,
     gap: 12,
+  },
+  workoutCard: {
+    backgroundColor: '#020617',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#1f2937',
+    padding: 12,
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  workoutTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f9fafb',
+    flex: 1,
+    marginRight: 8,
+  },
+  workoutMeta: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 6,
+  },
+  workoutChart: {
+    marginBottom: 6,
+    paddingVertical: 4,
+    backgroundColor: '#020617',
+  },
+  workoutChartRow: {
+    height: 80,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    overflow: 'hidden',
+  },
+  workoutChartSegment: {
+    flex: 1,
+    marginHorizontal: 1,
+    justifyContent: 'flex-end',
+  },
+  workoutChartBar: {
+    width: '100%',
+    borderRadius: 3,
+  },
+  intervalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  intervalName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#e5e7eb',
+    flex: 1,
+    marginRight: 8,
+  },
+  intervalMeta: {
+    fontSize: 12,
+    color: '#9ca3af',
   },
 });
 
