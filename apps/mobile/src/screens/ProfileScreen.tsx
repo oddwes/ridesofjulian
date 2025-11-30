@@ -20,6 +20,12 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const [ftpIsDirty, setFtpIsDirty] = useState(false);
   const [ftpIsSaving, setFtpIsSaving] = useState(false);
   const [ftpShowSuccess, setFtpShowSuccess] = useState(false);
+  const [weight, setWeight] = useState<string>('');
+  const [weightInput, setWeightInput] = useState<string>('');
+  const [weightInputFocused, setWeightInputFocused] = useState(false);
+  const [weightIsDirty, setWeightIsDirty] = useState(false);
+  const [weightIsSaving, setWeightIsSaving] = useState(false);
+  const [weightShowSuccess, setWeightShowSuccess] = useState(false);
   const [stravaConnected, setStravaConnected] = useState(false);
 
   useEffect(() => {
@@ -32,15 +38,31 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
         .eq('user_id', session.user.id)
         .single();
 
-      if (!error && data?.data?.ftp) {
-        const entries = Object.entries(data.data.ftp as Record<string, number>)
-          .map(([date, value]) => ({ date, value }))
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        if (entries.length > 0) {
-          const ftpValue = String(entries[0].value);
-          setFtp(ftpValue);
-          setFtpInput(ftpValue);
+      if (!error && data?.data) {
+        const statsData = data.data as { ftp?: Record<string, number>; weight?: Record<string, number> };
+
+        if (statsData.ftp) {
+          const ftpEntries = Object.entries(statsData.ftp)
+            .map(([date, value]) => ({ date, value }))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+          if (ftpEntries.length > 0) {
+            const ftpValue = String(ftpEntries[0].value);
+            setFtp(ftpValue);
+            setFtpInput(ftpValue);
+          }
+        }
+
+        if (statsData.weight) {
+          const weightEntries = Object.entries(statsData.weight)
+            .map(([date, value]) => ({ date, value }))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+          if (weightEntries.length > 0) {
+            const weightValue = String(weightEntries[0].value);
+            setWeight(weightValue);
+            setWeightInput(weightValue);
+          }
         }
       }
     };
@@ -79,11 +101,42 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     
     const ftpValue = String(value);
     setFtpInput(ftpValue);
-    
+
     if (ftpValue !== ftp) {
       setFtpIsDirty(true);
     } else {
       setFtpIsDirty(false);
+    }
+  };
+
+  const handleWeightInputChange = (text: string) => {
+    setWeightInput(text);
+    if (!weightIsDirty && text !== weight) {
+      setWeightIsDirty(true);
+    }
+  };
+
+  const handleWeightInputBlur = () => {
+    const trimmed = weightInput.trim();
+    if (!trimmed) {
+      setWeightInput(weight);
+      setWeightIsDirty(false);
+      return;
+    }
+    const value = parseFloat(trimmed);
+    if (Number.isNaN(value) || value <= 0) {
+      setWeightInput(weight);
+      setWeightIsDirty(false);
+      return;
+    }
+
+    const weightValue = String(value);
+    setWeightInput(weightValue);
+
+    if (weightValue !== weight) {
+      setWeightIsDirty(true);
+    } else {
+      setWeightIsDirty(false);
     }
   };
 
@@ -104,12 +157,14 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
         .eq('user_id', session.user.id)
         .single();
 
-      const existingFtp = existing?.data?.ftp || {};
+      const existingData = (existing?.data as { ftp?: Record<string, number>; weight?: Record<string, number> }) || {};
+      const existingFtp = existingData.ftp || {};
       const ftpData = {
+        ...existingData,
         ftp: {
           [today]: value,
-          ...existingFtp
-        }
+          ...existingFtp,
+        },
       };
 
       if (existing) {
@@ -140,11 +195,70 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     }
   };
 
+  const handleSaveWeight = async () => {
+    if (!session?.user?.id || !weightIsDirty) return;
+
+    const value = parseFloat(weightInput);
+    if (Number.isNaN(value) || value <= 0) return;
+
+    setWeightIsSaving(true);
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: existing } = await supabase
+        .from('stats')
+        .select('data')
+        .eq('user_id', session.user.id)
+        .single();
+
+      const existingData = (existing?.data as { ftp?: Record<string, number>; weight?: Record<string, number> }) || {};
+      const existingWeight = existingData.weight || {};
+      const weightData = {
+        ...existingData,
+        weight: {
+          [today]: value,
+          ...existingWeight,
+        },
+      };
+
+      if (existing) {
+        await supabase
+          .from('stats')
+          .update({ data: weightData })
+          .eq('user_id', session.user.id);
+      } else {
+        await supabase
+          .from('stats')
+          .insert({
+            user_id: session.user.id,
+            data: weightData,
+          });
+      }
+
+      setWeight(String(value));
+      setWeightIsDirty(false);
+      setWeightIsSaving(false);
+      setWeightShowSuccess(true);
+
+      setTimeout(() => {
+        setWeightShowSuccess(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to save weight:', error);
+      setWeightIsSaving(false);
+    }
+  };
+
   const handleClose = () => {
     setFtpIsDirty(false);
     setFtpIsSaving(false);
     setFtpShowSuccess(false);
     setFtpInput(ftp);
+    setWeightIsDirty(false);
+    setWeightIsSaving(false);
+    setWeightShowSuccess(false);
+    setWeightInput(weight);
     onClose();
   };
 
@@ -195,9 +309,9 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>FTP</Text>
-          <View style={styles.ftpContainer}>
-            <Text style={styles.ftpLabel}>Functional Threshold Power</Text>
+          <Text style={styles.sectionTitle}>Stats</Text>
+          <View style={styles.statsInputContainer}>
+            <Text style={styles.ftpLabel}>FTP</Text>
             <View style={styles.ftpInputContainer}>
               {ftpIsDirty && !ftpIsSaving && !ftpShowSuccess && (
                 <Pressable onPress={handleSaveFtp} style={styles.ftpSaveButton}>
@@ -228,6 +342,40 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 placeholderTextColor="#6b7280"
               />
               <Text style={styles.ftpUnit}>W</Text>
+            </View>
+          </View>
+          <View style={[styles.statsInputContainer]}>
+            <Text style={styles.ftpLabel}>Weight</Text>
+            <View style={styles.ftpInputContainer}>
+              {weightIsDirty && !weightIsSaving && !weightShowSuccess && (
+                <Pressable onPress={handleSaveWeight} style={styles.ftpSaveButton}>
+                  <Feather name="save" size={20} color="#3b82f6" />
+                </Pressable>
+              )}
+              {weightIsSaving && (
+                <View style={styles.ftpSaveButton}>
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                </View>
+              )}
+              {weightShowSuccess && (
+                <View style={styles.ftpSaveButton}>
+                  <Feather name="check" size={20} color="#10b981" />
+                </View>
+              )}
+              <TextInput
+                style={[styles.ftpInput, weightInputFocused && styles.ftpInputFocused]}
+                value={weightInput}
+                onChangeText={handleWeightInputChange}
+                onBlur={() => {
+                  handleWeightInputBlur();
+                  setWeightInputFocused(false);
+                }}
+                onFocus={() => setWeightInputFocused(true)}
+                keyboardType="numeric"
+                placeholder="--"
+                placeholderTextColor="#6b7280"
+              />
+              <Text style={styles.ftpUnit}>kg</Text>
             </View>
           </View>
         </View>
@@ -346,10 +494,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 12,
   },
-  ftpContainer: {
+  statsInputContainer: {
     backgroundColor: '#1e293b',
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

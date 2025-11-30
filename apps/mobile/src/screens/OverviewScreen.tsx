@@ -11,11 +11,11 @@ import { FTPGraph } from '../components/FTPGraph';
 import { SlidingLoadingIndicator } from '../components/SlidingLoadingIndicator';
 import type { DateRange } from './HomeScreen';
 
-interface StatsScreenProps {
+interface OverviewScreenProps {
   dateRange: DateRange;
 }
 
-export function StatsScreen({ dateRange }: StatsScreenProps) {
+export function OverviewScreen({ dateRange }: OverviewScreenProps) {
   const { data: activities = [], isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
     dateRange.start,
     dateRange.end
