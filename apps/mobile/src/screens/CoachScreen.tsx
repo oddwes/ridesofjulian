@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,9 +48,14 @@ export function CoachScreen() {
   };
 
   const [startDate, setStartDate] = useState<string>(formatLocalDate(new Date()));
+  const [endDate, setEndDate] = useState<string>(
+    formatLocalDate(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000))
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'end' | null>(
+    null
+  );
   // Lazy require to avoid type resolution issues; package must be installed in the app.
   const DateTimePicker =
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -77,12 +83,14 @@ export function CoachScreen() {
             blockDuration?: number;
             weeklyHours?: number;
             startDate?: string;
+            endDate?: string;
           };
           if (inputs.userPrompt) setUserPrompt(inputs.userPrompt);
           if (inputs.ftp) setFtp(inputs.ftp);
           if (inputs.blockDuration) setBlockDuration(inputs.blockDuration);
           if (inputs.weeklyHours) setWeeklyHours(inputs.weeklyHours);
           if (inputs.startDate) setStartDate(inputs.startDate);
+          if (inputs.endDate) setEndDate(inputs.endDate);
         }
       } catch (e) {
         console.error('Error loading stored plan', e);
@@ -135,6 +143,15 @@ export function CoachScreen() {
     loadFtpDefault();
   }, [session?.user?.id]);
 
+  useEffect(() => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diffMs = end.getTime() - start.getTime();
+    const days = diffMs >= 0 ? Math.floor(diffMs / msPerDay) + 1 : 1;
+    setBlockDuration(days);
+  }, [startDate, endDate]);
+
   const savePlanAndInputs = async (workouts: RideWorkout[]) => {
     try {
       await Promise.all([
@@ -147,6 +164,7 @@ export function CoachScreen() {
             blockDuration,
             weeklyHours,
             startDate,
+            endDate,
           })
         ),
       ]);
@@ -248,16 +266,14 @@ export function CoachScreen() {
     return new Date(year, month - 1, day);
   };
 
-  const getISOWeek = (date: Date) => {
-    const target = new Date(date.valueOf());
-    const dayNr = (date.getDay() + 6) % 7;
-    target.setDate(target.getDate() - dayNr + 3);
-    const firstThursday = target.valueOf();
-    target.setMonth(0, 1);
-    if (target.getDay() !== 4) {
-      target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
-    }
-    return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
+  const getISOWeekAndYear = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const isoYear = d.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+    const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    return { isoYear, week };
   };
 
   const groupWorkoutsByWeek = (workouts: RideWorkout[]) => {
@@ -265,11 +281,8 @@ export function CoachScreen() {
 
     workouts.forEach((workout) => {
       const date = parseLocalDate(workout.selectedDate);
-      const weekNum = getISOWeek(date);
-      const weekKey = `${date.getFullYear()}-W${String(weekNum).padStart(
-        2,
-        '0'
-      )}`;
+      const { isoYear, week } = getISOWeekAndYear(date);
+      const weekKey = `${isoYear}-W${String(week).padStart(2, '0')}`;
 
       if (!weeks[weekKey]) {
         weeks[weekKey] = [];
@@ -291,6 +304,29 @@ export function CoachScreen() {
     if (avgPower < 250) return 'rgba(251, 191, 36, 0.8)';
     if (avgPower < 300) return 'rgba(251, 146, 60, 0.8)';
     return 'rgba(220, 38, 38, 0.85)';
+  };
+
+  const handleSavePlan = async () => {
+    try {
+      await savePlanAndInputs(generatedPlan);
+
+      const { error } = await supabase.from('schedule').insert({
+        date: startDate,
+        plan: generatedPlan,
+        type: 'cycling',
+        user_id: session!.user!.id,
+      });
+
+      if (error) {
+        console.error('Error saving plan to schedule', error);
+        Alert.alert('Error', 'Failed to save plan to schedule.');
+      } else {
+        Alert.alert('Success', 'Training plan saved to your schedule.');
+      }
+    } catch (e) {
+      console.error('Error saving plan', e);
+      Alert.alert('Error', 'Failed to save training plan.');
+    }
   };
 
   return (
@@ -331,33 +367,6 @@ export function CoachScreen() {
                 }}
               />
             </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Duration (days)</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                editable={!isGenerating}
-                value={String(blockDuration)}
-                onChangeText={(text) => {
-                  const val = text.replace(/[^0-9]/g, '');
-                  setBlockDuration(val ? parseInt(val, 10) : 0);
-                }}
-              />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.field}>
-              <Text style={styles.label}>Start Date</Text>
-              <Pressable
-                style={styles.input}
-                disabled={isGenerating}
-                onPress={() => !isGenerating && setShowDatePicker(true)}
-              >
-                <Text style={styles.inputText}>{startDate}</Text>
-              </Pressable>
-            </View>
             <View style={styles.field}>
               <Text style={styles.label}>Weekly Hours</Text>
               <TextInput
@@ -370,6 +379,29 @@ export function CoachScreen() {
                   setWeeklyHours(val ? parseInt(val, 10) : 0);
                 }}
               />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.field}>
+              <Text style={styles.label}>Start Date</Text>
+              <Pressable
+                style={styles.input}
+                disabled={isGenerating}
+                onPress={() => !isGenerating && setActiveDatePicker('start')}
+              >
+                <Text style={styles.inputText}>{startDate}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>End Date</Text>
+              <Pressable
+                style={styles.input}
+                disabled={isGenerating}
+                onPress={() => !isGenerating && setActiveDatePicker('end')}
+              >
+                <Text style={styles.inputText}>{endDate}</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -388,6 +420,13 @@ export function CoachScreen() {
           <View style={styles.planSection}>
             <View style={styles.planHeader}>
               <Text style={styles.planTitle}>Your Training Plan</Text>
+              <Pressable
+                style={styles.saveButton}
+                onPress={handleSavePlan}
+                disabled={isGenerating || !generatedPlan.length}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </Pressable>
             </View>
 
             {groupWorkoutsByWeek(generatedPlan).map(([weekKey, workouts]) => {
@@ -443,7 +482,7 @@ export function CoachScreen() {
                             onPress={() => handleDeleteWorkout(workout)}
                             style={styles.deleteButton}
                           >
-                            <Text style={styles.deleteButtonText}>Delete</Text>
+                            <Feather name="trash-2" size={18} color="#ef4444" />
                           </Pressable>
                         </View>
                         <Text style={styles.workoutMeta}>
@@ -508,19 +547,21 @@ export function CoachScreen() {
       </ScrollView>
 
       <Modal
-        visible={showDatePicker}
+        visible={!!activeDatePicker}
         animationType="slide"
         transparent
-        onRequestClose={() => setShowDatePicker(false)}
+        onRequestClose={() => setActiveDatePicker(null)}
       >
         <Pressable
           style={styles.modalOverlay}
-          onPress={() => setShowDatePicker(false)}
+          onPress={() => setActiveDatePicker(null)}
         >
           <View style={styles.modalContent}>
             <View style={styles.datePickerContainer}>
               <DateTimePicker
-                value={parseLocalDate(startDate)}
+                value={parseLocalDate(
+                  activeDatePicker === 'end' ? endDate : startDate
+                )}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
                 // @ts-ignore - iOS-only prop, safe to ignore on Android
@@ -529,8 +570,12 @@ export function CoachScreen() {
                 themeVariant="dark"
                 onChange={(_: any, date?: Date) => {
                   if (!date) return;
-                  setStartDate(formatLocalDate(date));
-                  setShowDatePicker(false);
+                  if (activeDatePicker === 'end') {
+                    setEndDate(formatLocalDate(date));
+                  } else {
+                    setStartDate(formatLocalDate(date));
+                  }
+                  setActiveDatePicker(null);
                 }}
               />
             </View>
@@ -632,6 +677,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#f9fafb',
   },
+  saveButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#16a34a',
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   clearButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -684,10 +740,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   deleteButton: {
-    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#7f1d1d',
   },
   deleteButtonText: {
     fontSize: 12,
@@ -702,10 +755,7 @@ const styles = StyleSheet.create({
   workoutChart: {
     marginBottom: 6,
     paddingVertical: 4,
-    borderRadius: 8,
     backgroundColor: '#020617',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#1f2937',
   },
   workoutChartRow: {
     height: 80,
