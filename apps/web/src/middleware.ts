@@ -68,7 +68,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|auth/callback|strava-logo.svg).*)',
+    // Apply middleware to all routes except Next static assets, auth callback,
+    // the Strava logo, and API routes (e.g. /api/generate-plan)
+    '/((?!api|_next/static|_next/image|favicon.ico|auth/callback|strava-logo.svg).*)',
   ],
 }
 

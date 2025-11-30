@@ -1,0 +1,777 @@
+import { useEffect, useState } from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  Pressable,
+  Platform,
+  Modal,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabase';
+
+type Interval = {
+  id: string;
+  name: string;
+  duration: number;
+  powerMin: number;
+  powerMax: number;
+};
+
+type RideWorkout = {
+  id: number;
+  workoutTitle: string;
+  selectedDate: string;
+  intervals: Interval[];
+};
+
+const PLAN_KEY = 'generated_training_plan';
+const INPUTS_KEY = 'training_plan_inputs';
+
+export function CoachScreen() {
+  const { session } = useAuth();
+  const [userPrompt, setUserPrompt] = useState('');
+  const [ftp, setFtp] = useState<number>(200);
+  const [blockDuration, setBlockDuration] = useState<number>(7);
+  const [weeklyHours, setWeeklyHours] = useState<number>(10);
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [startDate, setStartDate] = useState<string>(formatLocalDate(new Date()));
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Lazy require to avoid type resolution issues; package must be installed in the app.
+  const DateTimePicker =
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('@react-native-community/datetimepicker').default ||
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('@react-native-community/datetimepicker');
+
+  useEffect(() => {
+    const loadStored = async () => {
+      try {
+        const [planStr, inputsStr] = await Promise.all([
+          AsyncStorage.getItem(PLAN_KEY),
+          AsyncStorage.getItem(INPUTS_KEY),
+        ]);
+
+        if (planStr) {
+          const parsed = JSON.parse(planStr) as RideWorkout[];
+          setGeneratedPlan(parsed);
+        }
+
+        if (inputsStr) {
+          const inputs = JSON.parse(inputsStr) as {
+            userPrompt?: string;
+            ftp?: number;
+            blockDuration?: number;
+            weeklyHours?: number;
+            startDate?: string;
+          };
+          if (inputs.userPrompt) setUserPrompt(inputs.userPrompt);
+          if (inputs.ftp) setFtp(inputs.ftp);
+          if (inputs.blockDuration) setBlockDuration(inputs.blockDuration);
+          if (inputs.weeklyHours) setWeeklyHours(inputs.weeklyHours);
+          if (inputs.startDate) setStartDate(inputs.startDate);
+        }
+      } catch (e) {
+        console.error('Error loading stored plan', e);
+      }
+    };
+
+    loadStored();
+  }, []);
+
+  const loadFtpDefault = async () => {
+    try {
+      if (!session?.user?.id) {
+        setFtp(200);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('stats')
+        .select('data')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (!error && data?.data) {
+        const statsData = data.data as { ftp?: Record<string, number> };
+
+        if (statsData.ftp) {
+          const ftpEntries = Object.entries(statsData.ftp)
+            .map(([date, value]) => ({ date, value }))
+            .sort(
+              (a, b) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+
+          if (ftpEntries.length > 0) {
+            const latest = Number(ftpEntries[0].value) || 0;
+            setFtp(latest > 0 ? latest : 200);
+            return;
+          }
+        }
+      }
+
+      setFtp(200);
+    } catch (e) {
+      console.error('Error loading FTP', e);
+      setFtp(200);
+    }
+  };
+
+  useEffect(() => {
+    loadFtpDefault();
+  }, [session?.user?.id]);
+
+  const savePlanAndInputs = async (workouts: RideWorkout[]) => {
+    try {
+      await Promise.all([
+        AsyncStorage.setItem(PLAN_KEY, JSON.stringify(workouts)),
+        AsyncStorage.setItem(
+          INPUTS_KEY,
+          JSON.stringify({
+            userPrompt,
+            ftp,
+            blockDuration,
+            weeklyHours,
+            startDate,
+          })
+        ),
+      ]);
+    } catch (e) {
+      console.error('Error saving plan', e);
+    }
+  };
+
+  const generatePlan = async () => {
+    if (!userPrompt.trim()) {
+      Alert.alert('Missing goal', 'Please enter a training goal.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedPlan([]);
+
+    try {
+      const workouts: RideWorkout[] = [];
+      const params = new URLSearchParams({
+        userPrompt,
+        ftp: String(ftp),
+        blockDuration: String(blockDuration),
+        weeklyHours: String(weeklyHours),
+        startDate,
+      });
+      const url = `${TRAINING_PLAN_API_BASE_URL}/api/generate-plan?${params.toString()}`;
+
+      // Lazy require to avoid TS issues and keep bundle small
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const EventSourceImpl =
+        require('react-native-sse').default ||
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        require('react-native-sse');
+
+      await new Promise<void>((resolve, reject) => {
+        const es = new EventSourceImpl(url);
+
+        es.addEventListener('message', (event: any) => {
+          const raw = String(event?.data ?? '').trim();
+          if (!raw) return;
+          if (raw === '[DONE]') {
+            es.close();
+            resolve();
+            return;
+          }
+          try {
+            const workout = JSON.parse(raw) as RideWorkout;
+            workouts.push(workout);
+            setGeneratedPlan([...workouts]);
+          } catch (e) {
+            console.error('Failed to parse workout from SSE', e);
+          }
+        });
+
+        es.addEventListener('error', (event: any) => {
+          console.error('SSE error', event);
+          es.close();
+          reject(new Error('Failed to stream training plan'));
+        });
+      });
+
+      await savePlanAndInputs(workouts);
+    } catch (error) {
+      console.error('Error generating plan', error);
+      Alert.alert('Error', 'Failed to generate training plan.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const clearPlan = async () => {
+    await AsyncStorage.removeItem(PLAN_KEY);
+    setGeneratedPlan([]);
+  };
+
+  const handleDeleteWorkout = (workout: RideWorkout) => {
+    Alert.alert(
+      'Delete workout',
+      `Delete "${workout.workoutTitle}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const updated = generatedPlan.filter((w) => w.id !== workout.id);
+            setGeneratedPlan(updated);
+            await AsyncStorage.setItem(PLAN_KEY, JSON.stringify(updated));
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const parseLocalDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const getISOWeek = (date: Date) => {
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7;
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = target.valueOf();
+    target.setMonth(0, 1);
+    if (target.getDay() !== 4) {
+      target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+    }
+    return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
+  };
+
+  const groupWorkoutsByWeek = (workouts: RideWorkout[]) => {
+    const weeks: { [key: string]: RideWorkout[] } = {};
+
+    workouts.forEach((workout) => {
+      const date = parseLocalDate(workout.selectedDate);
+      const weekNum = getISOWeek(date);
+      const weekKey = `${date.getFullYear()}-W${String(weekNum).padStart(
+        2,
+        '0'
+      )}`;
+
+      if (!weeks[weekKey]) {
+        weeks[weekKey] = [];
+      }
+      weeks[weekKey].push(workout);
+    });
+
+    return Object.entries(weeks).sort(([a], [b]) => a.localeCompare(b));
+  };
+
+  const formatDurationMinutes = (intervals: Interval[]) =>
+    intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
+
+  const getIntervalColor = (powerMin: number, powerMax: number) => {
+    const avgPower = (powerMin + powerMax) / 2;
+    if (avgPower < 100) return 'rgba(156, 163, 175, 0.8)';
+    if (avgPower < 150) return 'rgba(96, 165, 250, 0.8)';
+    if (avgPower < 200) return 'rgba(52, 211, 153, 0.8)';
+    if (avgPower < 250) return 'rgba(251, 191, 36, 0.8)';
+    if (avgPower < 300) return 'rgba(251, 146, 60, 0.8)';
+    return 'rgba(220, 38, 38, 0.85)';
+  };
+
+  return (
+    <>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>AI Training Plan Builder</Text>
+          {!isGenerating && (
+            <Pressable style={styles.clearButton} onPress={clearPlan}>
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>Training Goal</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            multiline
+            editable={!isGenerating}
+            value={userPrompt}
+            onChangeText={setUserPrompt}
+            placeholder="e.g., Build base fitness with polarized training approach, focusing on endurance and high intensity intervals"
+            placeholderTextColor="#6b7280"
+          />
+
+          <View style={styles.row}>
+            <View style={styles.field}>
+              <Text style={styles.label}>FTP</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                editable={!isGenerating}
+                value={String(ftp)}
+                onChangeText={(text) => {
+                  const val = text.replace(/[^0-9]/g, '');
+                  setFtp(val ? parseInt(val, 10) : 0);
+                }}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Duration (days)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                editable={!isGenerating}
+                value={String(blockDuration)}
+                onChangeText={(text) => {
+                  const val = text.replace(/[^0-9]/g, '');
+                  setBlockDuration(val ? parseInt(val, 10) : 0);
+                }}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.field}>
+              <Text style={styles.label}>Start Date</Text>
+              <Pressable
+                style={styles.input}
+                disabled={isGenerating}
+                onPress={() => !isGenerating && setShowDatePicker(true)}
+              >
+                <Text style={styles.inputText}>{startDate}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Weekly Hours</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                editable={!isGenerating}
+                value={String(weeklyHours)}
+                onChangeText={(text) => {
+                  const val = text.replace(/[^0-9]/g, '');
+                  setWeeklyHours(val ? parseInt(val, 10) : 0);
+                }}
+              />
+            </View>
+          </View>
+
+          <Pressable
+            style={[styles.button, isGenerating && styles.buttonDisabled]}
+            onPress={generatePlan}
+            disabled={isGenerating}
+          >
+            <Text style={styles.buttonText}>
+              {isGenerating ? 'Generating Plan...' : 'Generate Training Plan'}
+            </Text>
+          </Pressable>
+        </View>
+
+        {generatedPlan.length > 0 && (
+          <View style={styles.planSection}>
+            <View style={styles.planHeader}>
+              <Text style={styles.planTitle}>Your Training Plan</Text>
+            </View>
+
+            {groupWorkoutsByWeek(generatedPlan).map(([weekKey, workouts]) => {
+              const firstDate = parseLocalDate(workouts[0].selectedDate);
+              const lastDate = parseLocalDate(
+                workouts[workouts.length - 1].selectedDate
+              );
+              const weekTotal = workouts.reduce(
+                (total, workout) =>
+                  total + formatDurationMinutes(workout.intervals),
+                0
+              );
+
+              return (
+                <View key={weekKey} style={styles.weekBlock}>
+                  <View style={styles.weekHeader}>
+                    <Text style={styles.weekTitle}>
+                      {weekKey}
+                    </Text>
+                    <Text style={styles.weekSubtitle}>
+                      {firstDate.toLocaleDateString()} - {lastDate.toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.weekSubtitle}>
+                      Total: {Math.floor(weekTotal / 60)}h{' '}
+                      {Math.round(weekTotal % 60)}m
+                    </Text>
+                  </View>
+
+                  {workouts.map((workout) => {
+                    const totalMinutes = formatDurationMinutes(
+                      workout.intervals
+                    );
+                    const date = parseLocalDate(workout.selectedDate);
+                    const maxPower =
+                      workout.intervals.length > 0
+                        ? Math.max(
+                            300,
+                            ...workout.intervals.map((i) => i.powerMax || 0)
+                          )
+                        : 0;
+                    const totalDurationSeconds = workout.intervals.reduce(
+                      (sum, i) => sum + (i.duration || 0),
+                      0
+                    );
+
+                    return (
+                      <View key={workout.id} style={styles.workoutCard}>
+                        <View style={styles.workoutHeader}>
+                          <Text style={styles.workoutTitle}>
+                            {workout.workoutTitle}
+                          </Text>
+                          <Pressable
+                            onPress={() => handleDeleteWorkout(workout)}
+                            style={styles.deleteButton}
+                          >
+                            <Text style={styles.deleteButtonText}>Delete</Text>
+                          </Pressable>
+                        </View>
+                        <Text style={styles.workoutMeta}>
+                          {date.toLocaleDateString()} |{' '}
+                          {Math.floor(totalMinutes / 60)}h{' '}
+                          {Math.round(totalMinutes % 60)}m
+                        </Text>
+
+                        {workout.intervals.length > 0 && maxPower > 0 && (
+                          <View style={styles.workoutChart}>
+                            <View style={styles.workoutChartRow}>
+                              {workout.intervals.map((interval) => {
+                                if (!interval.duration) return null;
+                                const barHeight =
+                                  (interval.powerMax / maxPower) * 72 || 4;
+                                return (
+                                  <View
+                                    key={interval.id}
+                                    style={[
+                                      styles.workoutChartSegment,
+                                      { flex: interval.duration },
+                                    ]}
+                                  >
+                                    <View
+                                      style={[
+                                        styles.workoutChartBar,
+                                        {
+                                          height: Math.max(barHeight, 4),
+                                          backgroundColor: getIntervalColor(
+                                            interval.powerMin,
+                                            interval.powerMax
+                                          ),
+                                        },
+                                      ]}
+                                    />
+                                  </View>
+                                );
+                              })}
+                            </View>
+                          </View>
+                        )}
+
+                        {workout.intervals.map((interval) => (
+                          <View key={interval.id} style={styles.intervalRow}>
+                            <Text style={styles.intervalName}>
+                              {interval.name}
+                            </Text>
+                            <Text style={styles.intervalMeta}>
+                              {interval.duration / 60}m | {interval.powerMin}-
+                              {interval.powerMax}W
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+
+      <Modal
+        visible={showDatePicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowDatePicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={parseLocalDate(startDate)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+                // @ts-ignore - iOS-only prop, safe to ignore on Android
+                textColor="#f9fafb"
+                // @ts-ignore - iOS-only prop
+                themeVariant="dark"
+                onChange={(_: any, date?: Date) => {
+                  if (!date) return;
+                  setStartDate(formatLocalDate(date));
+                  setShowDatePicker(false);
+                }}
+              />
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1e293b',
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#f9fafb',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: '#020617',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#1f2937',
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#e5e7eb',
+    marginBottom: 6,
+  },
+  input: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#f9fafb',
+    fontSize: 14,
+    backgroundColor: '#020617',
+    marginBottom: 12,
+  },
+  inputText: {
+    color: '#f9fafb',
+    fontSize: 14,
+  },
+  textArea: {
+    height: 70,
+    textAlignVertical: 'top',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  field: {
+    flex: 1,
+  },
+  button: {
+    marginTop: 4,
+    borderRadius: 8,
+    paddingVertical: 12,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  planSection: {
+    marginTop: 8,
+  },
+  planHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  planTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#f9fafb',
+  },
+  clearButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#dc2626',
+  },
+  clearButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  weekBlock: {
+    marginBottom: 16,
+    justifyContent: 'space-between',
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 6,
+  },
+  weekTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#f9fafb',
+  },
+  weekSubtitle: {
+    fontSize: 12,
+    color: '#e5e7eb',
+  },
+  workoutCard: {
+    backgroundColor: '#020617',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#1f2937',
+    padding: 12,
+    marginBottom: 8,
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  workoutTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f9fafb',
+    flex: 1,
+    marginRight: 8,
+  },
+  deleteButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#7f1d1d',
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fee2e2',
+  },
+  workoutMeta: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 6,
+  },
+  workoutChart: {
+    marginBottom: 6,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#020617',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#1f2937',
+  },
+  workoutChartRow: {
+    height: 80,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    overflow: 'hidden',
+  },
+  workoutChartSegment: {
+    flex: 1,
+    marginHorizontal: 1,
+    justifyContent: 'flex-end',
+  },
+  workoutChartBar: {
+    width: '100%',
+    borderRadius: 3,
+  },
+  intervalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  intervalName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#e5e7eb',
+    flex: 1,
+    marginRight: 8,
+  },
+  intervalMeta: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1e293b',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 32,
+    color: '#f9fafb',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomColor: '#334155',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#f9fafb',
+  },
+  modalClose: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#f9fafb',
+  },
+  datePickerContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    color: '#f9fafb',
+  },
+});

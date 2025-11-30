@@ -40,10 +40,21 @@ Example output (one JSON object per line):
 {"id": 2, "workoutTitle": "Threshold Intervals", "selectedDate": "2024-01-17", "intervals": [{"id": "1", "name": "Warmup", "duration": 600, "powerMin": ${zones.recovery.min}, "powerMax": ${zones.recovery.max}}, {"id": "2", "name": "Threshold", "duration": 1200, "powerMin": ${zones.threshold.min}, "powerMax": ${zones.threshold.max}}]}`;
 };
 
-export async function POST(request: NextRequest) {
-  try {
-    const { userPrompt, ftp, blockDuration, weeklyHours, startDate } = await request.json();
+type GenerateParams = {
+  userPrompt: string;
+  ftp: number;
+  blockDuration: number;
+  weeklyHours: number;
+  startDate: string;
+};
 
+async function generatePlanResponse({
+  userPrompt,
+  ftp,
+  blockDuration,
+  weeklyHours,
+  startDate,
+}: GenerateParams) {
     if (!userPrompt || !ftp || !blockDuration || !weeklyHours || !startDate) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -134,9 +145,48 @@ Output one workout JSON object per line. Do not wrap in an array.`;
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       },
+  });
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { userPrompt, ftp, blockDuration, weeklyHours, startDate } =
+      await request.json();
+
+    return await generatePlanResponse({
+      userPrompt,
+      ftp,
+      blockDuration,
+      weeklyHours,
+      startDate,
     });
   } catch (error) {
     console.error("Error generating plan:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userPrompt = searchParams.get("userPrompt") || "";
+    const ftp = Number(searchParams.get("ftp") || "0");
+    const blockDuration = Number(searchParams.get("blockDuration") || "0");
+    const weeklyHours = Number(searchParams.get("weeklyHours") || "0");
+    const startDate = searchParams.get("startDate") || "";
+
+    return await generatePlanResponse({
+      userPrompt,
+      ftp,
+      blockDuration,
+      weeklyHours,
+      startDate,
+    });
+  } catch (error) {
+    console.error("Error generating plan (GET):", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
