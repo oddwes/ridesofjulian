@@ -1,12 +1,13 @@
-import { Modal, Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View, ScrollView, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { Header } from '../components/Header';
 import { ProfileScreen } from './ProfileScreen';
 import { WorkoutEditScreen } from './WorkoutEditScreen';
 import { OverviewScreen } from './OverviewScreen';
+import { CoachScreen } from './CoachScreen';
 import { Calendar } from '../components/calendar/Calendar';
 import { createWorkout } from '@ridesofjulian/shared';
 import { supabase } from '../config/supabase';
@@ -21,10 +22,12 @@ export function HomeScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'overview'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'overview' | 'coach'>('calendar');
   const [selectedRange, setSelectedRange] = useState('3months');
   const [isLoadingDateRange, setIsLoadingDateRange] = useState(false);
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const sidebarX = useRef(new Animated.Value(-260)).current;
   const queryClient = useQueryClient();
 
   const dateRangeOptions = useMemo(() => {
@@ -75,53 +78,78 @@ export function HomeScreen() {
     }
   };
 
+  const openSidebar = () => {
+    setIsSidebarOpen(true);
+    Animated.timing(sidebarX, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeSidebar = () => {
+    Animated.timing(sidebarX, {
+      toValue: -260,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSidebarOpen(false);
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
       <Header 
+        onMenuPress={openSidebar}
         onProfilePress={() => setShowProfile(true)}
         onAddWorkoutPress={handleAddWorkout}
         isCreatingWorkout={isCreatingWorkout}
       />
 
-      <View style={styles.tabBar}>
-        <Pressable
-          style={[styles.tab, activeTab === 'calendar' && styles.tabActive]}
-          onPress={() => setActiveTab('calendar')}
-        >
-          <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>
-            Calendar
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
-          onPress={() => setActiveTab('overview')}
-        >
-          <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
-            Overview
-          </Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.pickerSection}>
-        <Pressable 
-          style={styles.pickerContainer}
-          onPress={() => setShowDateRangePicker(true)}
-        >
-          <Text style={styles.pickerSelectedValue}>{currentDateRange.label}</Text>
-          <Text style={styles.chevron}>⌄</Text>
-        </Pressable>
-      </View>
-
-      {activeTab === 'calendar' ? (
-        <Calendar 
-          dateRange={currentDateRange}
-          isLoadingDateRange={isLoadingDateRange}
-          onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} 
-        />
-      ) : (
-        <OverviewScreen dateRange={currentDateRange} />
+      { (activeTab == 'overview' || activeTab == 'calendar') && (
+        <>
+          <View style={styles.tabBar}>
+            <Pressable
+              style={[styles.tab, activeTab === 'calendar' && styles.tabActive]}
+              onPress={() => setActiveTab('calendar')}
+            >
+              <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>
+                Calendar
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
+              onPress={() => setActiveTab('overview')}
+            >
+              <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
+                Overview
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.pickerSection}>
+            <Pressable 
+              style={styles.pickerContainer}
+              onPress={() => setShowDateRangePicker(true)}
+            >
+              <Text style={styles.pickerSelectedValue}>{currentDateRange.label}</Text>
+              <Text style={styles.chevron}>⌄</Text>
+            </Pressable>
+          </View>
+          {activeTab === 'calendar' && (
+            <Calendar 
+              dateRange={currentDateRange}
+              isLoadingDateRange={isLoadingDateRange}
+              onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} 
+            />
+          )}
+          {activeTab === 'overview' && (
+            <OverviewScreen dateRange={currentDateRange} />
+          )}
+        </>
       )}
+
+      {activeTab === 'coach' && <CoachScreen />}
 
       <Modal
         visible={showProfile}
@@ -191,6 +219,53 @@ export function HomeScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      {isSidebarOpen && (
+        <View style={styles.sidebarOverlay}>
+          <Pressable style={styles.sidebarBackdrop} onPress={closeSidebar} />
+          <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarX }] }]}>
+            <View>
+              <Text style={styles.sidebarTitle}>Navigate</Text>
+              <Pressable
+                style={styles.sidebarItem}
+                onPress={() => {
+                  setActiveTab('calendar');
+                  closeSidebar();
+                }}
+              >
+                <Text style={styles.sidebarItemText}>Calendar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.sidebarItem}
+                onPress={() => {
+                  setActiveTab('overview');
+                  closeSidebar();
+                }}
+              >
+                <Text style={styles.sidebarItemText}>Overview</Text>
+              </Pressable>
+              <Pressable
+                style={styles.sidebarItem}
+                onPress={() => {
+                  setActiveTab('coach');
+                  closeSidebar();
+                }}
+              >
+                <Text style={styles.sidebarItemText}>Coach</Text>
+              </Pressable>
+            </View>
+            <Pressable
+              style={styles.sidebarItem}
+              onPress={() => {
+                setShowProfile(true);
+                closeSidebar();
+              }}
+            >
+              <Text style={styles.sidebarItemText}>Profile</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      )}
     </View>
   );
 }
@@ -315,6 +390,48 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#3b82f6',
+  },
+  sidebarOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  sidebarBackdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  sidebar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 240,
+    paddingTop: 64,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    backgroundColor: '#020617',
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: '#1f2937',
+    justifyContent: 'space-between',
+  },
+  sidebarTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#f9fafb',
+    marginBottom: 16,
+  },
+  sidebarItem: {
+    paddingVertical: 10,
+  },
+  sidebarItemText: {
+    fontSize: 16,
+    color: '#e5e7eb',
   },
 });
 

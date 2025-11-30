@@ -1,35 +1,47 @@
 import { Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
 type HeaderProps = {
   onProfilePress?: () => void;
   onAddWorkoutPress?: () => void;
+  onMenuPress?: () => void;
   isCreatingWorkout?: boolean;
 };
 
-export function Header({ onProfilePress, onAddWorkoutPress, isCreatingWorkout }: HeaderProps) {
+export function Header({ onProfilePress, onAddWorkoutPress, onMenuPress, isCreatingWorkout }: HeaderProps) {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const profilePicUrl = session?.user?.user_metadata?.avatar_url;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <Pressable 
-        style={styles.addButton} 
-        onPress={onAddWorkoutPress}
-        disabled={isCreatingWorkout}
-      >
-        <View style={[styles.plusIcon, isCreatingWorkout && styles.plusIconDisabled]}>
-          {isCreatingWorkout ? (
-            <ActivityIndicator size="small" color="#3b82f6" />
-          ) : (
-            <Text style={styles.plusText}>+</Text>
-          )}
-        </View>
-      </Pressable>
+      <View style={styles.leftGroup}>
+        <Pressable style={styles.iconButton} onPress={onMenuPress}>
+          <View style={styles.menuIcon}>
+            <Feather name="menu" size={22} color="#3b82f6" />
+          </View>
+        </Pressable>
 
-      <Text style={styles.title}>TRAINHARD</Text>
+        <Pressable 
+          style={styles.iconButton} 
+          onPress={onAddWorkoutPress}
+          disabled={isCreatingWorkout}
+        >
+          <View style={[styles.plusIcon, isCreatingWorkout && styles.plusIconDisabled]}>
+            {isCreatingWorkout ? (
+              <ActivityIndicator size="small" color="#3b82f6" />
+            ) : (
+              <Text style={styles.plusText}>+</Text>
+            )}
+          </View>
+        </Pressable>
+      </View>
+
+      <View style={[styles.titleContainer, { top: insets.top + 20 }]}>
+        <Text style={styles.title}>TRAINHARD</Text>
+      </View>
 
       <Pressable onPress={onProfilePress} style={styles.profileButton}>
         {profilePicUrl ? (
@@ -47,22 +59,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    position: 'relative',
     paddingHorizontal: 16,
     paddingBottom: 12,
     backgroundColor: '#1e293b',
   },
-  addButton: {
+  leftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  titleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'none',
+  },
+  menuIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
   plusIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#3b82f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
