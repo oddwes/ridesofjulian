@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import { Header } from '../components/Header';
 import { ProfileScreen } from './ProfileScreen';
 import { WorkoutEditScreen } from './WorkoutEditScreen';
-import { StatsScreen } from './StatsScreen';
+import { OverviewScreen } from './OverviewScreen';
 import { Calendar } from '../components/calendar/Calendar';
 import { createWorkout } from '@ridesofjulian/shared';
 import { supabase } from '../config/supabase';
@@ -21,7 +21,7 @@ export function HomeScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'stats'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'overview'>('calendar');
   const [selectedRange, setSelectedRange] = useState('3months');
   const [isLoadingDateRange, setIsLoadingDateRange] = useState(false);
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
@@ -94,11 +94,11 @@ export function HomeScreen() {
           </Text>
         </Pressable>
         <Pressable
-          style={[styles.tab, activeTab === 'stats' && styles.tabActive]}
-          onPress={() => setActiveTab('stats')}
+          style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
+          onPress={() => setActiveTab('overview')}
         >
-          <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>
-            Stats
+          <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
+            Overview
           </Text>
         </Pressable>
       </View>
@@ -120,7 +120,7 @@ export function HomeScreen() {
           onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} 
         />
       ) : (
-        <StatsScreen dateRange={currentDateRange} />
+        <OverviewScreen dateRange={currentDateRange} />
       )}
 
       <Modal
