@@ -109,7 +109,7 @@ export function HomeScreen() {
         isCreatingWorkout={isCreatingWorkout}
       />
 
-      { (activeTab == 'overview' || activeTab == 'calendar') && (
+      {(activeTab == 'overview' || activeTab == 'calendar') && (
         <>
           <View style={styles.tabBar}>
             <Pressable
@@ -317,6 +317,7 @@ const styles = StyleSheet.create({
   },
   pickerSection: {
     alignItems: 'center',
+    paddingBottom: 4,
   },
   pickerContainer: {
     flexDirection: 'row',

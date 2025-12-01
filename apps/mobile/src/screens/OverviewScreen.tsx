@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange';
 import { useWorkouts } from '../hooks/useWorkouts';
 import { getFtp, type FtpData, getFtpForDate } from '../utils/ftpUtil';
@@ -14,6 +15,8 @@ import type { DateRange } from './HomeScreen';
 interface OverviewScreenProps {
   dateRange: DateRange;
 }
+
+dayjs.extend(isoWeek);
 
 export function OverviewScreen({ dateRange }: OverviewScreenProps) {
   const { data: activities = [], isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
@@ -63,11 +66,11 @@ export function OverviewScreen({ dateRange }: OverviewScreenProps) {
       { start: dayjs.Dayjs; timeSeconds: number; tss: number }
     > = {};
 
-    // Generate all weeks in the date range
-    let current = dayjs(dateRange.start).startOf('week');
-    const end = dayjs(dateRange.end).endOf('week');
+    // Generate all ISO weeks (Mon-Sun) in the date range
+    let current = dayjs(dateRange.start).startOf('isoWeek');
+    const end = dayjs(dateRange.end).endOf('isoWeek');
     
-    while (current.isBefore(end) || current.isSame(end, 'week')) {
+    while (current.isBefore(end) || current.isSame(end, 'day')) {
       const key = current.format('YYYY-MM-DD');
       byWeek[key] = { start: current, timeSeconds: 0, tss: 0 };
       current = current.add(1, 'week');
@@ -76,7 +79,7 @@ export function OverviewScreen({ dateRange }: OverviewScreenProps) {
     // Fill in data for weeks with activities
     for (const a of cyclingActivities) {
       const d = dayjs(a.start_date);
-      const weekStart = d.startOf('week');
+      const weekStart = d.startOf('isoWeek');
       const key = weekStart.format('YYYY-MM-DD');
       if (byWeek[key]) {
         byWeek[key].timeSeconds += a.moving_time || 0;
@@ -115,11 +118,11 @@ export function OverviewScreen({ dateRange }: OverviewScreenProps) {
       { start: dayjs.Dayjs; workouts: number; exercises: number }
     > = {};
 
-    // Generate all weeks in the date range
-    let current = dayjs(dateRange.start).startOf('week');
-    const end = dayjs(dateRange.end).endOf('week');
+    // Generate all ISO weeks (Mon-Sun) in the date range
+    let current = dayjs(dateRange.start).startOf('isoWeek');
+    const end = dayjs(dateRange.end).endOf('isoWeek');
     
-    while (current.isBefore(end) || current.isSame(end, 'week')) {
+    while (current.isBefore(end) || current.isSame(end, 'day')) {
       const key = current.format('YYYY-MM-DD');
       byWeek[key] = { start: current, workouts: 0, exercises: 0 };
       current = current.add(1, 'week');
@@ -128,7 +131,7 @@ export function OverviewScreen({ dateRange }: OverviewScreenProps) {
     // Fill in data for weeks with workouts
     for (const w of workouts) {
       const d = dayjs(w.datetime);
-      const weekStart = d.startOf('week');
+      const weekStart = d.startOf('isoWeek');
       const key = weekStart.format('YYYY-MM-DD');
       if (byWeek[key]) {
         byWeek[key].workouts += 1;

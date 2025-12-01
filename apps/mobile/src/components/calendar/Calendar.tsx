@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import { Day } from './Day';
 import { WeeklySummary } from '../WeeklySummary';
 import { SlidingLoadingIndicator } from '../SlidingLoadingIndicator';
@@ -32,6 +33,7 @@ export type ScheduledRideWorkout = RideWorkout & {
 };
 
 dayjs.extend(advancedFormat);
+dayjs.extend(isoWeek);
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const PULL_THRESHOLD = -SCREEN_HEIGHT / 6;
@@ -177,7 +179,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onPlan
       >
         <SlidingLoadingIndicator isLoading={!!showLoadingPill} />
         {days.map((date) => {
-          const weekStart = date.startOf('week');
+          const weekStart = date.startOf('isoWeek');
           const weekKey = weekStart.format('YYYY-MM-DD');
           const isNewWeek = weekKey !== lastWeekKey;
           lastWeekKey = weekKey;
