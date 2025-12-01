@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   today: {
     borderWidth: 2,
-    borderLeftColor: '#3b82f6',
+    borderColor: '#3b82f6',
   },
   dateText: {
     fontSize: 14,

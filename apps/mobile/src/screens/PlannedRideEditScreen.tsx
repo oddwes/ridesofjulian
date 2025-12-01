@@ -7,6 +7,7 @@ import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Interval, RideWorkout, ScheduledRideWorkout } from '../components/calendar/Calendar';
 import { DatePickerModal } from '../components/DatePickerModal';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { formatDuration } from '../utils/formatUtil';
 
 interface PlannedRideEditScreenProps {
@@ -152,161 +153,203 @@ export function PlannedRideEditScreen({ workout, onClose }: PlannedRideEditScree
       <View style={styles.container}>
         <View style={styles.modalHandle} />
         <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <TextInput
-            value={workoutTitle}
-            onChangeText={setWorkoutTitle}
-            style={styles.headerTitle}
-            placeholder="Workout title"
-            placeholderTextColor="#9ca3af"
-          />
-          <View style={styles.headerSubtitleContainer}>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+          <View style={styles.header}>
+            <TextInput
+              value={workoutTitle}
+              onChangeText={setWorkoutTitle}
+              style={styles.headerTitle}
+              placeholder="Workout title"
+              placeholderTextColor="#9ca3af"
+              editable={!isSaving && !isDeleting}
+            />
+            <View style={styles.headerSubtitleContainer}>
+              <TouchableOpacity
+                onPress={() => !isSaving && !isDeleting && setShowDatePicker(true)}
+                disabled={isSaving || isDeleting}
+                style={isSaving || isDeleting ? styles.disabledOpacity : undefined}
+              >
+                <Text style={styles.headerSubtitle}>
+                  {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                </Text>
+              </TouchableOpacity>
               <Text style={styles.headerSubtitle}>
-                {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                {formatDuration(Math.round(totalDurationMinutes))}
               </Text>
-            </TouchableOpacity>
-            <Text style={styles.headerSubtitle}>
-              {formatDuration(Math.round(totalDurationMinutes))}
-            </Text>
+            </View>
           </View>
-        </View>
 
-        {intervals.length > 0 && maxPower > 0 && (
-          <View style={styles.chartCard}>
-            <View style={styles.chartRow}>
-              {intervals.map((interval) => {
-                if (!interval.duration) return null;
-                const barHeight = (interval.powerMax / maxPower) * 160 || 4;
-                return (
-                  <View
-                    key={interval.id}
-                    style={[styles.chartSegment, { flex: interval.duration }]}
-                  >
+          {intervals.length > 0 && maxPower > 0 && (
+            <View style={styles.chartCard}>
+              <View style={styles.chartRow}>
+                {intervals.map((interval) => {
+                  if (!interval.duration) return null;
+                  const barHeight = (interval.powerMax / maxPower) * 160 || 4;
+                  return (
                     <View
-                      style={[
-                        styles.chartBar,
-                        {
-                          height: Math.max(barHeight, 4),
-                          backgroundColor: getIntervalColor(
-                            interval.powerMin,
-                            interval.powerMax
-                          ),
-                        },
-                      ]}
-                    />
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {intervals.map((interval) => (
-          <View key={interval.id} style={styles.intervalCard}>
-            <View style={styles.intervalField}>
-              <Text style={styles.intervalLabel}>Name</Text>
-              <TextInput
-                value={interval.name}
-                onChangeText={(text) => updateInterval(interval.id, 'name', text)}
-                style={styles.intervalInput}
-                placeholder="Interval name"
-                placeholderTextColor="#9ca3af"
-              />
-            </View>
-
-            <View style={styles.intervalFieldSmall}>
-              <Text style={styles.intervalLabel}>Duration (min)</Text>
-              <TextInput
-                value={String(interval.duration / 60)}
-                keyboardType="numeric"
-                onChangeText={(text) => {
-                  const val = text.replace(/[^0-9]/g, '');
-                  updateInterval(
-                    interval.id,
-                    'duration',
-                    val ? parseInt(val, 10) * 60 : 0
+                      key={interval.id}
+                      style={[styles.chartSegment, { flex: interval.duration }]}
+                    >
+                      <View
+                        style={[
+                          styles.chartBar,
+                          {
+                            height: Math.max(barHeight, 4),
+                            backgroundColor: getIntervalColor(
+                              interval.powerMin,
+                              interval.powerMax
+                            ),
+                          },
+                        ]}
+                      />
+                    </View>
                   );
-                }}
-                style={styles.intervalInput}
-              />
-            </View>
-
-            <View style={styles.intervalPowerField}>
-              <Text style={styles.intervalLabel}>Power Range (W)</Text>
-              <View style={styles.powerRow}>
-                <TextInput
-                  value={String(interval.powerMin)}
-                  keyboardType="numeric"
-                  onChangeText={(text) => {
-                    const val = text.replace(/[^0-9]/g, '');
-                    updateInterval(
-                      interval.id,
-                      'powerMin',
-                      val ? parseInt(val, 10) : 0
-                    );
-                  }}
-                  style={styles.powerInput}
-                />
-                <Text style={styles.powerDash}>-</Text>
-                <TextInput
-                  value={String(interval.powerMax)}
-                  keyboardType="numeric"
-                  onChangeText={(text) => {
-                    const val = text.replace(/[^0-9]/g, '');
-                    updateInterval(
-                      interval.id,
-                      'powerMax',
-                      val ? parseInt(val, 10) : 0
-                    );
-                  }}
-                  style={styles.powerInput}
-                />
+                })}
               </View>
             </View>
+          )}
 
-            <TouchableOpacity
-              onPress={() => duplicateInterval(interval.id)}
-              style={styles.iconButton}
-            >
-              <Text style={styles.iconButtonText}>⧉</Text>
-            </TouchableOpacity>
+          {intervals.map((interval) => (
+            <View key={interval.id} style={styles.intervalCard}>
+              <View style={styles.intervalField}>
+                <Text style={styles.intervalLabel}>Name</Text>
+                <TextInput
+                  value={interval.name}
+                  onChangeText={(text) => updateInterval(interval.id, 'name', text)}
+                  style={styles.intervalInput}
+                  placeholder="Interval name"
+                  placeholderTextColor="#9ca3af"
+                editable={!isSaving && !isDeleting}
+                />
+              </View>
 
-            <TouchableOpacity
-              onPress={() => deleteInterval(interval.id)}
-              style={[styles.iconButton, styles.iconDelete]}
-            >
-              <Feather name="trash-2" size={20} color="#ef4444" />
-            </TouchableOpacity>
-          </View>
-        ))}
+              <View style={styles.intervalFieldSmall}>
+                <Text style={styles.intervalLabel}>Duration</Text>
+                <TextInput
+                  value={String(interval.duration / 60)}
+                  keyboardType="numeric"
+                  onChangeText={(text) => {
+                    const val = text.replace(/[^0-9]/g, '');
+                    updateInterval(
+                      interval.id,
+                      'duration',
+                      val ? parseInt(val, 10) * 60 : 0
+                    );
+                  }}
+                  style={styles.intervalInput}
+                editable={!isSaving && !isDeleting}
+                />
+              </View>
 
-        <TouchableOpacity style={styles.addButton} onPress={addInterval}>
-          <Text style={styles.addButtonText}>Add Interval</Text>
-        </TouchableOpacity>
+              <View style={styles.intervalPowerField}>
+                <Text style={styles.intervalLabel}>Power Range (W)</Text>
+                <View style={styles.powerRow}>
+                  <TextInput
+                    value={String(interval.powerMin)}
+                    keyboardType="numeric"
+                    onChangeText={(text) => {
+                      const val = text.replace(/[^0-9]/g, '');
+                      updateInterval(
+                        interval.id,
+                        'powerMin',
+                        val ? parseInt(val, 10) : 0
+                      );
+                    }}
+                    style={styles.powerInput}
+                    editable={!isSaving && !isDeleting}
+                  />
+                  <Text style={styles.powerDash}>-</Text>
+                  <TextInput
+                    value={String(interval.powerMax)}
+                    keyboardType="numeric"
+                    onChangeText={(text) => {
+                      const val = text.replace(/[^0-9]/g, '');
+                      updateInterval(
+                        interval.id,
+                        'powerMax',
+                        val ? parseInt(val, 10) : 0
+                      );
+                    }}
+                    style={styles.powerInput}
+                editable={!isSaving && !isDeleting}
+                  />
+                </View>
+              </View>
+
+                
+              <TouchableOpacity
+                onPress={() => duplicateInterval(interval.id)}
+                style={[
+                  styles.iconButton,
+                  (isSaving || isDeleting) && styles.disabledOpacity,
+                ]}
+                disabled={isSaving || isDeleting}
+              >
+                <Feather name="copy" size={20} color="#2563eb" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => deleteInterval(interval.id)}
+                style={[
+                  styles.iconButton,
+                  (isSaving || isDeleting) && styles.disabledOpacity,
+                ]}
+                disabled={isSaving || isDeleting}
+              >
+                <Feather name="trash-2" size={20} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          <TouchableOpacity
+            style={[
+              styles.addButton,
+              (isSaving || isDeleting) && styles.disabledOpacity,
+            ]}
+            onPress={addInterval}
+            disabled={isSaving || isDeleting}
+          >
+            <Text style={styles.addButtonText}>Add Interval</Text>
+          </TouchableOpacity>
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.deleteButton}
+              style={[
+                styles.deleteButton,
+                (isDeleting || isSaving) && styles.disabledOpacity,
+              ]}
               onPress={handleDelete}
-              disabled={isDeleting}
+              disabled={isDeleting || isSaving}
               >
               <Text style={styles.deleteButtonText}>
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </Text>
             </TouchableOpacity>
             <View style={styles.footerButtons}>
-              <TouchableOpacity style={styles.footerCancel} onPress={onClose}>
+              <TouchableOpacity
+                style={[
+                  styles.footerCancel,
+                  (isSaving || isDeleting) && styles.disabledOpacity,
+                ]}
+                onPress={onClose}
+                disabled={isSaving || isDeleting}
+              >
                 <Text style={styles.footerCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.footerSave}
+                style={[
+                  styles.footerSave,
+                  (isSaving || isDeleting) && styles.disabledOpacity,
+                ]}
                 onPress={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || isDeleting}
               >
-                <Text style={styles.footerSaveText}>
-                  {isSaving ? 'Saving...' : 'Save'}
-                </Text>
+                {isSaving ? (
+                  <View style={styles.saveContent}>
+                    <LoadingSpinner size="small" />
+                    <Text style={styles.footerSaveText}>Saving...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.footerSaveText}>Save</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -435,11 +478,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   intervalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
+    color: '#ffffff',
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
@@ -449,16 +489,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   intervalFieldSmall: {
-    width: 80,
+    width: 60,
     marginRight: 8,
   },
   intervalPowerField: {
-    width: 140,
     marginRight: 8,
   },
   intervalLabel: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: 11,
+    color: '#ffffff',
     marginBottom: 2,
   },
   intervalInput: {
@@ -476,40 +515,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   powerInput: {
-    width: 52,
+    width: 45,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    backgroundColor: '#f3f4f6',
     paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingVertical: 8,
     fontSize: 13,
     color: '#111827',
   },
   powerDash: {
     marginHorizontal: 4,
-    color: '#4b5563',
+    color: '#ffffff',
   },
   iconButton: {
-    paddingHorizontal: 6,
+    paddingLeft: 6,
     paddingVertical: 6,
-  },
-  iconButtonText: {
-    fontSize: 16,
-    color: '#2563eb',
-  },
-  iconDelete: {
-    marginLeft: 2,
+    marginTop: 12,
   },
   iconDeleteText: {
     fontSize: 16,
     color: '#ef4444',
   },
   addButton: {
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: 4,
     backgroundColor: '#2563eb',
-    borderRadius: 9999,
-    paddingVertical: 12,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignSelf: 'center',
     alignItems: 'center',
   },
   addButtonText: {
@@ -518,6 +552,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
+    marginTop: 32,
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 8,
@@ -544,6 +579,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: '#2563eb',
+  },
+  disabledOpacity: {
+    opacity: 0.5,
+  },
+  saveContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
   footerSaveText: {
     fontSize: 14,
