@@ -6,9 +6,10 @@ import dayjs from 'dayjs';
 import { Header } from '../components/Header';
 import { ProfileScreen } from './ProfileScreen';
 import { WorkoutEditScreen } from './WorkoutEditScreen';
+import { PlannedRideEditScreen } from './PlannedRideEditScreen';
 import { OverviewScreen } from './OverviewScreen';
 import { CoachScreen } from './CoachScreen';
-import { Calendar } from '../components/calendar/Calendar';
+import { Calendar, ScheduledRideWorkout } from '../components/calendar/Calendar';
 import { createWorkout } from '@ridesofjulian/shared';
 import { supabase } from '../config/supabase';
 
@@ -21,6 +22,7 @@ export type DateRange = {
 export function HomeScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
+  const [editingPlannedWorkout, setEditingPlannedWorkout] = useState<ScheduledRideWorkout | null>(null);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const [activeTab, setActiveTab] = useState<'calendar' | 'overview' | 'coach'>('calendar');
   const [selectedRange, setSelectedRange] = useState('3months');
@@ -141,6 +143,7 @@ export function HomeScreen() {
               dateRange={currentDateRange}
               isLoadingDateRange={isLoadingDateRange}
               onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} 
+              onPlannedRidePress={(workout) => setEditingPlannedWorkout(workout)}
             />
           )}
           {activeTab === 'overview' && (
@@ -170,6 +173,20 @@ export function HomeScreen() {
           <WorkoutEditScreen 
             workoutId={editingWorkoutId} 
             onClose={() => setEditingWorkoutId(null)} 
+          />
+        )}
+      </Modal>
+
+      <Modal
+        visible={!!editingPlannedWorkout}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditingPlannedWorkout(null)}
+      >
+        {editingPlannedWorkout && (
+          <PlannedRideEditScreen
+            workout={editingPlannedWorkout}
+            onClose={() => setEditingPlannedWorkout(null)}
           />
         )}
       </Modal>

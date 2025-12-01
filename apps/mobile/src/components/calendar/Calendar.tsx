@@ -1,4 +1,4 @@
-import { ScrollView, View, StyleSheet, Dimensions, Text } from 'react-native';
+import { ScrollView, View, StyleSheet, Dimensions, Text, Pressable } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
@@ -12,7 +12,7 @@ import { getFtp } from '../../utils/ftpUtil';
 import { supabase } from '../../config/supabase';
 import type { DateRange } from '../../screens/HomeScreen';
 
-type Interval = {
+export type Interval = {
   id: string;
   name: string;
   duration: number;
@@ -20,11 +20,15 @@ type Interval = {
   powerMax: number;
 };
 
-type RideWorkout = {
+export type RideWorkout = {
   id: number;
   workoutTitle: string;
   selectedDate: string;
   intervals: Interval[];
+};
+
+export type ScheduledRideWorkout = RideWorkout & {
+  scheduleRowDate: string;
 };
 
 dayjs.extend(advancedFormat);
@@ -36,9 +40,10 @@ interface CalendarProps {
   onWorkoutPress?: (workoutId: string) => void;
   dateRange: DateRange;
   isLoadingDateRange?: boolean;
+  onPlannedRidePress?: (workout: ScheduledRideWorkout) => void;
 }
 
-export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: CalendarProps) {
+export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onPlannedRidePress }: CalendarProps) {
   const queryClient = useQueryClient();
 
   const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();
@@ -136,7 +141,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
   const rangeEnd = dayjs(dateRange.end);
   const futureLimit = today.add(7, 'day');
 
-  const scheduledByDate: Record<string, RideWorkout[]> = {};
+  const scheduledByDate: Record<string, ScheduledRideWorkout[]> = {};
 
   scheduleRows.forEach((row) => {
     if (!row.plan) return;
@@ -145,7 +150,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
       if (d.isBefore(today, 'day') || d.isAfter(futureLimit, 'day')) return;
       const key = d.format('YYYY-MM-DD');
       if (!scheduledByDate[key]) scheduledByDate[key] = [];
-      scheduledByDate[key].push(workout);
+      scheduledByDate[key].push({ ...workout, scheduleRowDate: row.date });
     });
   });
   
@@ -207,12 +212,13 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
                     : 0;
 
                 return (
-                  <View
+                  <Pressable
                     key={`scheduled-${workout.id}`}
                     style={[
                       styles.workoutCard,
                       isToday && styles.workoutCardToday,
                     ]}
+                    onPress={() => onPlannedRidePress && onPlannedRidePress(workout)}
                   >
                     <View style={styles.workoutHeader}>
                       <Text style={styles.workoutTitle}>
@@ -268,7 +274,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
                         </Text>
                       </View>
                     ))}
-                  </View>
+                  </Pressable>
                 );
               })}
               {!(scheduledWorkouts.length > 0 &&

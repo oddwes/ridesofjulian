@@ -1,20 +1,11 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  Pressable,
-  Platform,
-  Modal,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, View, Pressable, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
+import { DatePickerModal } from '../components/DatePickerModal';
 
 type Interval = {
   id: string;
@@ -53,15 +44,7 @@ export function CoachScreen() {
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
-  const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'end' | null>(
-    null
-  );
-  // Lazy require to avoid type resolution issues; package must be installed in the app.
-  const DateTimePicker =
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('@react-native-community/datetimepicker').default ||
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('@react-native-community/datetimepicker');
+  const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'end' | null>(null);
 
   useEffect(() => {
     const loadStored = async () => {
@@ -546,42 +529,18 @@ export function CoachScreen() {
         )}
       </ScrollView>
 
-      <Modal
+      <DatePickerModal
         visible={!!activeDatePicker}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setActiveDatePicker(null)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setActiveDatePicker(null)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={parseLocalDate(
-                  activeDatePicker === 'end' ? endDate : startDate
-                )}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-                // @ts-ignore - iOS-only prop, safe to ignore on Android
-                textColor="#f9fafb"
-                // @ts-ignore - iOS-only prop
-                themeVariant="dark"
-                onChange={(_: any, date?: Date) => {
-                  if (!date) return;
-                  if (activeDatePicker === 'end') {
-                    setEndDate(formatLocalDate(date));
-                  } else {
-                    setStartDate(formatLocalDate(date));
-                  }
-                  setActiveDatePicker(null);
-                }}
-              />
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
+        date={parseLocalDate(activeDatePicker === 'end' ? endDate : startDate)}
+        onChange={(date) => {
+          if (activeDatePicker === 'end') {
+            setEndDate(formatLocalDate(date));
+          } else {
+            setStartDate(formatLocalDate(date));
+          }
+        }}
+        onClose={() => setActiveDatePicker(null)}
+      />
     </>
   );
 }
