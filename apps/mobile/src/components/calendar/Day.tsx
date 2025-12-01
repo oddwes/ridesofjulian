@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   today: {
-    borderLeftWidth: 4,
+    borderWidth: 2,
     borderLeftColor: '#3b82f6',
   },
   dateText: {

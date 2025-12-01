@@ -209,7 +209,10 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
                 return (
                   <View
                     key={`scheduled-${workout.id}`}
-                    style={styles.workoutCard}
+                    style={[
+                      styles.workoutCard,
+                      isToday && styles.workoutCardToday,
+                    ]}
                   >
                     <View style={styles.workoutHeader}>
                       <Text style={styles.workoutTitle}>
@@ -306,6 +309,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#1f2937',
     padding: 12,
+  },
+  workoutCardToday: {
+    borderColor: '#3b82f6',
+    borderWidth: 2,
   },
   workoutHeader: {
     flexDirection: 'row',
