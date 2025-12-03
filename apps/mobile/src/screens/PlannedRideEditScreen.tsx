@@ -9,6 +9,7 @@ import type { Interval, RideWorkout, ScheduledRideWorkout } from '../components/
 import { DatePickerModal } from '../components/DatePickerModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { formatDuration } from '../utils/formatUtil';
+import { connectWahoo, createWahooWorkout, deleteWahooWorkout, ensureValidWahooToken } from '../utils/WahooUtil';
 
 interface PlannedRideEditScreenProps {
   workout: ScheduledRideWorkout;
@@ -30,6 +31,8 @@ export function PlannedRideEditScreen({ workout, onClose }: PlannedRideEditScree
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isPushingToWahoo, setIsPushingToWahoo] = useState(false);
+  const [wahooId, setWahooId] = useState<number | null>(workout.wahooId ?? null);
 
   const totalDurationMinutes = useMemo(
     () => intervals.reduce((sum, interval) => sum + interval.duration / 60, 0),
@@ -148,34 +151,108 @@ export function PlannedRideEditScreen({ workout, onClose }: PlannedRideEditScree
     }
   };
 
+  const handleWahooPress = async () => {
+    if (!session?.user?.id) return;
+    if (isSaving || isDeleting || isPushingToWahoo) return;
+
+    setIsPushingToWahoo(true);
+    try {
+      if (wahooId) {
+        await deleteWahooWorkout(wahooId);
+        await updateSchedule((plan) =>
+          plan.map((w) =>
+            w.id === workout.id ? { ...w, wahooId: undefined } : w
+          )
+        );
+        setWahooId(null);
+        return;
+      }
+
+      if (!intervals.length) return;
+
+      const token = await ensureValidWahooToken();
+      let hasToken = !!token;
+
+      if (!hasToken) {
+        const ok = await connectWahoo();
+        if (!ok) {
+          return;
+        }
+        hasToken = true;
+      }
+
+      if (!hasToken) return;
+
+      const result = await createWahooWorkout({
+        id: workout.id,
+        workoutTitle,
+        selectedDate,
+        intervals,
+      });
+
+      await updateSchedule((plan) =>
+        plan.map((w) =>
+          w.id === workout.id ? { ...w, wahooId: result.workoutId } : w
+        )
+      );
+      setWahooId(result.workoutId);
+    } catch (error) {
+      console.error('Failed to sync workout with Wahoo:', error);
+    } finally {
+      setIsPushingToWahoo(false);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={styles.container}>
         <View style={styles.modalHandle} />
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.header}>
-            <TextInput
-              value={workoutTitle}
-              onChangeText={setWorkoutTitle}
-              style={styles.headerTitle}
-              placeholder="Workout title"
-              placeholderTextColor="#9ca3af"
-              editable={!isSaving && !isDeleting}
-            />
-            <View style={styles.headerSubtitleContainer}>
-              <TouchableOpacity
-                onPress={() => !isSaving && !isDeleting && setShowDatePicker(true)}
-                disabled={isSaving || isDeleting}
-                style={isSaving || isDeleting ? styles.disabledOpacity : undefined}
-              >
+            {/* <View style={styles.headerMain}> */}
+              <TextInput
+                value={workoutTitle}
+                onChangeText={setWorkoutTitle}
+                style={styles.headerTitle}
+                placeholder="Workout title"
+                placeholderTextColor="#9ca3af"
+                editable={!isSaving && !isDeleting}
+              />
+              <View style={styles.headerSubtitleContainer}>
+                <TouchableOpacity
+                  onPress={() => !isSaving && !isDeleting && setShowDatePicker(true)}
+                  disabled={isSaving || isDeleting}
+                  style={isSaving || isDeleting ? styles.disabledOpacity : undefined}
+                >
+                  <Text style={styles.headerSubtitle}>
+                    {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                  </Text>
+                </TouchableOpacity>
                 <Text style={styles.headerSubtitle}>
-                  {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                  {formatDuration(Math.round(totalDurationMinutes))}
                 </Text>
-              </TouchableOpacity>
-              <Text style={styles.headerSubtitle}>
-                {formatDuration(Math.round(totalDurationMinutes))}
+              </View>
+            {/* </View> */}
+          </View>
+          <View style={styles.pushWorkoutContainer}>
+            <TouchableOpacity
+              style={[
+                styles.pushWahooButton,
+                wahooId ? styles.pushWahooButtonRemove : styles.pushWahooButtonPush,
+                (isSaving || isDeleting || isPushingToWahoo || (!intervals.length && !wahooId)) &&
+                  styles.disabledOpacity,
+              ]}
+              onPress={handleWahooPress}
+              disabled={isSaving || isDeleting || isPushingToWahoo || (!intervals.length && !wahooId)}
+            >
+              <Text style={styles.pushWahooText}>
+                {isPushingToWahoo
+                  ? 'Working...'
+                  : wahooId
+                  ? 'Remove from Wahoo'
+                  : 'Push to Wahoo'}
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {intervals.length > 0 && maxPower > 0 && (
@@ -402,6 +479,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ffffff',
     marginTop: 4,
+  },
+  pushWorkoutContainer: {
+    marginBottom: 16,
+  },
+  pushWahooButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  pushWahooButtonPush: {
+    backgroundColor: '#2563eb',
+  },
+  pushWahooButtonRemove: {
+    backgroundColor: '#ef4444',
+  },
+  pushWahooText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   durationText: {
     fontSize: 16,

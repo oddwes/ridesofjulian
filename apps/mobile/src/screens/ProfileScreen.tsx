@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { connectStrava, disconnectStrava, ensureValidStravaToken } from '../utils/StravaUtil';
 import { StravaIcon } from '../components/StravaIcon';
+import { connectWahoo, disconnectWahoo, ensureValidWahooToken } from '../utils/WahooUtil';
 
 type ProfileScreenProps = {
   onClose: () => void;
@@ -27,6 +28,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const [weightIsSaving, setWeightIsSaving] = useState(false);
   const [weightShowSuccess, setWeightShowSuccess] = useState(false);
   const [stravaConnected, setStravaConnected] = useState(false);
+  const [wahooConnected, setWahooConnected] = useState(false);
 
   useEffect(() => {
     const fetchFtp = async () => {
@@ -71,11 +73,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   }, [session?.user?.id]);
 
   useEffect(() => {
-    const checkStrava = async () => {
-      const hasValidToken = await ensureValidStravaToken();
-      setStravaConnected(hasValidToken);
+    const checkConnections = async () => {
+      const hasStrava = await ensureValidStravaToken();
+      const wahooToken = await ensureValidWahooToken();
+      setStravaConnected(hasStrava);
+      setWahooConnected(!!wahooToken);
     };
-    checkStrava();
+    checkConnections();
   }, []);
 
   const handleFtpInputChange = (text: string) => {
@@ -267,9 +271,21 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
       await disconnectStrava();
       setStravaConnected(false);
     } else {
-    const ok = await connectStrava();
-    if (ok) {
-      setStravaConnected(true);
+      const ok = await connectStrava();
+      if (ok) {
+        setStravaConnected(true);
+      }
+    }
+  };
+
+  const handleWahooPress = async () => {
+    if (wahooConnected) {
+      await disconnectWahoo();
+      setWahooConnected(false);
+    } else {
+      const ok = await connectWahoo();
+      if (ok) {
+        setWahooConnected(true);
       }
     }
   };
@@ -393,8 +409,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
             <StravaIcon size={20} />
           </Pressable>
 
-          <Pressable style={[styles.serviceButton, styles.wahooButton]}>
-            <Text style={styles.serviceButtonText}>Connect to</Text>
+          <Pressable
+            style={[styles.serviceButton, styles.wahooButton]}
+            onPress={handleWahooPress}
+          >
+            <Text style={styles.serviceButtonText}>
+              {wahooConnected ? 'Disconnect from ' : 'Connect to '}
+            </Text>
             <Image
               source={require('../../assets/wahoo.png')}
               style={styles.wahooIcon}

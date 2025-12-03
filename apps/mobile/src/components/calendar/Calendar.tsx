@@ -26,6 +26,7 @@ export type RideWorkout = {
   workoutTitle: string;
   selectedDate: string;
   intervals: Interval[];
+  wahooId?: number;
 };
 
 export type ScheduledRideWorkout = RideWorkout & {
