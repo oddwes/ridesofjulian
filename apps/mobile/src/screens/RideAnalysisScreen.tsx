@@ -192,20 +192,6 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
     setIsAnalyzing(true);
     setAnalysisError(null);
     try {
-      if (!hasAnalysisRow) {
-        const { error } = await supabase
-          .from('ride_analysis')
-          .insert({
-            user_id: user.id,
-            strava_id: activity.id,
-            analysis: null,
-          });
-        if (error) {
-          console.error('Failed to create ride_analysis row', error);
-        } else {
-          setHasAnalysisRow(true);
-        }
-      }
       setIsQueued(true);
 
       const slimLaps =
@@ -282,7 +268,8 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
       );
 
       if (!response.ok) {
-        setAnalysisError('Failed to analyze ride.');
+        setAnalysisError('Failed to analyze ride');
+        setIsQueued(false);
         return;
       }
 
@@ -292,7 +279,8 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
         setIsQueued(false);
       }
     } catch (e) {
-      setAnalysisError('Failed to analyze ride.');
+      setAnalysisError('Failed to analyze ride');
+      setIsQueued(false);
     } finally {
       setIsAnalyzing(false);
     }
@@ -369,7 +357,7 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
           {analysisError && (
             <Text style={styles.errorText}>{analysisError}</Text>
           )}
-          {isQueued && !analysis && (
+          {isQueued && !analysis && !analysisError && (
             <Animated.Text
               style={[
                 styles.loadingAnalysisText,
@@ -483,6 +471,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#f97316',
     fontSize: 12,
+    textAlign: 'center',
   },
   loadingAnalysisText: {
     marginTop: 8,

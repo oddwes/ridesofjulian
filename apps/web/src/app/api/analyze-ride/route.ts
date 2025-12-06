@@ -115,6 +115,22 @@ export async function POST(request: NextRequest) {
       workout_plan,
     });
 
+    if (user_id && strava_id != null) {
+      const { error: upsertPendingError } = await supabase
+        .from('ride_analysis')
+        .upsert(
+          {
+            user_id,
+            strava_id,
+            analysis: null,
+          },
+          { onConflict: 'user_id,strava_id' }
+        );
+      if (upsertPendingError) {
+        console.error('Error creating pending ride analysis row:', upsertPendingError);
+      }
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1",
       messages: [
