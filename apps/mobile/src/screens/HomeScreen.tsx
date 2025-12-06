@@ -9,6 +9,7 @@ import { WorkoutEditScreen } from './WorkoutEditScreen';
 import { PlannedRideEditScreen } from './PlannedRideEditScreen';
 import { OverviewScreen } from './OverviewScreen';
 import { CoachScreen } from './CoachScreen';
+import { PlanScreen } from './PlanScreen';
 import { Calendar, ScheduledRideWorkout } from '../components/calendar/Calendar';
 import { createWorkout } from '@ridesofjulian/shared';
 import { supabase } from '../config/supabase';
@@ -24,7 +25,7 @@ export function HomeScreen() {
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [editingPlannedWorkout, setEditingPlannedWorkout] = useState<ScheduledRideWorkout | null>(null);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'overview' | 'coach'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'overview' | 'coach' | 'plan'>('calendar');
   const [selectedRange, setSelectedRange] = useState('3months');
   const [isLoadingDateRange, setIsLoadingDateRange] = useState(false);
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
@@ -109,7 +110,7 @@ export function HomeScreen() {
         isCreatingWorkout={isCreatingWorkout}
       />
 
-      {(activeTab == 'overview' || activeTab == 'calendar') && (
+      {(activeTab === 'overview' || activeTab === 'calendar' || activeTab === 'plan') && (
         <>
           <View style={styles.tabBar}>
             <Pressable
@@ -126,6 +127,14 @@ export function HomeScreen() {
             >
               <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
                 Overview
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tab, activeTab === 'plan' && styles.tabActive]}
+              onPress={() => setActiveTab('plan')}
+            >
+              <Text style={[styles.tabText, activeTab === 'plan' && styles.tabTextActive]}>
+                Plan
               </Text>
             </Pressable>
           </View>
@@ -148,6 +157,13 @@ export function HomeScreen() {
           )}
           {activeTab === 'overview' && (
             <OverviewScreen dateRange={currentDateRange} />
+          )}
+          {activeTab === 'plan' && (
+            <PlanScreen 
+              dateRange={currentDateRange}
+              isLoadingDateRange={isLoadingDateRange}
+              onPlannedRidePress={(workout) => setEditingPlannedWorkout(workout)}
+            />
           )}
         </>
       )}
@@ -260,6 +276,15 @@ export function HomeScreen() {
                 }}
               >
                 <Text style={styles.sidebarItemText}>Overview</Text>
+              </Pressable>
+              <Pressable
+                style={styles.sidebarItem}
+                onPress={() => {
+                  setActiveTab('plan');
+                  closeSidebar();
+                }}
+              >
+                <Text style={styles.sidebarItemText}>Plan</Text>
               </Pressable>
               <Pressable
                 style={styles.sidebarItem}
