@@ -1,14 +1,16 @@
 import { ScrollView, View, StyleSheet, Dimensions, Text, Pressable } from 'react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { SlidingLoadingIndicator } from '../components/SlidingLoadingIndicator';
 import { Day } from '../components/calendar/Day';
-import { supabase } from '../config/supabase';
-import { getFtp, getFtpForDate, type FtpData } from '../utils/ftpUtil';
+import { getFtpForDate, type FtpData } from '../utils/ftpUtil';
 import { PlanWeeklySummary } from '../components/PlanWeeklySummary';
+import { useSchedule } from '../hooks/useSchedule';
+import { useUser } from '../hooks/useUser';
+import { useFtpHistory } from '../hooks/useFtpHistory';
 import type { DateRange } from './HomeScreen';
 import type { Interval, RideWorkout, ScheduledRideWorkout } from '../components/calendar/Calendar';
 
@@ -59,38 +61,10 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
   const scrollY = useRef(0);
   const isRefreshing = useRef(false);
 
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
-  });
+  const { data: user } = useUser();
+  const { data: ftpHistory } = useFtpHistory(user?.id);
 
-  const { data: ftpHistory } = useQuery<FtpData | null>({
-    queryKey: ['ftpHistory', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      return await getFtp(supabase, user.id);
-    },
-    enabled: !!user,
-  });
-
-  const { data: scheduleRows = [], isLoading: scheduleLoading } = useQuery({
-    queryKey: ['schedule', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('schedule')
-        .select('date, plan, type')
-        .eq('user_id', user.id)
-        .eq('type', 'cycling')
-        .order('date', { ascending: true });
-      if (error) throw error;
-      return data as { date: string; plan: RideWorkout[]; type: string }[];
-    },
-    enabled: !!user,
-  });
+  const { data: scheduleRows = [], isLoading: scheduleLoading } = useSchedule(user?.id);
 
   const isLoading = scheduleLoading;
   const showLoadingPill = isLoading || refreshing || isLoadingDateRange;

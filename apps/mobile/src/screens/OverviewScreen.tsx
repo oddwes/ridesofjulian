@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange';
 import { useWorkouts } from '../hooks/useWorkouts';
-import { getFtp, type FtpData, getFtpForDate } from '../utils/ftpUtil';
-import { supabase } from '../config/supabase';
+import { type FtpData, getFtpForDate } from '../utils/ftpUtil';
 import { getTSS, type StravaActivity } from '../utils/StravaUtil';
+import { useUser } from '../hooks/useUser';
+import { useFtpHistory } from '../hooks/useFtpHistory';
 import { FTPGraph } from '../components/FTPGraph';
 import { SlidingLoadingIndicator } from '../components/SlidingLoadingIndicator';
 import type { DateRange } from './HomeScreen';
@@ -34,22 +34,8 @@ export function OverviewScreen({ dateRange }: OverviewScreenProps) {
     [allWorkouts, dateRange]
   );
 
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
-  });
-
-  const { data: ftpHistory, isLoading: ftpLoading } = useQuery<FtpData | null>({
-    queryKey: ['ftpHistory', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      return await getFtp(supabase, user.id);
-    },
-    enabled: !!user,
-  });
+  const { data: user } = useUser();
+  const { data: ftpHistory, isLoading: ftpLoading } = useFtpHistory(user?.id);
 
   const cyclingActivities = useMemo(
     () =>

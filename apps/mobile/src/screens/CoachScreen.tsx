@@ -6,6 +6,7 @@ import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { DatePickerModal } from '../components/DatePickerModal';
+import { useSchedule } from '../hooks/useSchedule';
 
 type Interval = {
   id: string;
@@ -27,6 +28,7 @@ const INPUTS_KEY = 'training_plan_inputs';
 
 export function CoachScreen() {
   const { session } = useAuth();
+  const { data: scheduleData } = useSchedule(session?.user?.id);
   const [userPrompt, setUserPrompt] = useState('');
   const [ftp, setFtp] = useState<number>(200);
   const [blockDuration, setBlockDuration] = useState<number>(7);
@@ -289,6 +291,12 @@ export function CoachScreen() {
     return 'rgba(220, 38, 38, 0.85)';
   };
 
+  const hasMatchingPlan = !!scheduleData?.some(
+    (row) =>
+      row.date === startDate &&
+      JSON.stringify(row.plan) === JSON.stringify(generatedPlan)
+  );
+
   const handleSavePlan = async () => {
     try {
       await savePlanAndInputs(generatedPlan);
@@ -403,13 +411,15 @@ export function CoachScreen() {
           <View style={styles.planSection}>
             <View style={styles.planHeader}>
               <Text style={styles.planTitle}>Your Training Plan</Text>
-              <Pressable
-                style={styles.saveButton}
-                onPress={handleSavePlan}
-                disabled={isGenerating || !generatedPlan.length}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </Pressable>
+              {!hasMatchingPlan && (
+                <Pressable
+                  style={styles.saveButton}
+                  onPress={handleSavePlan}
+                  disabled={isGenerating || !generatedPlan.length}
+                >
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </Pressable>
+              )}
             </View>
 
             {groupWorkoutsByWeek(generatedPlan).map(([weekKey, workouts]) => {

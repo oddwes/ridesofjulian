@@ -118,6 +118,18 @@ export interface StravaActivity {
   average_heartrate?: number;
 }
 
+export interface StravaLap {
+  id: number;
+  elapsed_time: number;
+  average_watts?: number;
+  average_heartrate?: number;
+  average_cadence?: number;
+}
+
+export interface StravaDetailedActivity extends StravaActivity {
+  laps?: StravaLap[];
+}
+
 const stravaApiGet = async (url: string, params: Record<string, any> = {}) => {
   const accessToken = await AsyncStorage.getItem(STRAVA_ACCESS_TOKEN_KEY);
   if (!accessToken) throw new Error('No Strava access token');
@@ -151,6 +163,10 @@ export const getAthleteActivities = async (year: number, page = 1): Promise<Stra
   }
 
   return activities;
+};
+
+export const getActivityById = async (id: number): Promise<StravaDetailedActivity> => {
+  return stravaApiGet(`https://www.strava.com/api/v3/activities/${id}`);
 };
 
 export const getTSS = (activity: StravaActivity, ftp: number): number => {

@@ -1,5 +1,5 @@
 import { ScrollView, View, StyleSheet, Dimensions } from 'react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
@@ -9,8 +9,9 @@ import { WeeklySummary } from '../WeeklySummary';
 import { SlidingLoadingIndicator } from '../SlidingLoadingIndicator';
 import { useWorkouts } from '../../hooks/useWorkouts';
 import { useStravaActivitiesForDateRange } from '../../hooks/useStravaActivitiesForDateRange';
-import { getFtp } from '../../utils/ftpUtil';
-import { supabase } from '../../config/supabase';
+import { useUser } from '../../hooks/useUser';
+import { useFtpHistory } from '../../hooks/useFtpHistory';
+import type { StravaActivity } from '../../utils/StravaUtil';
 import type { DateRange } from '../../screens/HomeScreen';
 
 export type Interval = {
@@ -43,9 +44,10 @@ interface CalendarProps {
   onWorkoutPress?: (workoutId: string) => void;
   dateRange: DateRange;
   isLoadingDateRange?: boolean;
+  onActivityPress?: (activity: StravaActivity) => void;
 }
 
-export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: CalendarProps) {
+export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onActivityPress }: CalendarProps) {
   const queryClient = useQueryClient();
 
   const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();
@@ -92,22 +94,8 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
     }
   };
   
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
-  });
-
-  const { data: ftpHistory } = useQuery({
-    queryKey: ['ftpHistory', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      return await getFtp(supabase, user.id);
-    },
-    enabled: !!user,
-  });
+  const { data: user } = useUser();
+  const { data: ftpHistory } = useFtpHistory(user?.id);
 
   const today = dayjs().startOf('day');
   const rangeStart = dayjs(dateRange.start);
@@ -166,6 +154,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: Cale
                 activities={dayActivities}
                 ftpHistory={ftpHistory}
                 onWorkoutPress={onWorkoutPress}
+                onActivityPress={onActivityPress}
               />
             </View>
           );

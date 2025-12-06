@@ -7,10 +7,12 @@ import { Header } from '../components/Header';
 import { ProfileScreen } from './ProfileScreen';
 import { WorkoutEditScreen } from './WorkoutEditScreen';
 import { PlannedRideEditScreen } from './PlannedRideEditScreen';
+import { RideAnalysisScreen } from './RideAnalysisScreen';
 import { OverviewScreen } from './OverviewScreen';
 import { CoachScreen } from './CoachScreen';
 import { PlanScreen } from './PlanScreen';
 import { Calendar, ScheduledRideWorkout } from '../components/calendar/Calendar';
+import type { StravaActivity } from '../utils/StravaUtil';
 import { createWorkout } from '@ridesofjulian/shared';
 import { supabase } from '../config/supabase';
 
@@ -24,6 +26,7 @@ export function HomeScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [editingPlannedWorkout, setEditingPlannedWorkout] = useState<ScheduledRideWorkout | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
   const [isCreatingWorkout, setIsCreatingWorkout] = useState(false);
   const [activeTab, setActiveTab] = useState<'calendar' | 'overview' | 'coach' | 'plan'>('calendar');
   const [selectedRange, setSelectedRange] = useState('3months');
@@ -152,6 +155,7 @@ export function HomeScreen() {
               dateRange={currentDateRange}
               isLoadingDateRange={isLoadingDateRange}
               onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} 
+              onActivityPress={(activity) => setSelectedActivity(activity)}
             />
           )}
           {activeTab === 'overview' && (
@@ -202,6 +206,20 @@ export function HomeScreen() {
           <PlannedRideEditScreen
             workout={editingPlannedWorkout}
             onClose={() => setEditingPlannedWorkout(null)}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        visible={selectedActivity != null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSelectedActivity(null)}
+      >
+        {selectedActivity && (
+          <RideAnalysisScreen
+            activity={selectedActivity}
+            onClose={() => setSelectedActivity(null)}
           />
         )}
       </Modal>

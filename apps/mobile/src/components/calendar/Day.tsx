@@ -12,9 +12,10 @@ interface DayProps {
   activities?: StravaActivity[];
   ftpHistory?: FtpData | null;
   onWorkoutPress?: (workoutId: string) => void;
+  onActivityPress?: (activity: StravaActivity) => void;
 }
 
-export function Day({ date, isToday, workouts = [], activities = [], ftpHistory, onWorkoutPress }: DayProps) {
+export function Day({ date, isToday, workouts = [], activities = [], ftpHistory, onWorkoutPress, onActivityPress }: DayProps) {
   const hasWorkouts = workouts.length > 0 || activities.length > 0;
   const formattedDate = date.format('MMMM Do, YYYY');
 
@@ -52,7 +53,7 @@ export function Day({ date, isToday, workouts = [], activities = [], ftpHistory,
               <RideCard
                 key={activity.id}
                 activity={activity}
-                onPress={handleActivityPress}
+                onPress={onActivityPress ? () => onActivityPress(activity) : handleActivityPress}
                 ftpForActivity={ftpForActivity}
                 getTSS={getTSS}
                 formatDistance={formatDistance}
