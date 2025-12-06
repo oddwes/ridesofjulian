@@ -1,4 +1,4 @@
-import { ScrollView, View, StyleSheet, Dimensions, Text, Pressable } from 'react-native';
+import { ScrollView, View, StyleSheet, Dimensions } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
@@ -43,10 +43,9 @@ interface CalendarProps {
   onWorkoutPress?: (workoutId: string) => void;
   dateRange: DateRange;
   isLoadingDateRange?: boolean;
-  onPlannedRidePress?: (workout: ScheduledRideWorkout) => void;
 }
 
-export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onPlannedRidePress }: CalendarProps) {
+export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange }: CalendarProps) {
   const queryClient = useQueryClient();
 
   const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();
@@ -110,55 +109,12 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onPlan
     enabled: !!user,
   });
 
-  const { data: scheduleRows = [] } = useQuery({
-    queryKey: ['schedule', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('schedule')
-        .select('date, plan, type')
-        .eq('user_id', user.id)
-        .eq('type', 'cycling')
-        .order('date', { ascending: true });
-      if (error) throw error;
-      return data as { date: string; plan: RideWorkout[]; type: string }[];
-    },
-    enabled: !!user,
-  });
-
-  const formatDurationMinutes = (intervals: Interval[]) =>
-    intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
-
-  const getIntervalColor = (powerMin: number, powerMax: number) => {
-    const avgPower = (powerMin + powerMax) / 2;
-    if (avgPower < 100) return 'rgba(156, 163, 175, 0.8)';
-    if (avgPower < 150) return 'rgba(96, 165, 250, 0.8)';
-    if (avgPower < 200) return 'rgba(52, 211, 153, 0.8)';
-    if (avgPower < 250) return 'rgba(251, 191, 36, 0.8)';
-    if (avgPower < 300) return 'rgba(251, 146, 60, 0.8)';
-    return 'rgba(220, 38, 38, 0.85)';
-  };
-
   const today = dayjs().startOf('day');
   const rangeStart = dayjs(dateRange.start);
   const rangeEnd = dayjs(dateRange.end);
-  const futureLimit = today.add(7, 'day');
-
-  const scheduledByDate: Record<string, ScheduledRideWorkout[]> = {};
-
-  scheduleRows.forEach((row) => {
-    if (!row.plan) return;
-    row.plan.forEach((workout) => {
-      const d = dayjs(workout.selectedDate);
-      if (d.isBefore(today, 'day') || d.isAfter(futureLimit, 'day')) return;
-      const key = d.format('YYYY-MM-DD');
-      if (!scheduledByDate[key]) scheduledByDate[key] = [];
-      scheduledByDate[key].push({ ...workout, scheduleRowDate: row.date });
-    });
-  });
   
   const days = [];
-  const endForDays = rangeEnd.isBefore(today, 'day') ? rangeEnd : futureLimit;
+  const endForDays = rangeEnd.isBefore(today, 'day') ? rangeEnd : today;
   let currentDate = endForDays;
 
   while (currentDate.isAfter(rangeStart) || currentDate.isSame(rangeStart, 'day')) {
@@ -187,7 +143,6 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onPlan
 
           const isToday = date.isSame(today, 'day');
           const dateStr = date.format('YYYY-MM-DD');
-          const scheduledWorkouts = scheduledByDate[dateStr] ?? [];
           const dayWorkouts = workouts.filter(w => 
             dayjs(w.datetime).format('YYYY-MM-DD') === dateStr
           );
@@ -204,94 +159,14 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onPlan
                   weekStart={weekStart}
                 />
               )}
-              {scheduledWorkouts.map((workout) => {
-                const totalMinutes = formatDurationMinutes(workout.intervals);
-                const maxPower =
-                  workout.intervals.length > 0
-                    ? Math.max(
-                        300,
-                        ...workout.intervals.map((i) => i.powerMax || 0)
-                      )
-                    : 0;
-
-                return (
-                  <Pressable
-                    key={`scheduled-${workout.id}`}
-                    style={[
-                      styles.workoutCard,
-                      isToday && styles.workoutCardToday,
-                    ]}
-                    onPress={() => onPlannedRidePress && onPlannedRidePress(workout)}
-                  >
-                    <View style={styles.workoutHeader}>
-                      <Text style={styles.workoutTitle}>
-                        {workout.workoutTitle}
-                      </Text>
-                    </View>
-                    <Text style={styles.workoutMeta}>
-                      {dayjs(workout.selectedDate).format('YYYY-MM-DD')} |{' '}
-                      {Math.floor(totalMinutes / 60)}h{' '}
-                      {Math.round(totalMinutes % 60)}m
-                    </Text>
-
-                    {workout.intervals.length > 0 && maxPower > 0 && (
-                      <View style={styles.workoutChart}>
-                        <View style={styles.workoutChartRow}>
-                          {workout.intervals.map((interval) => {
-                            if (!interval.duration) return null;
-                            const barHeight =
-                              (interval.powerMax / maxPower) * 72 || 4;
-                            return (
-                              <View
-                                key={interval.id}
-                                style={[
-                                  styles.workoutChartSegment,
-                                  { flex: interval.duration },
-                                ]}
-                              >
-                                <View
-                                  style={[
-                                    styles.workoutChartBar,
-                                    {
-                                      height: Math.max(barHeight, 4),
-                                      backgroundColor: getIntervalColor(
-                                        interval.powerMin,
-                                        interval.powerMax
-                                      ),
-                                    },
-                                  ]}
-                                />
-                              </View>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    )}
-
-                    {workout.intervals.map((interval) => (
-                      <View key={interval.id} style={styles.intervalRow}>
-                        <Text style={styles.intervalName}>{interval.name}</Text>
-                        <Text style={styles.intervalMeta}>
-                          {interval.duration / 60}m | {interval.powerMin}-
-                          {interval.powerMax}W
-                        </Text>
-                      </View>
-                    ))}
-                  </Pressable>
-                );
-              })}
-              {!(scheduledWorkouts.length > 0 &&
-                dayWorkouts.length === 0 &&
-                dayActivities.length === 0) && (
-                <Day
-                  date={date}
-                  isToday={isToday}
-                  workouts={dayWorkouts}
-                  activities={dayActivities}
-                  ftpHistory={ftpHistory}
-                  onWorkoutPress={onWorkoutPress}
-                />
-              )}
+              <Day
+                date={date}
+                isToday={isToday}
+                workouts={dayWorkouts}
+                activities={dayActivities}
+                ftpHistory={ftpHistory}
+                onWorkoutPress={onWorkoutPress}
+              />
             </View>
           );
         })}

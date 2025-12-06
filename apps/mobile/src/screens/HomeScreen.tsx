@@ -152,7 +152,6 @@ export function HomeScreen() {
               dateRange={currentDateRange}
               isLoadingDateRange={isLoadingDateRange}
               onWorkoutPress={(workoutId) => setEditingWorkoutId(workoutId)} 
-              onPlannedRidePress={(workout) => setEditingPlannedWorkout(workout)}
             />
           )}
           {activeTab === 'overview' && (
