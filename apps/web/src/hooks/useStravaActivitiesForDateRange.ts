@@ -31,8 +31,8 @@ export const useStravaActivitiesForDateRange = (startDate: string, endDate: stri
 
   const activities = useMemo(
     () =>
-      allActivities.filter((a: any) => {
-        const date = dayjs(a.start_date);
+      allActivities.filter((a) => {
+        const date = dayjs((a as { start_date: string }).start_date);
         return (
           date.isAfter(dayjs(startDate).subtract(1, 'day')) &&
           date.isBefore(dayjs(endDate).add(1, 'day'))
