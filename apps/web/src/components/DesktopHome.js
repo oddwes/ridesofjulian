@@ -48,6 +48,7 @@ const DesktopHome = () => {
 
   return (
     <div className="flex flex-col items-center gap-4 w-full justify-center">
+      <TabNavigation />
       <div className="mt-2">
         <DateRangeDropdown
           value={dateRangeOptions.find(option => option.value === selectedRange)}

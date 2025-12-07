@@ -115,7 +115,7 @@ export function HomeScreen() {
 
       {(activeTab === 'overview' || activeTab === 'calendar' || activeTab === 'plan') && (
         <>
-          <View style={styles.tabBar}>
+          {/* <View style={styles.tabBar}>
             <Pressable
               style={[styles.tab, activeTab === 'calendar' && styles.tabActive]}
               onPress={() => setActiveTab('calendar')}
@@ -140,7 +140,7 @@ export function HomeScreen() {
                 Plan
               </Text>
             </Pressable>
-          </View>
+          </View> */}
           <View style={styles.pickerSection}>
             <Pressable 
               style={styles.pickerContainer}
