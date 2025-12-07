@@ -19,17 +19,13 @@ export const GymCard = ({
 }) => {
   const formatExercise = (exercise: { name?: string; weight?: number }) => {
     if (!exercise?.name) return ''
-    return exercise.weight ? `${exercise.name} (${exercise.weight} lbs)` : exercise.name
+    return exercise.name
   }
   
   const exercises = workout.exercises || []
+  const subtitle = exercises.map(formatExercise).filter(Boolean).join(', ')
   
   if (variant === 'mobile') {
-    const itemsPerColumn = Math.ceil(exercises.length / 3)
-    const column1 = exercises.slice(0, itemsPerColumn)
-    const column2 = exercises.slice(itemsPerColumn, itemsPerColumn * 2)
-    const column3 = exercises.slice(itemsPerColumn * 2)
-    
     return (
       <div 
         onClick={onClick}
@@ -39,35 +35,13 @@ export const GymCard = ({
           <div className="text-sm font-semibold text-purple-800 mb-2">
             💪 Gym
           </div>
-          <div className="flex gap-2 text-[11px] text-purple-700">
-            <div className="flex flex-col">
-              {column1.map((exercise, idx) => (
-                <div key={idx}>{formatExercise(exercise)}</div>
-              ))}
-            </div>
-            {column2.length > 0 && (
-              <div className="flex flex-col">
-                {column2.map((exercise, idx) => (
-                  <div key={idx}>{formatExercise(exercise)}</div>
-                ))}
-              </div>
-            )}
-            {column3.length > 0 && (
-              <div className="flex flex-col">
-                {column3.map((exercise, idx) => (
-                  <div key={idx}>{formatExercise(exercise)}</div>
-                ))}
-              </div>
-            )}
+          <div className="text-[11px] text-purple-700">
+            {subtitle}
           </div>
         </div>
       </div>
     )
   }
-
-  const midpoint = Math.ceil(exercises.length / 2)
-  const leftColumn = exercises.slice(0, midpoint)
-  const rightColumn = exercises.slice(midpoint)
 
   return (
     <div 
@@ -78,19 +52,8 @@ export const GymCard = ({
         <div className="text-sm font-semibold text-purple-800 mb-2">
           💪 Gym
         </div>
-        <div className="flex gap-4 text-xs text-purple-700 w-full justify-center">
-          <div className="flex flex-col">
-            {leftColumn.map((exercise, idx) => (
-              <div key={idx}>{formatExercise(exercise)}</div>
-            ))}
-          </div>
-          {rightColumn.length > 0 && (
-            <div className="flex flex-col">
-              {rightColumn.map((exercise, idx) => (
-                <div key={idx}>{formatExercise(exercise)}</div>
-              ))}
-            </div>
-          )}
+        <div className="text-xs text-purple-700 w-full text-center">
+          {subtitle}
         </div>
       </div>
     </div>

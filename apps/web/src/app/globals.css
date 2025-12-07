@@ -37,3 +37,17 @@ input[type="datetime-local"] {
   font: inherit;
   font-size: 16px;
 }
+
+.loading-pill {
+  transform: translateX(-100px);
+  animation: slide-pill 1.5s linear infinite;
+}
+
+@keyframes slide-pill {
+  0% {
+    transform: translateX(-100px);
+  }
+  100% {
+    transform: translateX(400px);
+  }
+}

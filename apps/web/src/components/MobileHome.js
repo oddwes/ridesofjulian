@@ -2,23 +2,32 @@
 
 import { format, subDays, parseISO, startOfDay } from 'date-fns'
 import dayjs from 'dayjs'
+import isoWeek from 'dayjs/plugin/isoWeek'
+import { useQuery } from '@tanstack/react-query'
 import { useWorkoutData } from '../hooks/useWorkoutData'
-import { LoadingSpinner } from './LoadingSpinner'
 import { formatDateKey, isDateMatch } from '../utils/DateUtil'
 import { PlannedRideCard } from './calendar/RideCard'
 import { RideCardWeb } from './calendar/RideCardWeb'
 import { GymCardWeb } from './calendar/GymCardWeb'
+import { WeeklySummary } from './WeeklySummary'
+import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
+import { useSupabase } from '@/contexts/SupabaseContext'
+import { getFtp } from '@/utils/FtpUtil'
+
+dayjs.extend(isoWeek)
 
 const MobileHome = () => {
+  const { supabase, user } = useSupabase()
   const { activities, plannedWorkouts, gymWorkouts, loading } = useWorkoutData(dayjs().year())
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center mt-8">
-        <LoadingSpinner />
-      </div>
-    )
-  }
+  const { data: ftpHistory } = useQuery({
+    queryKey: ['ftpHistory', user?.id],
+    queryFn: async () => {
+      if (!user) return null
+      return await getFtp(supabase, user.id)
+    },
+    enabled: !!user,
+  })
 
   const today = startOfDay(new Date())
   const todayStr = formatDateKey(today)
@@ -93,9 +102,12 @@ const MobileHome = () => {
     currentDate = subDays(currentDate, 1)
   }
 
+  let lastWeekKey = null
+
   return (
     <div className="max-w-4xl mx-auto p-3 text-gray-600">
       <div className="flex flex-col gap-3">
+        <SlidingLoadingIndicator isLoading={!!loading} />
         {dayCards.length === 0 && (
           <p className="text-center text-gray-500">No workouts yet. Add one!</p>
         )}
@@ -104,24 +116,40 @@ const MobileHome = () => {
           const hasWorkouts = workouts.length > 0
           const isToday = formatDateKey(date) === formatDateKey(new Date())
 
+          const weekStart = dayjs(date).startOf('isoWeek')
+          const weekKey = weekStart.format('YYYY-MM-DD')
+          const isNewWeek = weekKey !== lastWeekKey
+          if (isNewWeek) {
+            lastWeekKey = weekKey
+          }
+
           return (
-            <div key={key} className={`rounded-lg p-3 ${hasWorkouts ? 'bg-white shadow-md' : 'bg-gray-300'} ${isToday ? 'border-l-4 border-blue-500' : ''}`}>
-              <h2 className={`text-base font-bold ${hasWorkouts ? 'mb-2' : ''}`}>
-                {format(date, 'MMMM do, yyyy')}
-                {!hasWorkouts && <span className="font-normal text-gray-400"> - Rest</span>}
-              </h2>
-              
-              {hasWorkouts && (
-                <div className="flex flex-col gap-1.5">
-                  {workouts.map((item, idx) => (
-                    <div key={idx}>
-                      {item.type === 'gym' && <GymCardWeb workout={item.workout} />}
-                      {item.type === 'ride' && <RideCardWeb activity={item.workout} />}
-                      {item.type === 'planned' && <PlannedRideCard workout={item.workout} variant="mobile" />}
-                    </div>
-                  ))}
-                </div>
+            <div key={key}>
+              {isNewWeek && (
+                <WeeklySummary
+                  activities={activities}
+                  ftpHistory={ftpHistory}
+                  weekStart={weekStart}
+                />
               )}
+              <div className={`rounded-lg p-3 ${hasWorkouts ? 'bg-white shadow-md' : 'bg-gray-300'} ${isToday ? 'border-2 border-blue-500' : ''}`}>
+                <h2 className={`text-base font-bold ${hasWorkouts ? 'mb-2' : ''}`}>
+                  {format(date, 'MMMM do, yyyy')}
+                  {!hasWorkouts && <span className="font-normal text-gray-400"> - Rest</span>}
+                </h2>
+                
+                {hasWorkouts && (
+                  <div className="flex flex-col gap-1.5">
+                    {workouts.map((item, idx) => (
+                      <div key={idx}>
+                        {item.type === 'gym' && <GymCardWeb workout={item.workout} />}
+                        {item.type === 'ride' && <RideCardWeb activity={item.workout} />}
+                        {item.type === 'planned' && <PlannedRideCard workout={item.workout} variant="mobile" />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}

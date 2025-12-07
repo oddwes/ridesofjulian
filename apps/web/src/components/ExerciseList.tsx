@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import EditableLabel from 'react-inline-editing';
-import { Exercise } from '@ridesofjulian/shared';
+import { Exercise, getDisplayWeight, normalizeWeightInput, WeightUnit } from '@ridesofjulian/shared';
 
 interface ExerciseListProps {
   workoutId?: string;
@@ -55,8 +55,14 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
   };
 
   const handleExerciseChange = (exerciseId: string, field: 'name' | 'weight' | 'reps' | 'sets', value: string | number) => {
+    let finalValue: string | number = value;
+
+    if (field === 'weight' && typeof value === 'number') {
+      finalValue = normalizeWeightInput(value, weightUnit as WeightUnit);
+    }
+
     const updatedExercises = localExercises.map(ex =>
-      ex.id === exerciseId ? { ...ex, [field]: value || (field === 'name' ? '' : 0) } : ex
+      ex.id === exerciseId ? { ...ex, [field]: finalValue || (field === 'name' ? '' : 0) } : ex
     );
     setLocalExercises(updatedExercises);
     onExercisesChange(updatedExercises);
@@ -144,16 +150,16 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {localExercises.map((exercise) => (
-        <div key={exercise.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div key={exercise.id} className="p-3 bg-white rounded-lg border border-gray-200 text-gray-800">
           <div className="flex justify-between items-center mb-2">
             <div onKeyDown={handleKeyDown}>
               {exercise.id && (
                 <EditableLabel
                   text={exercise.name}
-                  labelClassName="font-semibold text-lg text-gray-800 dark:text-gray-200"
-                  inputClassName="bg-gray-100 dark:bg-gray-600 px-1 rounded font-semibold text-lg"
+                  labelClassName="font-semibold text-lg text-gray-800"
+                  inputClassName="px-1 rounded font-semibold text-lg"
                   onFocusOut={(name: string) => {
                     handleExerciseChange(exercise.id!, 'name', name);
                     onFocusRequest(undefined);
@@ -164,7 +170,7 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
             </div>
             <button
               onClick={() => localDeleteExercise(exercise.id!)}
-              className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+              className="text-red-500"
               aria-label="Delete exercise"
             >
               <TrashIcon className="h-5 w-5" />
@@ -173,20 +179,27 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
 
           <div className="grid grid-cols-3 items-center gap-4 mb-4">
             <div>
-              <label htmlFor={`weight-${exercise.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor={`weight-${exercise.id}`} className="block text-sm font-medium text-gray-500 mb-1">
                 Weight ({weightUnit})
               </label>
               <input
                 id={`weight-${exercise.id}`}
                 type="number"
                 min="0"
-                value={exercise.weight || ''}
-                onChange={(e) => handleExerciseChange(exercise.id!, 'weight', parseInt(e.target.value))}
-                className="w-full p-1.5 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                value={getDisplayWeight(exercise.weight as number | undefined | null, weightUnit as WeightUnit) || ''}
+                onChange={(e) => {
+                  const numeric = parseFloat(e.target.value);
+                  if (!Number.isNaN(numeric)) {
+                    handleExerciseChange(exercise.id!, 'weight', numeric);
+                  } else {
+                    handleExerciseChange(exercise.id!, 'weight', 0);
+                  }
+                }}
+                className="w-full p-1.5 rounded bg-white text-sm text-gray-900"
               />
             </div>
             <div>
-              <label htmlFor={`sets-${exercise.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor={`sets-${exercise.id}`} className="block text-sm font-medium text-gray-500 mb-1">
                 Sets
               </label>
               <input
@@ -195,11 +208,11 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
                 min="0"
                 value={exercise.sets || ''}
                 onChange={(e) => handleExerciseChange(exercise.id!, 'sets', parseInt(e.target.value))}
-                className="w-full p-1.5 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-1.5 rounded bg-white text-sm text-gray-900"
               />
             </div>
             <div>
-              <label htmlFor={`reps-${exercise.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor={`reps-${exercise.id}`} className="block text-sm font-medium text-gray-500 mb-1">
                 Reps
               </label>
               <input
@@ -208,13 +221,13 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
                 min="0"
                 value={exercise.reps || ''}
                 onChange={(e) => handleExerciseChange(exercise.id!, 'reps', parseInt(e.target.value))}
-                className="w-full p-1.5 border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-1.5 rounded bg-white text-sm text-gray-900"
               />
             </div>
           </div>
           {(exercise.sets || 0) > 0 && (
             <div
-              className="flex flex-col justify-center items-center space-y-2 border rounded-lg p-2 cursor-pointer"
+              className="flex flex-col justify-center items-center space-y-2 border rounded-lg p-2 cursor-pointer border-gray-300"
               onMouseDown={() => handleMouseDown(exercise.id!)}
               onMouseUp={() => handleMouseUp(exercise.id!)}
               onMouseLeave={handleMouseLeave}

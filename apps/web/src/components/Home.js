@@ -6,7 +6,11 @@ import MobileHome from './MobileHome'
 
 const Home = () => {
   const isMobile = useMediaQuery('(max-width: 768px)')
-  
+
+  if (isMobile === null) {
+    return null
+  }
+
   return isMobile ? <MobileHome /> : <DesktopHome />
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Exercise } from '@ridesofjulian/shared';
+import { Exercise, getDisplayWeight, normalizeWeightInput, WeightUnit } from '@ridesofjulian/shared';
 
 interface ExerciseListProps {
   exercises: Exercise[];
@@ -75,16 +75,6 @@ export function ExerciseList({
     setTimerExerciseId(exerciseId);
   };
 
-  const lbsToKg = (lbs: number) => Math.round(lbs * 0.453592 * 10) / 10;
-  const kgToLbs = (kg: number) => Math.round(kg * 2.20462 * 10) / 10;
-
-  const getDisplayWeight = (weightInLbs: number) => {
-    if (weightUnit === 'kg') {
-      return lbsToKg(weightInLbs);
-    }
-    return weightInLbs;
-  };
-
   const handleExerciseChange = (
     exerciseId: string, 
     field: 'name' | 'weight' | 'reps' | 'sets', 
@@ -92,9 +82,8 @@ export function ExerciseList({
   ) => {
     let finalValue = value;
     
-    // If changing weight and unit is kg, convert to lbs for storage
-    if (field === 'weight' && weightUnit === 'kg' && typeof value === 'number') {
-      finalValue = kgToLbs(value);
+    if (field === 'weight' && typeof value === 'number') {
+      finalValue = normalizeWeightInput(value, weightUnit as WeightUnit);
     }
     
     const updatedExercises = localExercises.map(ex =>
