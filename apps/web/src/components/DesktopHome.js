@@ -7,6 +7,7 @@ import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesFor
 import Calendar from './calendar/Calendar'
 import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
 import { DateRangeDropdown } from './DateRangeDropdown'
+import TabNavigation from './TabNavigation'
 
 const DesktopHome = () => {
   const [selectedRange, setSelectedRange] = useState('3months')
