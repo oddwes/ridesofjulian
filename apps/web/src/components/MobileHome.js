@@ -3,6 +3,7 @@
 import { format, subDays, parseISO, startOfDay } from 'date-fns'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWorkoutData } from '../hooks/useWorkoutData'
 import { formatDateKey, isDateMatch } from '../utils/DateUtil'
@@ -13,12 +14,44 @@ import { WeeklySummary } from './WeeklySummary'
 import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp } from '@/utils/FtpUtil'
+import { DateRangeDropdown } from './DateRangeDropdown'
 
 dayjs.extend(isoWeek)
 
 const MobileHome = () => {
   const { supabase, user } = useSupabase()
-  const { activities, plannedWorkouts, gymWorkouts, loading } = useWorkoutData(dayjs().year())
+
+  const [selectedRange, setSelectedRange] = useState('3months')
+
+  const dateRangeOptions = useMemo(() => {
+    const now = dayjs()
+    const options = [
+      { value: '3months', label: '3 Months', start: now.subtract(3, 'month').format('YYYY-MM-DD'), end: now.format('YYYY-MM-DD') },
+      { value: '6months', label: '6 Months', start: now.subtract(6, 'month').format('YYYY-MM-DD'), end: now.format('YYYY-MM-DD') },
+      { value: '12months', label: '12 Months', start: now.subtract(12, 'month').format('YYYY-MM-DD'), end: now.format('YYYY-MM-DD') },
+    ]
+
+    const currentYear = now.year()
+    for (let year = currentYear; year >= 2009; year--) {
+      options.push({
+        value: `year-${year}`,
+        label: year.toString(),
+        start: `${year}-01-01`,
+        end: `${year}-12-31`,
+      })
+    }
+
+    return options
+  }, [])
+
+  const currentDateRange = useMemo(
+    () => dateRangeOptions.find(opt => opt.value === selectedRange) || dateRangeOptions[2],
+    [selectedRange, dateRangeOptions]
+  )
+
+  const { activities, plannedWorkouts, gymWorkouts, loading } = useWorkoutData(
+    dayjs(currentDateRange.start).year()
+  )
 
   const { data: ftpHistory } = useQuery({
     queryKey: ['ftpHistory', user?.id],
@@ -30,37 +63,14 @@ const MobileHome = () => {
   })
 
   const today = startOfDay(new Date())
+  const rangeStartDate = startOfDay(new Date(currentDateRange.start))
+  const rangeEndDate = startOfDay(new Date(currentDateRange.end))
   const todayStr = formatDateKey(today)
   const fourDaysFromNow = startOfDay(new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000))
   const fourDaysFromNowStr = formatDateKey(fourDaysFromNow)
   
-  let earliestDate = today
-  
-  if (gymWorkouts.length > 0) {
-    const earliestGym = gymWorkouts.reduce((earliest, w) => {
-      const date = startOfDay(parseISO(w.datetime))
-      return date < earliest ? date : earliest
-    }, today)
-    if (earliestGym < earliestDate) earliestDate = earliestGym
-  }
-  
-  if (activities.length > 0) {
-    const earliestActivity = activities.reduce((earliest, a) => {
-      const date = startOfDay(parseISO(a.start_date))
-      return date < earliest ? date : earliest
-    }, today)
-    if (earliestActivity < earliestDate) earliestDate = earliestActivity
-  }
-
-  let latestDate = today
-  if (plannedWorkouts.length > 0) {
-    plannedWorkouts.forEach(w => {
-      const plannedDate = startOfDay(parseISO(w.starts))
-      if (plannedDate > latestDate && plannedDate <= fourDaysFromNow) {
-        latestDate = plannedDate
-      }
-    })
-  }
+  let earliestDate = rangeStartDate
+  let latestDate = rangeEndDate
 
   const dayCards = []
   let currentDate = latestDate
@@ -107,6 +117,13 @@ const MobileHome = () => {
   return (
     <div className="max-w-4xl mx-auto p-3 text-gray-600">
       <div className="flex flex-col gap-3">
+        <div className="flex justify-center">
+          <DateRangeDropdown
+            value={dateRangeOptions.find(option => option.value === selectedRange)}
+            options={dateRangeOptions}
+            onChange={(option) => setSelectedRange(option.value)}
+          />
+        </div>
         <SlidingLoadingIndicator isLoading={!!loading} />
         {dayCards.length === 0 && (
           <p className="text-center text-gray-500">No workouts yet. Add one!</p>

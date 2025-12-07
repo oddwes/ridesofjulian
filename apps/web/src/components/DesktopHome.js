@@ -1,46 +1,70 @@
 "use client"
 
-import { useState } from 'react'
-import { useWorkoutData } from '../hooks/useWorkoutData'
-import Calendar from './calendar/Calendar'
-import ReactSelect from 'react-select'
+import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
-import { LoadingSpinner } from './LoadingSpinner'
+import { useWorkoutData } from '../hooks/useWorkoutData'
+import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange'
+import Calendar from './calendar/Calendar'
+import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
+import { DateRangeDropdown } from './DateRangeDropdown'
 
 const DesktopHome = () => {
-  const [selectedYear, setSelectedYear] = useState(dayjs().year())
-  const { activities, plannedWorkouts, gymWorkouts, loading } = useWorkoutData(selectedYear)
+  const [selectedRange, setSelectedRange] = useState('3months')
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center mt-8">
-        <LoadingSpinner />
-      </div>
-    )
-  }
+  const dateRangeOptions = useMemo(() => {
+    const now = dayjs()
+    const options = [
+      { value: '3months', label: '3 Months', start: now.subtract(3, 'month').format('YYYY-MM-DD'), end: now.format('YYYY-MM-DD') },
+      { value: '6months', label: '6 Months', start: now.subtract(6, 'month').format('YYYY-MM-DD'), end: now.format('YYYY-MM-DD') },
+      { value: '12months', label: '12 Months', start: now.subtract(12, 'month').format('YYYY-MM-DD'), end: now.format('YYYY-MM-DD') },
+    ]
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => ({
-    value: dayjs().year() - i,
-    label: dayjs().year() - i
-  }))
+    const currentYear = now.year()
+    for (let year = currentYear; year >= 2009; year--) {
+      options.push({
+        value: `year-${year}`,
+        label: year.toString(),
+        start: `${year}-01-01`,
+        end: `${year}-12-31`,
+      })
+    }
 
-  const start = selectedYear === dayjs().year() ? dayjs() : dayjs(`${selectedYear}-12-31`)
-  const isCurrentYear = selectedYear === dayjs().year()
+    return options
+  }, [])
+
+  const currentDateRange = useMemo(
+    () => dateRangeOptions.find(opt => opt.value === selectedRange) || dateRangeOptions[2],
+    [selectedRange, dateRangeOptions]
+  )
+
+  const { plannedWorkouts, gymWorkouts, loading } = useWorkoutData(dayjs(currentDateRange.start).year())
+  const { activities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
+    currentDateRange.start,
+    currentDateRange.end
+  )
+
+  const isCurrentYearRange = dayjs(currentDateRange.end).year() === dayjs().year()
+  const isLoading = loading || activitiesLoading
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <ReactSelect
-        value={yearOptions.find(option => option.value === selectedYear)}
-        onChange={(option) => setSelectedYear(option.value)}
-        options={yearOptions}
-        className="w-48 text-gray-800"
-      />
-      <Calendar 
-        start={start} 
-        activities={activities} 
-        plannedWorkouts={isCurrentYear ? plannedWorkouts : []}
-        gymWorkouts={isCurrentYear ? gymWorkouts : []}
-      />
+    <div className="flex flex-col items-center gap-4 w-full justify-center">
+      <div className="mt-2">
+        <DateRangeDropdown
+          value={dateRangeOptions.find(option => option.value === selectedRange)}
+          options={dateRangeOptions}
+          onChange={(option) => setSelectedRange(option.value)}
+          className="w-35"
+        />
+      </div>
+      <div className="w-full">
+        <SlidingLoadingIndicator isLoading={isLoading} />
+        <Calendar 
+          dateRange={currentDateRange}
+          activities={activities}
+          plannedWorkouts={isCurrentYearRange ? plannedWorkouts : []}
+          gymWorkouts={isCurrentYearRange ? gymWorkouts : []}
+        />
+      </div>
     </div>
   )
 }

@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 dayjs.extend(isBetween);
 
-const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] }) => {
+const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [] }) => {
   const [editingWorkout, setEditingWorkout] = useState(null);
   const queryClient = useQueryClient();
   
@@ -117,10 +117,17 @@ const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] })
   };
 
   const printHeaderRow = () => {
+    const rangeStart = dayjs(dateRange.start);
+    const rangeEnd = dayjs(dateRange.end);
+    const sameYear = rangeStart.year() === rangeEnd.year();
+    const label = sameYear
+      ? rangeStart.year()
+      : `${rangeStart.year()} - ${rangeEnd.year()}`;
+
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return (
       <div className="font-bold h-full grow">
-        <Row header={dayjs(start).year()} columns={
+        <Row header={label} columns={
           days.map((day, index) => (
             <div key={index} className="text-center w-full">
               {day}
@@ -132,45 +139,26 @@ const Calendar = ({ start, activities, plannedWorkouts = [], gymWorkouts = [] })
   };
 
   const printWeeks = () => {
-    dayjs.extend(isBetween);
-    const yearStart = dayjs(start).startOf('year');
-    const nextWeek = dayjs().add(1, 'week');
-    const isCurrentYear = dayjs(start).year() === dayjs().year();
-    
-    // Find the latest date to display (either start or latest planned workout)
-    let latestDate = dayjs(start);
-    if (plannedWorkouts.length > 0) {
-      const latestWorkoutDate = plannedWorkouts.reduce((latest, workout) => {
-        const workoutDate = dayjs(workout.starts);
-        return workoutDate.isAfter(latest) ? workoutDate : latest;
-      }, dayjs(start));
-      
-      if (latestWorkoutDate.isAfter(latestDate)) {
-        latestDate = latestWorkoutDate;
-      }
-    }
-    
-    // Ensure at least one week beyond current week is shown (only for current year)
-    if (isCurrentYear && latestDate.isBefore(nextWeek)) {
-      latestDate = nextWeek;
-    }
-    
-    const totalWeeks = latestDate.diff(yearStart, 'weeks') + 1;
+    const rangeStart = dayjs(dateRange.start);
+    const rangeEnd = dayjs(dateRange.end);
+    const firstWeekStart = getBeginningOfWeek(rangeStart);
+    const lastWeekEnd = getEndOfWeek(rangeEnd);
+    const totalWeeks = lastWeekEnd.diff(firstWeekStart, 'weeks') + 1;
 
     return [...Array(totalWeeks).keys()].map((i) => {
-      const today = latestDate.subtract(i, 'weeks');
-      const startDate = getBeginningOfWeek(today);
-      const endDate = getEndOfWeek(today);
+      const weekEnd = lastWeekEnd.subtract(i, 'weeks');
+      const startDate = getBeginningOfWeek(weekEnd);
+      const endDate = getEndOfWeek(weekEnd);
       const activitiesForWeek = activities.filter((activity) =>
-        dayjs(activity.start_date).isBetween(startDate, endDate)
+        dayjs(activity.start_date).isBetween(startDate, endDate, null, '[]')
       );
       
       const plannedWorkoutsForWeek = plannedWorkouts.filter((workout) =>
-        dayjs(workout.starts).isBetween(startDate, endDate)
+        dayjs(workout.starts).isBetween(startDate, endDate, null, '[]')
       );
 
       const gymWorkoutsForWeek = gymWorkouts.filter((workout) =>
-        dayjs(workout.datetime).isBetween(startDate, endDate)
+        dayjs(workout.datetime).isBetween(startDate, endDate, null, '[]')
       );
 
       return (
