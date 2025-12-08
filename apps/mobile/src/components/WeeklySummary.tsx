@@ -6,7 +6,7 @@ import { getFtpForDate } from '../utils/ftpUtil';
 import { getTSS } from '@ridesofjulian/shared/utils/StravaUtil';
 
 type WeeklySummaryProps = {
-  activities: StravaActivity[];
+  activities: (StravaActivity & { source?: 'strava' | 'wahoo' })[];
   ftpHistory?: FtpData | null;
   weekStart: Dayjs;
 };
@@ -15,7 +15,9 @@ export function WeeklySummary({ activities, ftpHistory, weekStart }: WeeklySumma
   const weekEnd = weekStart.endOf('week');
 
   const weekActivities = activities.filter((a) => {
+    if (!a.start_date) return false;
     const d = dayjs(a.start_date);
+    if (!d.isValid()) return false;
     return !d.isBefore(weekStart, 'day') && !d.isAfter(weekEnd, 'day');
   });
 

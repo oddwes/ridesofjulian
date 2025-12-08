@@ -8,8 +8,9 @@ import { Day } from './Day';
 import { WeeklySummary } from '../WeeklySummary';
 import { SlidingLoadingIndicator } from '../SlidingLoadingIndicator';
 import { useWorkouts } from '../../hooks/useWorkouts';
-import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared';
-import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
+import { useStravaActivitiesForDateRange, useWahooActivitiesForDateRange, combineAndDeduplicateActivities } from '@ridesofjulian/shared';
+import { stravaApiCall, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
+import { ensureValidWahooToken } from '../../utils/WahooUtil';
 import { useUser } from '../../hooks/useUser';
 import { useFtpHistory } from '../../hooks/useFtpHistory';
 import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
@@ -61,14 +62,25 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onActi
     [allWorkouts, dateRange]
   );
 
-  const { activities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
+  const { activities: stravaActivities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
     dateRange.start,
     dateRange.end,
     ensureValidStravaToken,
-    getAthleteActivities
+    stravaApiCall
+  );
+  
+  const { workouts: wahooWorkouts, isLoading: wahooLoading } = useWahooActivitiesForDateRange(
+    dateRange.start,
+    dateRange.end,
+    ensureValidWahooToken
   );
 
-  const isLoading = workoutsLoading || activitiesLoading;
+  const activities = useMemo(() => {
+    const combined = combineAndDeduplicateActivities(stravaActivities, wahooWorkouts);
+    return combined.filter(a => a && typeof a.id === 'number' && a.start_date && a.name);
+  }, [stravaActivities, wahooWorkouts]);
+
+  const isLoading = workoutsLoading || activitiesLoading || wahooLoading;
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useRef(0);
   const isRefreshing = useRef(false);
@@ -81,6 +93,7 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onActi
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['workouts'] }),
       queryClient.invalidateQueries({ queryKey: ['stravaActivities'] }),
+      queryClient.invalidateQueries({ queryKey: ['wahooWorkouts'] }),
     ]);
     setRefreshing(false);
     isRefreshing.current = false;
@@ -137,9 +150,12 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onActi
           const dayWorkouts = workouts.filter(w => 
             dayjs(w.datetime).format('YYYY-MM-DD') === dateStr
           );
-          const dayActivities = activities.filter(a => 
-            dayjs(a.start_date).format('YYYY-MM-DD') === dateStr
-          );
+          const dayActivities = activities.filter(a => {
+            if (!a || !a.start_date || !a.id || !a.name) return false;
+            const activityDate = dayjs(a.start_date);
+            if (!activityDate.isValid()) return false;
+            return activityDate.format('YYYY-MM-DD') === dateStr;
+          });
 
           return (
             <View key={date.format()}>

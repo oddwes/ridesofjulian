@@ -6,7 +6,7 @@ import isoWeek from 'dayjs/plugin/isoWeek'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWorkoutData } from '../hooks/useWorkoutData'
-import { useStravaActivitiesForDateRange, useWahooActivitiesForDateRange } from '@ridesofjulian/shared'
+import { useStravaActivitiesForDateRange, useWahooActivitiesForDateRange, combineAndDeduplicateActivities } from '@ridesofjulian/shared'
 import { stravaApiCall, ensureValidToken } from '@ridesofjulian/shared/utils/StravaUtil/web'
 import { ensureValidWahooToken } from '@ridesofjulian/shared/utils/WahooUtil/web'
 import { formatDateKey, isDateMatch } from '../utils/DateUtil'
@@ -68,27 +68,10 @@ const MobileHome = () => {
     ensureValidWahooToken
   )
 
-  const activities = useMemo(() => {
-    const strava = (stravaActivities || []).map(a => ({ ...a, source: 'strava' }))
-    const wahoo = (wahooWorkouts || [])
-      .filter(w => w.workout_summary)
-      .map(w => ({
-        id: w.id,
-        name: w.name,
-        distance: parseFloat(w.workout_summary.distance_accum) || 0,
-        total_elevation_gain: parseFloat(w.workout_summary.ascent_accum) || 0,
-        moving_time: parseFloat(w.workout_summary.duration_active_accum) || 0,
-        start_date: w.workout_summary.started_at || w.starts,
-        type: 'Ride',
-        sport_type: 'Ride',
-        average_watts: w.workout_summary.power_avg ? parseFloat(w.workout_summary.power_avg) : undefined,
-        kilojoules: w.workout_summary.work_accum ? parseFloat(w.workout_summary.work_accum) / 1000 : undefined,
-        average_heartrate: w.workout_summary.heart_rate_avg ? parseFloat(w.workout_summary.heart_rate_avg) : undefined,
-        source: 'wahoo'
-      }))
-    
-    return [...strava, ...wahoo]
-  }, [stravaActivities, wahooWorkouts])
+  const activities = useMemo(() => 
+    combineAndDeduplicateActivities(stravaActivities, wahooWorkouts),
+    [stravaActivities, wahooWorkouts]
+  )
 
   const loading = workoutDataLoading || activitiesLoading || wahooLoading
 

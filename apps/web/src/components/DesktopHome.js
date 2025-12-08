@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { useWorkoutData } from '../hooks/useWorkoutData'
-import { useStravaActivitiesForDateRange, useWahooActivitiesForDateRange } from '@ridesofjulian/shared'
+import { useStravaActivitiesForDateRange, useWahooActivitiesForDateRange, combineAndDeduplicateActivities } from '@ridesofjulian/shared'
 import { stravaApiCall, ensureValidToken } from '@ridesofjulian/shared/utils/StravaUtil/web'
 import { ensureValidWahooToken } from '@ridesofjulian/shared/utils/WahooUtil/web'
 import Calendar from './calendar/Calendar'
@@ -53,29 +53,10 @@ const DesktopHome = () => {
     ensureValidWahooToken
   )
 
-  const activities = useMemo(() => {
-    const strava = (stravaActivities || []).map(a => ({ ...a, source: 'strava' }))
-    const wahoo = (wahooWorkouts || [])
-      .filter(w => w.workout_summary)
-      .map(w => ({
-        id: w.id,
-        name: w.name,
-        distance: parseFloat(w.workout_summary.distance_accum) || 0,
-        total_elevation_gain: parseFloat(w.workout_summary.ascent_accum) || 0,
-        moving_time: parseFloat(w.workout_summary.duration_active_accum) || 0,
-        start_date: w.workout_summary.started_at || w.starts,
-        type: 'Ride',
-        sport_type: 'Ride',
-        average_watts: w.workout_summary.power_avg ? parseFloat(w.workout_summary.power_avg) : undefined,
-        kilojoules: w.workout_summary.work_accum ? parseFloat(w.workout_summary.work_accum) / 1000 : undefined,
-        average_heartrate: w.workout_summary.heart_rate_avg ? parseFloat(w.workout_summary.heart_rate_avg) : undefined,
-        source: 'wahoo'
-      }))
-    
-    return [...strava, ...wahoo].sort((a, b) => 
-      new Date(b.start_date || b.starts).getTime() - new Date(a.start_date || a.starts).getTime()
-    )
-  }, [stravaActivities, wahooWorkouts])
+  const activities = useMemo(() => 
+    combineAndDeduplicateActivities(stravaActivities, wahooWorkouts),
+    [stravaActivities, wahooWorkouts]
+  )
 
   const isCurrentYearRange = dayjs(currentDateRange.end).year() === dayjs().year()
   const isLoading = loading || activitiesLoading || wahooLoading

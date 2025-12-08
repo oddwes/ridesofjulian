@@ -10,7 +10,7 @@ interface DayProps {
   date: Dayjs;
   isToday: boolean;
   workouts?: Workout[];
-  activities?: StravaActivity[];
+  activities?: (StravaActivity & { source?: 'strava' | 'wahoo' })[];
   ftpHistory?: FtpData | null;
   onWorkoutPress?: (workoutId: string) => void;
   onActivityPress?: (activity: StravaActivity) => void;
@@ -48,21 +48,28 @@ export function Day({ date, isToday, workouts = [], activities = [], ftpHistory,
       </Text>
       {hasWorkouts && (
         <View style={styles.workoutsContainer}>
-          {activities.map((activity) => {
-            const ftpForActivity = getFtpForDate(ftpHistory, activity.start_date);
-            return (
-              <RideCard
-                key={activity.id}
-                activity={activity}
-                onPress={onActivityPress ? () => onActivityPress(activity) : handleActivityPress}
-                ftpForActivity={ftpForActivity}
-                getTSS={getTSS}
-                formatDistance={formatDistance}
-                formatElevation={formatElevation}
-                formatDuration={formatDuration}
-              />
-            );
-          })}
+          {activities
+            .filter(activity => activity && activity.id && activity.start_date && activity.name)
+            .map((activity) => {
+              const ftpForActivity = getFtpForDate(ftpHistory, activity.start_date);
+              const isWahoo = activity.source === 'wahoo';
+              const handlePress = isWahoo 
+                ? undefined 
+                : (onActivityPress ? () => onActivityPress(activity) : handleActivityPress);
+              const activityKey = `${activity.source || 'strava'}-${String(activity.id)}`;
+              return (
+                <RideCard
+                  key={activityKey}
+                  activity={activity}
+                  onPress={handlePress}
+                  ftpForActivity={ftpForActivity}
+                  getTSS={getTSS}
+                  formatDistance={formatDistance}
+                  formatElevation={formatElevation}
+                  formatDuration={formatDuration}
+                />
+              );
+            })}
           {workouts.map((workout) => (
             <GymCard
               key={workout.id}
