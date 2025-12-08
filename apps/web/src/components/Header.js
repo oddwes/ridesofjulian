@@ -27,6 +27,7 @@ const Header = () => {
 
   const navItems = [
     { label: 'Calendar', href: '/' },
+    { label: 'Plan', href: '/plan' },
     { label: 'Coach', href: '/coach' },
   ];
 

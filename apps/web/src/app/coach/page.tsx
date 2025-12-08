@@ -11,6 +11,7 @@ import { DetailedChart } from "@/components/workouts/RideWorkoutChart";
 import { getStoredWahooToken, getWahooAuthUrl, createWahooWorkout } from "@/utils/WahooUtil";
 import { RideWorkout, Interval } from "@/types/workout";
 import { Exercise } from "@ridesofjulian/shared";
+import TabNavigation from "@/components/TabNavigation";
 
 const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout; onEdit?: (workout: RideWorkout) => void; onDelete?: (workout: RideWorkout) => void }) => {
   const totalDuration = workout.intervals.reduce(
@@ -18,17 +19,11 @@ const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout;
     0
   );
 
-  const parseLocalDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number);
-    return new Date(year, month - 1, day);
-  };
-
-  const date = parseLocalDate(workout.selectedDate);
   const durationHours = Math.floor(totalDuration / 60);
   const durationMinutes = Math.round(totalDuration % 60);
 
   return (
-    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 shadow-md">
+    <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 shadow-md">
       <div className="mb-3">
         <div className="flex justify-between items-start mb-1">
           <h4 className="text-sm sm:text-base font-semibold text-slate-50">
@@ -261,15 +256,8 @@ export default function CoachPage() {
   const clearPlan = () => {
     const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
     sessionStorage.removeItem('generated_training_plan');
-    sessionStorage.removeItem('training_plan_inputs');
     sessionStorage.removeItem(pushedWorkoutsKey);
     setGeneratedPlan([]);
-    setUserPrompt("");
-    setFtp(200);
-    setWeeklyHours(10);
-    const today = new Date().toISOString().split("T")[0];
-    setStartDate(today);
-    setEndDate(today);
   };
 
   const pushPlanToWahoo = async () => {
@@ -380,33 +368,23 @@ export default function CoachPage() {
 
   return (
     <>
+      <TabNavigation />
       <Container className="py-8 text-gray-600">
-        <div className="flex items-center justify-between mb-4 md:hidden">
-          <h1 className="text-2xl font-bold text-white">AI Training Plan Builder</h1>
-          {!isGenerating && (
-            <button
-              onClick={clearPlan}
-              className="px-4 py-2 rounded-md bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        <h1 className="hidden md:block text-3xl font-bold mb-6 text-white">
-          AI Training Plan Builder
-        </h1>
-
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 sm:p-6 mb-6 max-w-xl md:bg-white md:border-gray-300 md:rounded-lg md:max-w-none">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-white">AI Training Plan Builder</h1>
+          </div>
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 sm:p-6 mb-6 w-full">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold mb-1 text-slate-200 md:text-gray-900">
+              <label className="block text-xs font-semibold mb-1 text-slate-200">
                 Training Goal
               </label>
               <textarea
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
                 placeholder="e.g., Build base fitness with polarized training approach, focusing on endurance and high intensity intervals"
-                className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder:text-slate-500 resize-none md:bg-white md:border-gray-300 md:text-gray-900 md:placeholder:text-gray-400"
+                className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder:text-slate-500 resize-none"
                 rows={4}
                 disabled={isGenerating}
               />
@@ -414,7 +392,7 @@ export default function CoachPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold mb-1 text-slate-200 md:text-gray-900">
+                <label className="block text-xs font-semibold mb-1 text-slate-200">
                   FTP
                 </label>
                 <input
@@ -425,12 +403,12 @@ export default function CoachPage() {
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     setFtp(val ? parseInt(val) : 0);
                   }}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 md:bg-white md:border-gray-300 md:text-gray-900"
+                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
                   disabled={isGenerating}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1 text-slate-200 md:text-gray-900">
+                <label className="block text-xs font-semibold mb-1 text-slate-200">
                   Weekly Hours
                 </label>
                 <input
@@ -441,7 +419,7 @@ export default function CoachPage() {
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     setWeeklyHours(val ? parseInt(val) : 0);
                   }}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 md:bg-white md:border-gray-300 md:text-gray-900"
+                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
                   disabled={isGenerating}
                 />
               </div>
@@ -449,26 +427,26 @@ export default function CoachPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold mb-1 text-slate-200 md:text-gray-900">
+                <label className="block text-xs font-semibold mb-1 text-slate-200">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 md:bg-white md:border-gray-300 md:text-gray-900"
+                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
                   disabled={isGenerating}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1 text-slate-200 md:text-gray-900">
+                <label className="block text-xs font-semibold mb-1 text-slate-200">
                   End Date
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 md:bg-white md:border-gray-300 md:text-gray-900"
+                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
                   disabled={isGenerating}
                 />
               </div>
@@ -480,12 +458,13 @@ export default function CoachPage() {
               className="mt-2 w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
             >
               {isGenerating ? "Generating Plan..." : "Generate Training Plan"}
-            </button>
-          </div>
+             </button>
+           </div>
+         </div>
         </div>
 
         {generatedPlan.length > 0 && (
-          <div className="space-y-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          <div className="space-y-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white">Your Training Plan</h2>
               <div className="flex gap-3">
@@ -517,20 +496,18 @@ export default function CoachPage() {
               const endStr = lastDate.toISOString().split("T")[0];
 
               return (
-                <div key={weekKey} className="space-y-4">
+                <div key={weekKey} className="space-y-1">
                   <div className="flex flex-row items-baseline justify-between">
-                    {/* <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-6"> */}
-                      <span className="text-lg font-semibold text-white">{weekKey}</span>
-                      <span className="text-sm text-slate-300">
-                        {startStr} - {endStr}
-                      </span>
-                    {/* </div> */}
+                    <span className="text-lg font-semibold text-white">{weekKey}</span>
+                    <span className="text-sm text-slate-300">
+                      {startStr} - {endStr}
+                    </span>
                     <span className="text-sm text-slate-300">
                       {Math.floor(weekTotal / 60)}h {Math.round(weekTotal % 60)}m
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {workouts.map((workout, idx) => (
                       <WorkoutCard key={idx} workout={workout} onEdit={handleEditWorkout} onDelete={handleDeleteWorkout} />
                     ))}

@@ -145,7 +145,7 @@ export const DetailedChart = ({
 
   return (
     <div className={`relative ${height} bg-gray-50 border border-gray-200 rounded`}>
-      <div className="h-full p-4">
+      <div className="h-full p-2">
         <Line data={chartData!} options={chartOptions} />
       </div>
     </div>

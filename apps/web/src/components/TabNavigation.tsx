@@ -8,11 +8,12 @@ export default function TabNavigation() {
 
   const tabs = [
     { name: "Calendar", path: "/" },
+    { name: "Plan", path: "/plan" },
     { name: "Coach", path: "/coach" },
   ];
 
   return (
-    <div className="flex gap-8 pb-4 justify-center">
+    <div className="hidden md:flex gap-8 pb-4 justify-center">
       {tabs.map((tab) => {
         const isActive = pathname === tab.path;
         return (

@@ -4,7 +4,6 @@ import Home from '@/components/Home'
 import { ensureValidToken } from '@/utils/StravaUtil'
 import { ensureValidWahooToken } from '@/utils/WahooUtil'
 import { useEffect, useState } from 'react'
-import TabNavigation from '@/components/TabNavigation'
 
 export default function Page() {
   const [isReady, setIsReady] = useState(false)
@@ -24,8 +23,6 @@ export default function Page() {
   }
 
   return (
-    <>
-      <Home />
-    </>
+    <Home />
   )
 } 
