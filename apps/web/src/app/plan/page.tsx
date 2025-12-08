@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -87,7 +87,18 @@ export default function PlanPage() {
   }, [scheduleRows, ftpHistory])
 
   const todayStr = dayjs().format('YYYY-MM-DD')
-  const [collapsedWeeks, setCollapsedWeeks] = useState<string[]>([])
+  const [collapsedWeeks, setCollapsedWeeks] = useState<string[] | null>(null)
+
+  useEffect(() => {
+    if (!weeks.length || collapsedWeeks !== null) return
+    const currentWeekStart = dayjs().startOf('isoWeek')
+    const initial = weeks
+      .filter(w => w.weekStart.isBefore(currentWeekStart, 'day'))
+      .map(w => w.weekStart.format('YYYY-MM-DD'))
+    setCollapsedWeeks(initial)
+  }, [weeks, collapsedWeeks])
+
+  const collapsed = collapsedWeeks ?? []
 
   return (
     <div className="w-full max-w-6xl mx-auto px-3 md:px-4 overflow-x-hidden">
@@ -96,9 +107,10 @@ export default function PlanPage() {
       {!scheduleLoading && weeks.length === 0 && (
         <p className="mt-4 text-sm text-slate-300">No training plan yet.</p>
       )}
+
       {weeks.map((week) => {
         const weekKey = week.weekStart.format('YYYY-MM-DD')
-        const isCollapsed = collapsedWeeks.includes(weekKey)
+        const isCollapsed = collapsed.includes(weekKey)
         const dates: string[] = []
         for (let i = 0; i < 7; i++) {
           dates.push(week.weekStart.add(i, 'day').format('YYYY-MM-DD'))
@@ -117,9 +129,12 @@ export default function PlanPage() {
             <button
               type="button"
               onClick={() =>
-                setCollapsedWeeks(prev =>
-                  prev.includes(weekKey) ? prev.filter(k => k !== weekKey) : [...prev, weekKey]
-                )
+                setCollapsedWeeks(prev => {
+                  const base = prev ?? []
+                  return base.includes(weekKey)
+                    ? base.filter(k => k !== weekKey)
+                    : [...base, weekKey]
+                })
               }
               className="w-full flex items-baseline justify-between text-left"
             >

@@ -1,6 +1,6 @@
 import { ScrollView, View, StyleSheet, Dimensions, Text, Pressable } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, useRef as useMutableRef } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -60,6 +60,7 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useRef(0);
   const isRefreshing = useRef(false);
+  const [collapsedWeeks, setCollapsedWeeks] = useState<string[]>([]);
 
   const { data: user } = useUser();
   const { data: ftpHistory } = useFtpHistory(user?.id);
@@ -68,6 +69,30 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
 
   const isLoading = scheduleLoading;
   const showLoadingPill = isLoading || refreshing || isLoadingDateRange;
+
+  const initializedCollapsed = useMutableRef(false);
+
+  useEffect(() => {
+    if (!scheduleRows.length || initializedCollapsed.current) return;
+    const currentWeekStart = dayjs().startOf('isoWeek');
+    const weekKeys = new Set<string>();
+
+    scheduleRows.forEach((row) => {
+      if (!row.plan) return;
+      row.plan.forEach((workout) => {
+        const d = dayjs(workout.selectedDate);
+        const weekStart = d.startOf('isoWeek');
+        if (weekStart.isBefore(currentWeekStart, 'day')) {
+          weekKeys.add(weekStart.format('YYYY-MM-DD'));
+        }
+      });
+    });
+
+    if (weekKeys.size > 0) {
+      setCollapsedWeeks(Array.from(weekKeys));
+      initializedCollapsed.current = true;
+    }
+  }, [scheduleRows]);
 
   const onRefresh = async () => {
     if (isRefreshing.current) return;
@@ -95,20 +120,16 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
   const today = dayjs().startOf('day');
   const scheduledByDate: Record<string, ScheduledRideWorkout[]> = {};
   const weekTotals: Record<string, { minutes: number; tss: number }> = {};
-  const currentWeekStart = today.startOf('isoWeek');
-  const currentWeekEnd = today.endOf('isoWeek');
-  let maxTime = currentWeekEnd.toDate().getTime();
+  let minTime: number | null = null;
+  let maxTime: number | null = null;
 
   scheduleRows.forEach((row) => {
     if (!row.plan) return;
     row.plan.forEach((workout) => {
       const d = dayjs(workout.selectedDate);
-      if (d.isBefore(currentWeekStart, 'day')) return;
-
       const time = d.toDate().getTime();
-      if (time > maxTime) {
-        maxTime = time;
-      }
+      if (minTime === null || time < minTime) minTime = time;
+      if (maxTime === null || time > maxTime) maxTime = time;
 
       const dateKey = d.format('YYYY-MM-DD');
       const weekStart = d.startOf('isoWeek');
@@ -131,10 +152,13 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
   });
 
   const days: Dayjs[] = [];
-  let currentDate: Dayjs = currentWeekStart;
-  while (currentDate.toDate().getTime() <= maxTime) {
-    days.push(currentDate);
-    currentDate = currentDate.add(1, 'day');
+  if (minTime !== null && maxTime !== null) {
+    let currentDate: Dayjs = dayjs(minTime).startOf('day');
+    const lastDate = dayjs(maxTime).startOf('day');
+    while (currentDate.toDate().getTime() <= lastDate.toDate().getTime()) {
+      days.push(currentDate);
+      currentDate = currentDate.add(1, 'day');
+    }
   }
 
   let lastWeekKey: string | null = null;
@@ -150,27 +174,42 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
         bounces={true}
       >
         <SlidingLoadingIndicator isLoading={!!showLoadingPill} />
-        {days.map((date) => {
+        {!isLoading && days.map((date) => {
           const weekStart = date.startOf('isoWeek');
           const weekKey = weekStart.format('YYYY-MM-DD');
           const isNewWeek = weekKey !== lastWeekKey;
           lastWeekKey = weekKey;
+          const isCollapsed = collapsedWeeks.includes(weekKey);
 
           const dateStr = date.format('YYYY-MM-DD');
           const scheduledWorkouts = scheduledByDate[dateStr] ?? [];
           const totalsForWeek = weekTotals[weekKey];
           const isToday = date.isSame(today, 'day');
 
+          if (isCollapsed && !isNewWeek) {
+            return null;
+          }
+
           return (
             <View key={date.format()}>
               {isNewWeek && totalsForWeek && (
-                <PlanWeeklySummary
-                  weekStart={weekStart}
-                  totalMinutes={totalsForWeek.minutes}
-                  totalTss={totalsForWeek.tss}
-                />
+                <Pressable
+                  onPress={() =>
+                    setCollapsedWeeks(prev =>
+                      prev.includes(weekKey)
+                        ? prev.filter(k => k !== weekKey)
+                        : [...prev, weekKey]
+                    )
+                  }
+                >
+                  <PlanWeeklySummary
+                    weekStart={weekStart}
+                    totalMinutes={totalsForWeek.minutes}
+                    totalTss={totalsForWeek.tss}
+                  />
+                </Pressable>
               )}
-              {scheduledWorkouts.map((workout) => {
+              {!isCollapsed && scheduledWorkouts.map((workout) => {
                 const totalMinutes = formatDurationMinutes(workout.intervals);
                 const maxPower =
                   workout.intervals.length > 0
@@ -241,7 +280,7 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
                   </Pressable>
                 );
               })}
-              {scheduledWorkouts.length === 0 && (
+              {!isCollapsed && scheduledWorkouts.length === 0 && (
                 <Day
                   date={date}
                   isToday={isToday}
