@@ -116,32 +116,30 @@ export const RideCard = ({
     return content
   }
 
+  const primaryStats = [
+    formatDistance(activity.distance),
+    formatElevation(activity.total_elevation_gain),
+    activity.moving_time && formatDuration(Math.round(activity.moving_time / 60)),
+    (ftpForActivity !== undefined && ftpForActivity !== 0 && activity.moving_time) && `${getTSS(activity as StravaActivity, ftpForActivity)}TSS`,
+  ].filter(Boolean).join(' • ');
+
+  const secondaryStats = [
+    isCycling && activity.average_watts && `${Math.round(activity.average_watts)}W`,
+    activity.average_heartrate && `${Math.round(activity.average_heartrate)}bpm`,
+    isCycling && activity.kilojoules && `${Math.round(activity.kilojoules)}kJ`,
+  ].filter(Boolean).join(' • ');
+
   const cardContent = (
     <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center py-1 px-2">
           <div className="text-sm font-semibold truncate w-full text-center text-orange-800">
             {emoji} {activity.name}
           </div>
-          <div className="flex gap-1 text-xs text-orange-700">
-            <span>{formatDistance(activity.distance)}</span>
-            <span>{formatElevation(activity.total_elevation_gain)}</span>
-            {activity.moving_time && (
-              <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
-            )}
-            {(ftpForActivity !== undefined && ftpForActivity !== 0 && activity.moving_time) && (
-              <span>{getTSS(activity as StravaActivity, ftpForActivity)}TSS</span>
-            )}
+          <div className="text-xs text-orange-700 truncate w-full text-center">
+            {primaryStats}
           </div>
-          {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (
-            <div className="flex gap-2 text-xs text-orange-700">
-              {isCycling && activity.average_watts && (
-                <span>{Math.round(activity.average_watts)}W</span>
-              )}
-              {activity.average_heartrate && (
-                <span>{Math.round(activity.average_heartrate)}bpm</span>
-              )}
-              {isCycling && activity.kilojoules && (
-                <span>{Math.round(activity.kilojoules)}kJ</span>
-              )}
+          {secondaryStats && (
+            <div className="text-xs text-orange-700 truncate w-full text-center">
+              {secondaryStats}
             </div>
           )}
         </div>
