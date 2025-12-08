@@ -115,41 +115,17 @@ export function HomeScreen() {
 
       {(activeTab === 'overview' || activeTab === 'calendar' || activeTab === 'plan') && (
         <>
-          {/* <View style={styles.tabBar}>
-            <Pressable
-              style={[styles.tab, activeTab === 'calendar' && styles.tabActive]}
-              onPress={() => setActiveTab('calendar')}
-            >
-              <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>
-                Calendar
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
-              onPress={() => setActiveTab('overview')}
-            >
-              <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
-                Overview
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.tab, activeTab === 'plan' && styles.tabActive]}
-              onPress={() => setActiveTab('plan')}
-            >
-              <Text style={[styles.tabText, activeTab === 'plan' && styles.tabTextActive]}>
-                Plan
-              </Text>
-            </Pressable>
-          </View> */}
-          <View style={styles.pickerSection}>
-            <Pressable 
-              style={styles.pickerContainer}
-              onPress={() => setShowDateRangePicker(true)}
-            >
-              <Text style={styles.pickerSelectedValue}>{currentDateRange.label}</Text>
-              <Text style={styles.chevron}>⌄</Text>
-            </Pressable>
-          </View>
+          {(activeTab === 'calendar' || activeTab === 'overview') && (
+            <View style={styles.pickerSection}>
+              <Pressable 
+                style={styles.pickerContainer}
+                onPress={() => setShowDateRangePicker(true)}
+              >
+                <Text style={styles.pickerSelectedValue}>{currentDateRange.label}</Text>
+                <Text style={styles.chevron}>⌄</Text>
+              </Pressable>
+            </View>
+          )}
           {activeTab === 'calendar' && (
             <Calendar 
               dateRange={currentDateRange}

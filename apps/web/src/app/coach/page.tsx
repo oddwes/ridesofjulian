@@ -152,9 +152,9 @@ export default function CoachPage() {
         body: JSON.stringify({
           userPrompt,
           ftp,
-          blockDuration,
           weeklyHours,
           startDate,
+          endDate,
         }),
       });
 
@@ -336,6 +336,14 @@ export default function CoachPage() {
     return new Date(year, month - 1, day);
   };
 
+  const formatLocalDate = (date: Date) => {
+    // Format date as YYYY-MM-DD using local date components to avoid timezone shifts
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const getISOWeek = (date: Date) => {
     // ISO week date starts on Monday
     const target = new Date(date.valueOf());
@@ -347,6 +355,16 @@ export default function CoachPage() {
       target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
     }
     return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000); // 604800000 = 7 * 24 * 3600 * 1000
+  };
+
+  const getWeekRange = (date: Date) => {
+    // Return Monday-Sunday range for the given date
+    const dayNr = (date.getDay() + 6) % 7; // Monday = 0, Sunday = 6
+    const start = new Date(date);
+    start.setDate(date.getDate() - dayNr);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start, end };
   };
 
   const groupWorkoutsByWeek = (workouts: RideWorkout[]) => {
@@ -486,14 +504,14 @@ export default function CoachPage() {
               </div>
             </div>
             {groupWorkoutsByWeek(generatedPlan).map(([weekKey, workouts]) => {
-              const firstDate = parseLocalDate(workouts[0].selectedDate);
-              const lastDate = parseLocalDate(workouts[workouts.length - 1].selectedDate);
+              const anyDate = parseLocalDate(workouts[0].selectedDate);
+              const { start: weekStart, end: weekEnd } = getWeekRange(anyDate);
               const weekTotal = workouts.reduce((total, workout) => {
                 return total + workout.intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
               }, 0);
 
-              const startStr = firstDate.toISOString().split("T")[0];
-              const endStr = lastDate.toISOString().split("T")[0];
+              const startStr = formatLocalDate(weekStart);
+              const endStr = formatLocalDate(weekEnd);
 
               return (
                 <div key={weekKey} className="space-y-1">

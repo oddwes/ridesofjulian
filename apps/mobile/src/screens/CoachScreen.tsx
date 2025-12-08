@@ -172,9 +172,9 @@ export function CoachScreen() {
       const params = new URLSearchParams({
         userPrompt,
         ftp: String(ftp),
-        blockDuration: String(blockDuration),
         weeklyHours: String(weeklyHours),
         startDate,
+        endDate,
       });
       const url = `${TRAINING_PLAN_API_BASE_URL}/api/generate-plan?${params.toString()}`;
 

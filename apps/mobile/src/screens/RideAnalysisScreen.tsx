@@ -399,6 +399,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    marginBottom: 8,
   },
   headerTextContainer: {
     flex: 1,
@@ -427,7 +428,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 32,
   },
   analysisSection: {

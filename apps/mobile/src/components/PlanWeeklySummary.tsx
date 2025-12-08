@@ -8,7 +8,7 @@ type PlanWeeklySummaryProps = {
 };
 
 export function PlanWeeklySummary({ weekStart, totalMinutes, totalTss }: PlanWeeklySummaryProps) {
-  const weekEnd = weekStart.endOf('week');
+  const weekEnd = weekStart.endOf('isoWeek');
 
   let dateRange: string;
   if (weekStart.isSame(weekEnd, 'month')) {

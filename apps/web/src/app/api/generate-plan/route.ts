@@ -23,7 +23,7 @@ Output each workout as a separate JSON object on its own line (JSONL format). Ea
   - powerMin: minimum power in watts
   - powerMax: maximum power in watts
 
-CRITICAL: Respect the block duration exactly. The training plan should span from the start date through (start date + block duration). For example, a 3-day block starting on Nov 6th should have workouts distributed from Nov 6th through Nov 9th (start date + 3 days). All workout dates must fall within this range.
+CRITICAL: The training plan should span exactly from the start date through the end date (inclusive). For example, a block starting on Nov 6th and ending on Nov 9th should have workouts distributed from Nov 6th through Nov 9th. All workout dates must fall within this range.
 
 IMPORTANT: The user has specified a weekly training volume that MUST be met. Ensure the total duration of all workouts in each week adds up to approximately the requested weekly hours. Fill any remaining hours with Z2 blocks. Distribute workouts across the week with appropriate rest.
 
@@ -43,19 +43,19 @@ Example output (one JSON object per line):
 type GenerateParams = {
   userPrompt: string;
   ftp: number;
-  blockDuration: number;
   weeklyHours: number;
   startDate: string;
+  endDate: string;
 };
 
 async function generatePlanResponse({
   userPrompt,
   ftp,
-  blockDuration,
   weeklyHours,
   startDate,
+  endDate,
 }: GenerateParams) {
-    if (!userPrompt || !ftp || !blockDuration || !weeklyHours || !startDate) {
+    if (!userPrompt || !ftp || !endDate || !weeklyHours || !startDate) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -73,7 +73,7 @@ async function generatePlanResponse({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const userMessage = `Create a ${blockDuration}-day training plan starting on ${startDate}. The athlete has ${weeklyHours} hours available per week for training - ensure each week's total workout duration adds up to this amount. Training goal: ${userPrompt}. Distribute workouts across the week with 4-6 workouts per week, ensuring appropriate rest days and progressive load. Include workouts of varying durations and intensities.
+    const userMessage = `Create a training plan from ${startDate} through ${endDate}. The athlete has ${weeklyHours} hours available per week for training - ensure each week's total workout duration adds up to this amount. Training goal: ${userPrompt}. Distribute workouts across the week with 4-6 workouts per week, ensuring appropriate rest days and progressive load. Include workouts of varying durations and intensities.
 
 Output one workout JSON object per line. Do not wrap in an array.`;
 
@@ -150,13 +150,13 @@ Output one workout JSON object per line. Do not wrap in an array.`;
 
 export async function POST(request: NextRequest) {
   try {
-    const { userPrompt, ftp, blockDuration, weeklyHours, startDate } =
+    const { userPrompt, ftp, endDate, weeklyHours, startDate } =
       await request.json();
 
     return await generatePlanResponse({
       userPrompt,
       ftp,
-      blockDuration,
+      endDate,
       weeklyHours,
       startDate,
     });
@@ -174,14 +174,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userPrompt = searchParams.get("userPrompt") || "";
     const ftp = Number(searchParams.get("ftp") || "0");
-    const blockDuration = Number(searchParams.get("blockDuration") || "0");
+    const endDate = searchParams.get("endDate") || "";
     const weeklyHours = Number(searchParams.get("weeklyHours") || "0");
     const startDate = searchParams.get("startDate") || "";
 
     return await generatePlanResponse({
       userPrompt,
       ftp,
-      blockDuration,
+      endDate,
       weeklyHours,
       startDate,
     });
