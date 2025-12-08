@@ -115,7 +115,7 @@ const MobileHome = () => {
   let lastWeekKey = null
 
   return (
-    <div className="max-w-4xl mx-auto p-3 text-gray-600">
+    <div className="max-w-4xl mx-auto px-3 text-gray-600">
       <div className="flex flex-col gap-3">
         <div className="flex justify-center">
           <DateRangeDropdown

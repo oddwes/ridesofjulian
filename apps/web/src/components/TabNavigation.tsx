@@ -13,7 +13,7 @@ export default function TabNavigation() {
   ];
 
   return (
-    <div className="hidden md:flex gap-8 pb-4 justify-center">
+    <div className="hidden md:flex gap-8 justify-center">
       {tabs.map((tab) => {
         const isActive = pathname === tab.path;
         return (

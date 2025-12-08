@@ -48,7 +48,7 @@ const DesktopHome = () => {
   const isLoading = loading || activitiesLoading
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full justify-center">
+    <div className="flex flex-col items-center gap-2 w-full justify-center">
       <TabNavigation />
       <div className="mt-2">
         <DateRangeDropdown

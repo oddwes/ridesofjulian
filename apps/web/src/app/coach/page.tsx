@@ -369,7 +369,7 @@ export default function CoachPage() {
   return (
     <>
       <TabNavigation />
-      <Container className="py-8 text-gray-600">
+      <Container className="mb-8 text-gray-600">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">AI Training Plan Builder</h1>
