@@ -12,7 +12,7 @@ import { OverviewScreen } from './OverviewScreen';
 import { CoachScreen } from './CoachScreen';
 import { PlanScreen } from './PlanScreen';
 import { Calendar, ScheduledRideWorkout } from '../components/calendar/Calendar';
-import type { StravaActivity } from '../utils/StravaUtil';
+import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 import { createWorkout } from '@ridesofjulian/shared';
 import { supabase } from '../config/supabase';
 

@@ -1,4 +1,4 @@
-import { getTotalDistance, getTotalElevation, getTotalTime } from '../utils/StravaUtil'
+import { getTotalDistance, getTotalElevation, getTotalTime } from '@ridesofjulian/shared/utils/StravaUtil'
 import dayjs from 'dayjs'
 
 const Totals = ({ athleteActivities }) => {

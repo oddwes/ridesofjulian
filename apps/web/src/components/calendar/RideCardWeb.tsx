@@ -2,7 +2,7 @@
 
 import { RideCard } from '@ridesofjulian/shared/mobile';
 import { StravaActivity } from '@ridesofjulian/shared';
-import { getTSS } from '../../utils/StravaUtil';
+import { getTSS } from '@ridesofjulian/shared/utils/StravaUtil';
 import { formatDistance, formatElevation } from '../../utils/FormatUtil';
 import { formatDuration } from '../../utils/TimeUtil';
 import { useContext, useMemo } from 'react';

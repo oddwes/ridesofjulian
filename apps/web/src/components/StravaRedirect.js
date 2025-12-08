@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getAccessToken } from '../utils/StravaUtil';
+import { getAccessToken } from '@ridesofjulian/shared/utils/StravaUtil/web';
 import { LoadingSpinner } from './LoadingSpinner';
 
 const StravaRedirect = () => {

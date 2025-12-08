@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { getAthleteActivities, ensureValidStravaToken, StravaActivity } from '../utils/StravaUtil';
+import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
+import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 
 export const useStravaActivities = (year: number) => {
   return useQuery<StravaActivity[], Error>({

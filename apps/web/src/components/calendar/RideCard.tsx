@@ -1,7 +1,7 @@
 import { useContext, useMemo } from "react"
 import Link from "next/link"
 import { ChevronUp } from "lucide-react"
-import { getTSS } from "../../utils/StravaUtil"
+import { getTSS } from "@ridesofjulian/shared/utils/StravaUtil"
 import { formatDuration } from "../../utils/TimeUtil"
 import { formatDistance, formatElevation } from "../../utils/FormatUtil"
 import { FtpContext } from "../FTP"

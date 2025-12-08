@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthRequest, makeRedirectUri } from 'expo-auth-session';
+import { AuthRequest } from 'expo-auth-session';
 import dayjs from 'dayjs';
 import {
   STRAVA_ACCESS_TOKEN_KEY,
   STRAVA_REFRESH_TOKEN_KEY,
   STRAVA_TOKEN_EXPIRY_KEY,
   StravaTokenResponse,
-} from '@ridesofjulian/shared/src/utils/StravaUtil';
+} from './index';
+import { StravaActivity, StravaDetailedActivity } from '../../types/strava';
 
 export const storeStravaTokens = async (data: StravaTokenResponse) => {
   await AsyncStorage.multiSet([
@@ -103,33 +104,6 @@ export const connectStrava = async () => {
   return true;
 };
 
-export interface StravaActivity {
-  id: number;
-  name: string;
-  distance: number;
-  total_elevation_gain: number;
-  moving_time: number;
-  start_date: string;
-  type?: string;
-  sport_type?: string;
-  average_watts?: number;
-  weighted_average_watts?: number;
-  kilojoules?: number;
-  average_heartrate?: number;
-}
-
-export interface StravaLap {
-  id: number;
-  elapsed_time: number;
-  average_watts?: number;
-  average_heartrate?: number;
-  average_cadence?: number;
-}
-
-export interface StravaDetailedActivity extends StravaActivity {
-  laps?: StravaLap[];
-}
-
 const stravaApiGet = async (url: string, params: Record<string, any> = {}) => {
   const accessToken = await AsyncStorage.getItem(STRAVA_ACCESS_TOKEN_KEY);
   if (!accessToken) throw new Error('No Strava access token');
@@ -168,15 +142,4 @@ export const getAthleteActivities = async (year: number, page = 1): Promise<Stra
 export const getActivityById = async (id: number): Promise<StravaDetailedActivity> => {
   return stravaApiGet(`https://www.strava.com/api/v3/activities/${id}`);
 };
-
-export const getTSS = (activity: StravaActivity, ftp: number): number => {
-  if (!activity.weighted_average_watts) {
-    return 0;
-  }
-  const intensityFactor = activity.weighted_average_watts / ftp;
-  return Math.round(
-    ((activity.moving_time * activity.weighted_average_watts * intensityFactor) / (ftp * 3600)) * 100
-  );
-};
-
 

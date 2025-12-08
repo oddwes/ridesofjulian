@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange';
+import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared';
+import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
 import { useWorkouts } from '../hooks/useWorkouts';
 import { type FtpData, getFtpForDate } from '../utils/ftpUtil';
-import { getTSS, type StravaActivity } from '../utils/StravaUtil';
+import { getTSS, type StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 import { useUser } from '../hooks/useUser';
 import { useFtpHistory } from '../hooks/useFtpHistory';
 import { FTPGraph } from '../components/FTPGraph';
@@ -19,9 +20,11 @@ interface OverviewScreenProps {
 dayjs.extend(isoWeek);
 
 export function OverviewScreen({ dateRange }: OverviewScreenProps) {
-  const { data: activities = [], isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
+  const { activities = [], isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
     dateRange.start,
-    dateRange.end
+    dateRange.end,
+    ensureValidStravaToken,
+    getAthleteActivities
   );
 
   const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();

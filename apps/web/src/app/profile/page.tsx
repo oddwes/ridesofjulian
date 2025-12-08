@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Session } from '@supabase/supabase-js';
 import Image from "next/image";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { login, ensureValidToken } from "@/utils/StravaUtil";
+import { login, ensureValidToken } from "@ridesofjulian/shared/utils/StravaUtil/web";
 import { hasWahooRefreshToken, initiateWahooAuth } from "@/utils/WahooUtil";
 import { FTPInput } from "@/components/FTP";
 import { Save } from "lucide-react";

@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { useWorkoutData } from '../hooks/useWorkoutData'
-import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange'
+import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared'
+import { getAthleteActivities, ensureValidToken } from '@ridesofjulian/shared/utils/StravaUtil/web'
 import Calendar from './calendar/Calendar'
 import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
 import { DateRangeDropdown } from './DateRangeDropdown'
@@ -41,7 +42,9 @@ const DesktopHome = () => {
   const { plannedWorkouts, gymWorkouts, loading } = useWorkoutData(dayjs(currentDateRange.start).year())
   const { activities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
     currentDateRange.start,
-    currentDateRange.end
+    currentDateRange.end,
+    ensureValidToken,
+    getAthleteActivities
   )
 
   const isCurrentYearRange = dayjs(currentDateRange.end).year() === dayjs().year()

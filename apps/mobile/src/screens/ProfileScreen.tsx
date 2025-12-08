@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { useEffect, useState, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
-import { connectStrava, disconnectStrava, ensureValidStravaToken } from '../utils/StravaUtil';
+import { connectStrava, disconnectStrava, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
 import { StravaIcon } from '../components/StravaIcon';
 import { connectWahoo, disconnectWahoo, ensureValidWahooToken } from '../utils/WahooUtil';
 import AsyncStorage from '@react-native-async-storage/async-storage';

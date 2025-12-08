@@ -1,7 +1,7 @@
 'use client'
 
 import Home from '@/components/Home'
-import { ensureValidToken } from '@/utils/StravaUtil'
+import { ensureValidToken } from '@ridesofjulian/shared/utils/StravaUtil/web'
 import { ensureValidWahooToken } from '@/utils/WahooUtil'
 import { useEffect, useState } from 'react'
 

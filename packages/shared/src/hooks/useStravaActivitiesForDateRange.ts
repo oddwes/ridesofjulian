@@ -1,9 +1,14 @@
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
-import { getAthleteActivities, ensureValidToken } from '../utils/StravaUtil';
+import { StravaActivity } from '../types/strava';
 
-export const useStravaActivitiesForDateRange = (startDate: string, endDate: string) => {
+export const useStravaActivitiesForDateRange = (
+  startDate: string,
+  endDate: string,
+  ensureValidToken: () => Promise<boolean>,
+  getAthleteActivities: (year: number) => Promise<StravaActivity[]>
+) => {
   const yearsToFetch = useMemo(() => {
     const start = dayjs(startDate);
     const end = dayjs(endDate);
@@ -32,7 +37,7 @@ export const useStravaActivitiesForDateRange = (startDate: string, endDate: stri
   const activities = useMemo(
     () =>
       allActivities.filter((a) => {
-        const date = dayjs((a as { start_date: string }).start_date);
+        const date = dayjs(a.start_date);
         return (
           date.isAfter(dayjs(startDate).subtract(1, 'day')) &&
           date.isBefore(dayjs(endDate).add(1, 'day'))
@@ -43,5 +48,4 @@ export const useStravaActivitiesForDateRange = (startDate: string, endDate: stri
 
   return { activities, isLoading };
 };
-
 

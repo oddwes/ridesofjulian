@@ -13,3 +13,15 @@ export interface StravaActivity {
   average_heartrate?: number;
 }
 
+export interface StravaLap {
+  id: number;
+  elapsed_time: number;
+  average_watts?: number;
+  average_heartrate?: number;
+  average_cadence?: number;
+}
+
+export interface StravaDetailedActivity extends StravaActivity {
+  laps?: StravaLap[];
+}
+

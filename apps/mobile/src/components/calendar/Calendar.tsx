@@ -8,10 +8,11 @@ import { Day } from './Day';
 import { WeeklySummary } from '../WeeklySummary';
 import { SlidingLoadingIndicator } from '../SlidingLoadingIndicator';
 import { useWorkouts } from '../../hooks/useWorkouts';
-import { useStravaActivitiesForDateRange } from '../../hooks/useStravaActivitiesForDateRange';
+import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared';
+import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
 import { useUser } from '../../hooks/useUser';
 import { useFtpHistory } from '../../hooks/useFtpHistory';
-import type { StravaActivity } from '../../utils/StravaUtil';
+import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 import type { DateRange } from '../../screens/HomeScreen';
 
 export type Interval = {
@@ -60,9 +61,11 @@ export function Calendar({ onWorkoutPress, dateRange, isLoadingDateRange, onActi
     [allWorkouts, dateRange]
   );
 
-  const { data: activities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
+  const { activities, isLoading: activitiesLoading } = useStravaActivitiesForDateRange(
     dateRange.start,
-    dateRange.end
+    dateRange.end,
+    ensureValidStravaToken,
+    getAthleteActivities
   );
 
   const isLoading = workoutsLoading || activitiesLoading;

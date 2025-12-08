@@ -3,7 +3,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import type { StravaActivity } from '@ridesofjulian/shared';
 import type { FtpData } from '@/utils/FtpUtil';
 import { getFtpForDate } from '@/utils/FtpUtil';
-import { getTSS } from '@/utils/StravaUtil';
+import { getTSS } from '@ridesofjulian/shared/utils/StravaUtil';
 import { FtpContext } from './FTP';
 
 type WeeklySummaryProps = {

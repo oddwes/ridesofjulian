@@ -3,10 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Animated, Alert } from 'react-native';
 import { Linking } from 'react-native';
 import dayjs from 'dayjs';
-import type { StravaActivity } from '../utils/StravaUtil';
+import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 import { formatDistance, formatElevation, formatDuration } from '../utils/formatUtil';
 import { useStravaActivity } from '../hooks/useStravaActivity';
-import { useStravaActivitiesForDateRange } from '../hooks/useStravaActivitiesForDateRange';
+import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared';
+import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
 import { useUser } from '../hooks/useUser';
 import { useSchedule } from '../hooks/useSchedule';
 import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
@@ -69,8 +70,9 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
     [rideDate]
   );
 
-  const { data: rideHistory = [], isLoading: historyLoading } =
-    useStravaActivitiesForDateRange(historyStart, historyEnd);
+  const { activities, isLoading: historyLoading } =
+    useStravaActivitiesForDateRange(historyStart, historyEnd, ensureValidStravaToken, getAthleteActivities);
+  const rideHistory = activities;
 
   const { data: user } = useUser();
   const { data: scheduleRows = [] } = useSchedule(user?.id);

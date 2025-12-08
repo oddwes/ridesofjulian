@@ -1,5 +1,5 @@
 import { useContext } from "react"
-import { getTotalDistance, getTotalElevation, getTotalTime, getTotalTss } from "../../utils/StravaUtil"
+import { getTotalDistance, getTotalElevation, getTotalTime, getTotalTss } from "@ridesofjulian/shared/utils/StravaUtil"
 import { FtpContext } from "../FTP"
 
 export const RowHeader = ({ startDate, endDate, activitiesForWeek }) => {

@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, Linking } from 'react-native';
 import { Dayjs } from 'dayjs';
 import { Workout, RideCard, GymCard } from '@ridesofjulian/shared/mobile';
-import { StravaActivity, getTSS } from '../../utils/StravaUtil';
+import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
+import { getTSS } from '@ridesofjulian/shared/utils/StravaUtil';
 import { formatDistance, formatElevation, formatDuration } from '../../utils/formatUtil';
 import { FtpData, getFtpForDate } from '../../utils/ftpUtil';
 

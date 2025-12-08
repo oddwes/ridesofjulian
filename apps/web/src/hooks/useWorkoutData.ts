@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getAthleteActivities, hasRefreshToken } from '../utils/StravaUtil'
+import { getAthleteActivities, hasRefreshToken } from '@ridesofjulian/shared/utils/StravaUtil/web'
 import { getPlannedWorkouts, hasWahooRefreshToken } from '../utils/WahooUtil'
 import { useWorkouts } from './useWorkouts'
 

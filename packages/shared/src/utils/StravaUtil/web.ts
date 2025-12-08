@@ -1,10 +1,21 @@
-import { getBeginningOfYear, getEndOfYear } from './TimeUtil';
 import axios from 'axios';
 import {
-  STRAVA_ACCESS_TOKEN_KEY as ACCESS_TOKEN_KEY,
-  STRAVA_REFRESH_TOKEN_KEY as REFRESH_TOKEN_KEY,
-  STRAVA_TOKEN_EXPIRY_KEY as TOKEN_EXPIRY_KEY,
-} from '@ridesofjulian/shared/utils/StravaUtil';
+  STRAVA_ACCESS_TOKEN_KEY,
+  STRAVA_REFRESH_TOKEN_KEY,
+  STRAVA_TOKEN_EXPIRY_KEY,
+  StravaTokenResponse,
+} from './index';
+import { StravaActivity } from '../../types/strava';
+
+const getBeginningOfYear = (year: number) => {
+  const date = new Date(year, 0, 1);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
+
+const getEndOfYear = (year: number) => {
+  const date = new Date(year, 11, 31);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+};
 
 export const login = () => {
   const redirectUrl = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URL;
@@ -12,7 +23,7 @@ export const login = () => {
   window.location = `http://www.strava.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
 };
 
-export const getAccessToken = async (authCode) => {
+export const getAccessToken = async (authCode: string) => {
   try {
     const response = await axios.post(
       `https://www.strava.com/api/v3/oauth/token?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code`
@@ -25,7 +36,7 @@ export const getAccessToken = async (authCode) => {
 };
 
 export const refreshAccessToken = async () => {
-  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  const refreshToken = localStorage.getItem(STRAVA_REFRESH_TOKEN_KEY);
   if (!refreshToken) {
     return null;
   }
@@ -42,21 +53,21 @@ export const refreshAccessToken = async () => {
   }
 };
 
-const storeTokens = (data) => {
-  localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
-  localStorage.setItem(TOKEN_EXPIRY_KEY, data.expires_at);
+const storeTokens = (data: StravaTokenResponse) => {
+  localStorage.setItem(STRAVA_ACCESS_TOKEN_KEY, data.access_token);
+  localStorage.setItem(STRAVA_REFRESH_TOKEN_KEY, data.refresh_token);
+  localStorage.setItem(STRAVA_TOKEN_EXPIRY_KEY, String(data.expires_at));
 };
 
 export const isLoggedIn = () => {
   return (
-    !!localStorage.getItem(ACCESS_TOKEN_KEY) &&
-    localStorage.getItem(TOKEN_EXPIRY_KEY) > Date.now() / 1000
+    !!localStorage.getItem(STRAVA_ACCESS_TOKEN_KEY) &&
+    Number(localStorage.getItem(STRAVA_TOKEN_EXPIRY_KEY)) > Date.now() / 1000
   );
 };
 
 export const hasRefreshToken = () => {
-  return !!localStorage.getItem(REFRESH_TOKEN_KEY);
+  return !!localStorage.getItem(STRAVA_REFRESH_TOKEN_KEY);
 };
 
 export const ensureValidToken = async () => {
@@ -81,7 +92,7 @@ export const getAthleteStats = async () => {
   return await stravaApiV3Get(`https://www.strava.com/api/v3/athletes/${athlete.id}/stats`);
 };
 
-export const getAthleteActivities = async (year, page = 1) => {
+export const getAthleteActivities = async (year: number, page = 1): Promise<StravaActivity[]> => {
   const perPage = 100;
   const firstDayOfYear = getBeginningOfYear(year).valueOf() / 1000;
   const lastDayOfYear = getEndOfYear(year).valueOf() / 1000;
@@ -99,10 +110,10 @@ export const getAthleteActivities = async (year, page = 1) => {
   }
 };
 
-const stravaApiV3Get = async (url, params = {}) => {
+const stravaApiV3Get = async (url: string, params: Record<string, any> = {}) => {
   try {
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN_KEY)}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem(STRAVA_ACCESS_TOKEN_KEY)}` },
       params: params
     });
     return response.data;
@@ -111,29 +122,3 @@ const stravaApiV3Get = async (url, params = {}) => {
   }
 };
 
-export const getTotalDistance = (activities) => {
-  return Math.round(activities.reduce((partialSum, a) => partialSum + a.distance, 0) / 1000);
-};
-
-export const getTotalElevation = (activities) => {
-  return Math.round(activities.reduce((partialSum, a) => partialSum + a.total_elevation_gain, 0));
-};
-
-export const getTotalTime = (activities) => {
-  return Math.round(activities.reduce((partialSum, a) => partialSum + a.moving_time, 0) / 3600);
-};
-
-export const getTSS = (activity, ftp) => {
-  if (!activity.weighted_average_watts) {
-    return 0;
-  }
-  const intensityFactor = activity.weighted_average_watts / ftp;
-  return Math.round(
-    ((activity.moving_time * activity.weighted_average_watts * intensityFactor) / (ftp * 3600)) *
-    100
-  );
-};
-
-export const getTotalTss = (activities, ftp) => {
-  return activities.reduce((partialSum, activity) => partialSum + getTSS(activity, ftp), 0);
-};

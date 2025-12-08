@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 import dayjs, { Dayjs } from 'dayjs';
-import type { StravaActivity } from '../utils/StravaUtil';
+import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 import type { FtpData } from '../utils/ftpUtil';
 import { getFtpForDate } from '../utils/ftpUtil';
-import { getTSS } from '../utils/StravaUtil';
+import { getTSS } from '@ridesofjulian/shared/utils/StravaUtil';
 
 type WeeklySummaryProps = {
   activities: StravaActivity[];
