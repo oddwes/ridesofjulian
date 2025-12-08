@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAthleteActivities, hasRefreshToken } from '@ridesofjulian/shared/utils/StravaUtil/web'
-import { getPlannedWorkouts, hasWahooRefreshToken } from '../utils/WahooUtil'
+// import { hasWahooRefreshToken } from '../utils/WahooUtil'
 import { useWorkouts } from './useWorkouts'
 
 export const useWorkoutData = (selectedYear: number) => {
-  const [hasWahooToken, setHasWahooToken] = useState(false)
+  // const [hasWahooToken, setHasWahooToken] = useState(false)
   const [hasStravaToken, setHasStravaToken] = useState(false)
 
   useEffect(() => {
-    setHasWahooToken(hasWahooRefreshToken())
+    // setHasWahooToken(hasWahooRefreshToken())
     setHasStravaToken(hasRefreshToken())
   }, [])
 
