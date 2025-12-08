@@ -46,6 +46,7 @@ type GenerateParams = {
   weeklyHours: number;
   startDate: string;
   endDate: string;
+  openaiApiKey: string;
 };
 
 async function generatePlanResponse({
@@ -54,23 +55,17 @@ async function generatePlanResponse({
   weeklyHours,
   startDate,
   endDate,
+  openaiApiKey,
 }: GenerateParams) {
-    if (!userPrompt || !ftp || !endDate || !weeklyHours || !startDate) {
+    if (!userPrompt || !ftp || !endDate || !weeklyHours || !startDate || !openaiApiKey) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "OpenAI API key not configured" },
-        { status: 500 }
-      );
-    }
-
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: openaiApiKey,
     });
 
     const userMessage = `Create a training plan from ${startDate} through ${endDate}. The athlete has ${weeklyHours} hours available per week for training - ensure each week's total workout duration adds up to this amount. Training goal: ${userPrompt}. Distribute workouts across the week with 4-6 workouts per week, ensuring appropriate rest days and progressive load. Include workouts of varying durations and intensities.
@@ -150,7 +145,7 @@ Output one workout JSON object per line. Do not wrap in an array.`;
 
 export async function POST(request: NextRequest) {
   try {
-    const { userPrompt, ftp, endDate, weeklyHours, startDate } =
+    const { userPrompt, ftp, endDate, weeklyHours, startDate, openaiApiKey } =
       await request.json();
 
     return await generatePlanResponse({
@@ -159,6 +154,7 @@ export async function POST(request: NextRequest) {
       endDate,
       weeklyHours,
       startDate,
+      openaiApiKey,
     });
   } catch (error) {
     console.error("Error generating plan:", error);
@@ -168,29 +164,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userPrompt = searchParams.get("userPrompt") || "";
-    const ftp = Number(searchParams.get("ftp") || "0");
-    const endDate = searchParams.get("endDate") || "";
-    const weeklyHours = Number(searchParams.get("weeklyHours") || "0");
-    const startDate = searchParams.get("startDate") || "";
-
-    return await generatePlanResponse({
-      userPrompt,
-      ftp,
-      endDate,
-      weeklyHours,
-      startDate,
-    });
-  } catch (error) {
-    console.error("Error generating plan (GET):", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-

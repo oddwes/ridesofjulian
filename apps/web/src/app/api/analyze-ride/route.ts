@@ -8,13 +8,21 @@ const getSystemPrompt = () =>
 Provide clear, concise feedback, focusing on execution quality, intensity distribution, fatigue, and concrete next-step guidance. 
 Avoid repeating the raw data; interpret it.`;
 
-type AnalyzeParams = {
+type AnalyzeRequest = {
   ride_history?: unknown;
   training_plan?: unknown;
   current_activity?: unknown;
   workout_plan?: unknown;
   user_id?: string;
   strava_id?: number;
+  openaiApiKey: string;
+};
+
+type BuildMessageParams = {
+  ride_history?: unknown;
+  training_plan?: unknown;
+  current_activity?: unknown;
+  workout_plan?: unknown;
 };
 
 const buildUserMessage = ({
@@ -22,7 +30,7 @@ const buildUserMessage = ({
   training_plan,
   current_activity,
   workout_plan,
-}: AnalyzeParams) => {
+}: BuildMessageParams) => {
   const parts: string[] = [];
   if (current_activity) {
     parts.push(
@@ -75,7 +83,8 @@ export async function POST(request: NextRequest) {
       workout_plan,
       user_id,
       strava_id,
-    }: AnalyzeParams =
+      openaiApiKey,
+    }: AnalyzeRequest =
       await request.json();
 
     if (!ride_history && !training_plan && !current_activity && !workout_plan) {
@@ -85,10 +94,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!openaiApiKey) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured" },
-        { status: 500 }
+        { error: "OpenAI API key is required" },
+        { status: 400 }
       );
     }
 
@@ -104,7 +113,7 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: openaiApiKey,
     });
 
     const systemPrompt = getSystemPrompt();

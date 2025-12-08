@@ -6,6 +6,7 @@ import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { DatePickerModal } from '../components/DatePickerModal';
+import { SlidingLoadingIndicator } from '../components/SlidingLoadingIndicator';
 import { useSchedule } from '../hooks/useSchedule';
 
 type Interval = {
@@ -164,61 +165,105 @@ export function CoachScreen() {
       return;
     }
 
+    const openaiApiKey = await AsyncStorage.getItem('openai_api_key');
+    if (!openaiApiKey) {
+      Alert.alert('Missing API Key', 'Please set your OpenAI API key in Profile settings.');
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedPlan([]);
 
-    try {
+    return new Promise<void>((resolve, reject) => {
       const workouts: RideWorkout[] = [];
-      const params = new URLSearchParams({
-        userPrompt,
-        ftp: String(ftp),
-        weeklyHours: String(weeklyHours),
-        startDate,
-        endDate,
-      });
-      const url = `${TRAINING_PLAN_API_BASE_URL}/api/generate-plan?${params.toString()}`;
+      const url = `${TRAINING_PLAN_API_BASE_URL}/api/generate-plan`;
+      let processedLength = 0;
+      let buffer = '';
 
-      // Lazy require to avoid TS issues and keep bundle small
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const EventSourceImpl =
-        require('react-native-sse').default ||
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        require('react-native-sse');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
 
-      await new Promise<void>((resolve, reject) => {
-        const es = new EventSourceImpl(url);
+      xhr.onprogress = () => {
+        const responseText = xhr.responseText;
+        const newChunk = responseText.substring(processedLength);
+        processedLength = responseText.length;
 
-        es.addEventListener('message', (event: any) => {
-          const raw = String(event?.data ?? '').trim();
-          if (!raw) return;
-          if (raw === '[DONE]') {
-            es.close();
+        buffer += newChunk;
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+
+            if (!data || data === '[DONE]') {
+              continue;
+            }
+
+            try {
+              const workout = JSON.parse(data) as RideWorkout;
+              workouts.push(workout);
+              setGeneratedPlan([...workouts]);
+            } catch (e) {
+              console.error('Failed to parse workout:', e);
+            }
+          }
+        }
+      };
+
+      xhr.onload = async () => {
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            if (buffer.trim()) {
+              const lines = buffer.split('\n\n');
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6).trim();
+                  if (data && data !== '[DONE]') {
+                    try {
+                      const workout = JSON.parse(data) as RideWorkout;
+                      workouts.push(workout);
+                      setGeneratedPlan([...workouts]);
+                    } catch (e) {
+                      console.error('Failed to parse final workout:', e);
+                    }
+                  }
+                }
+              }
+            }
+            await savePlanAndInputs(workouts);
             resolve();
-            return;
+          } else {
+            throw new Error(`Failed to generate plan: ${xhr.status}`);
           }
-          try {
-            const workout = JSON.parse(raw) as RideWorkout;
-            workouts.push(workout);
-            setGeneratedPlan([...workouts]);
-          } catch (e) {
-            console.error('Failed to parse workout from SSE', e);
-          }
-        });
+        } catch (error) {
+          console.error('Error processing plan:', error);
+          Alert.alert('Error', 'Failed to generate training plan.');
+          reject(error);
+        } finally {
+          setIsGenerating(false);
+        }
+      };
 
-        es.addEventListener('error', (event: any) => {
-          console.error('SSE error', event);
-          es.close();
-          reject(new Error('Failed to stream training plan'));
-        });
-      });
+      xhr.onerror = () => {
+        console.error('Network error');
+        Alert.alert('Error', 'Failed to generate training plan.');
+        setIsGenerating(false);
+        reject(new Error('Network error'));
+      };
 
-      await savePlanAndInputs(workouts);
-    } catch (error) {
-      console.error('Error generating plan', error);
-      Alert.alert('Error', 'Failed to generate training plan.');
-    } finally {
-      setIsGenerating(false);
-    }
+      xhr.send(
+        JSON.stringify({
+          userPrompt,
+          ftp,
+          weeklyHours,
+          startDate,
+          endDate,
+          openaiApiKey,
+        })
+      );
+    });
   };
 
   const clearPlan = async () => {
@@ -406,6 +451,7 @@ export function CoachScreen() {
             </Text>
           </Pressable>
         </View>
+        <SlidingLoadingIndicator isLoading={isGenerating} />
 
         {generatedPlan.length > 0 && (
           <View style={styles.planSection}>

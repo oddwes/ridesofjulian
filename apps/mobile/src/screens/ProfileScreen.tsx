@@ -1,12 +1,13 @@
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { connectStrava, disconnectStrava, ensureValidStravaToken } from '../utils/StravaUtil';
 import { StravaIcon } from '../components/StravaIcon';
 import { connectWahoo, disconnectWahoo, ensureValidWahooToken } from '../utils/WahooUtil';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ProfileScreenProps = {
   onClose: () => void;
@@ -29,6 +30,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const [weightShowSuccess, setWeightShowSuccess] = useState(false);
   const [stravaConnected, setStravaConnected] = useState(false);
   const [wahooConnected, setWahooConnected] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState<string>('');
+  const [openaiApiKeyInput, setOpenaiApiKeyInput] = useState<string>('');
+  const [openaiApiKeyInputFocused, setOpenaiApiKeyInputFocused] = useState(false);
+  const [openaiApiKeyIsDirty, setOpenaiApiKeyIsDirty] = useState(false);
+  const ftpInputRef = useRef<TextInput>(null);
+  const weightInputRef = useRef<TextInput>(null);
+  const openaiApiKeyInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     const fetchFtp = async () => {
@@ -81,6 +89,42 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     };
     checkConnections();
   }, []);
+
+  useEffect(() => {
+    const loadOpenaiApiKey = async () => {
+      try {
+        const key = await AsyncStorage.getItem('openai_api_key');
+        if (key) {
+          setOpenaiApiKey(key);
+          setOpenaiApiKeyInput(key);
+        }
+      } catch (e) {
+        console.error('Error loading OpenAI API key', e);
+      }
+    };
+    loadOpenaiApiKey();
+  }, []);
+
+  const handleOpenaiApiKeyInputChange = (text: string) => {
+    setOpenaiApiKeyInput(text);
+    if (!openaiApiKeyIsDirty && text !== openaiApiKey) {
+      setOpenaiApiKeyIsDirty(true);
+    } else if (text === openaiApiKey) {
+      setOpenaiApiKeyIsDirty(false);
+    }
+  };
+
+  const handleSaveOpenaiApiKey = async () => {
+    if (!openaiApiKeyIsDirty) return;
+    try {
+      const trimmed = openaiApiKeyInput.trim();
+      await AsyncStorage.setItem('openai_api_key', trimmed);
+      setOpenaiApiKey(trimmed);
+      setOpenaiApiKeyIsDirty(false);
+    } catch (e) {
+      console.error('Error saving OpenAI API key', e);
+    }
+  };
 
   const handleFtpInputChange = (text: string) => {
     setFtpInput(text);
@@ -263,6 +307,8 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     setWeightIsSaving(false);
     setWeightShowSuccess(false);
     setWeightInput(weight);
+    setOpenaiApiKeyIsDirty(false);
+    setOpenaiApiKeyInput(openaiApiKey);
     onClose();
   };
 
@@ -294,6 +340,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
     await supabase.auth.signOut();
   };
 
+  const blurAllInputs = () => {
+    ftpInputRef.current?.blur();
+    weightInputRef.current?.blur();
+    openaiApiKeyInputRef.current?.blur();
+    Keyboard.dismiss();
+  };
+
   if (!session) return null;
 
   const user = session.user;
@@ -302,7 +355,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const email = user?.email;
 
   return (
-    <View style={[styles.container]}>
+    <View 
+      style={styles.container}
+      onStartShouldSetResponder={() => {
+        blurAllInputs();
+        return false;
+      }}
+    >
       <View style={styles.modalHandle} />
       
       <View style={styles.header}>
@@ -313,8 +372,13 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
         <View style={styles.closeButton} />
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.profileSection}>
+      <ScrollView 
+        style={styles.content} 
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={blurAllInputs}
+        onTouchStart={blurAllInputs}
+      >
+        <Pressable onPress={blurAllInputs} style={styles.profileSection}>
           {profilePicUrl ? (
             <Image source={{ uri: profilePicUrl }} style={styles.profileImage} />
           ) : (
@@ -322,7 +386,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
           )}
           <Text style={styles.name}>{fullName}</Text>
           <Text style={styles.email}>{email}</Text>
-        </View>
+        </Pressable>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Stats</Text>
@@ -345,6 +409,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 </View>
               )}
               <TextInput
+                ref={ftpInputRef}
                 style={[styles.ftpInput, ftpInputFocused && styles.ftpInputFocused]}
                 value={ftpInput}
                 onChangeText={handleFtpInputChange}
@@ -379,6 +444,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 </View>
               )}
               <TextInput
+                ref={weightInputRef}
                 style={[styles.ftpInput, weightInputFocused && styles.ftpInputFocused]}
                 value={weightInput}
                 onChangeText={handleWeightInputChange}
@@ -392,6 +458,31 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
                 placeholderTextColor="#6b7280"
               />
               <Text style={styles.ftpUnit}>kg</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>AI Settings</Text>
+          <View style={styles.statsInputContainer}>
+            <Text style={styles.ftpLabel}>OpenAI API Key</Text>
+            <View style={styles.ftpInputContainer}>
+              {openaiApiKeyIsDirty && (
+                <Pressable onPress={handleSaveOpenaiApiKey} style={styles.ftpSaveButton}>
+                  <Feather name="save" size={20} color="#3b82f6" />
+                </Pressable>
+              )}
+              <TextInput
+                ref={openaiApiKeyInputRef}
+                style={[styles.ftpInput, styles.openaiApiKeyInput, openaiApiKeyInputFocused && styles.ftpInputFocused]}
+                value={openaiApiKeyInput}
+                onChangeText={handleOpenaiApiKeyInputChange}
+                onBlur={() => setOpenaiApiKeyInputFocused(false)}
+                onFocus={() => setOpenaiApiKeyInputFocused(true)}
+                placeholder="sk-..."
+                placeholderTextColor="#6b7280"
+                secureTextEntry
+              />
             </View>
           </View>
         </View>
@@ -542,6 +633,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'right',
+  },
+  openaiApiKeyInput: {
+    width: 160,
+    textAlign: 'left',
   },
   ftpInputFocused: {
     backgroundColor: '#374151',

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Animated, Alert } from 'react-native';
 import { Linking } from 'react-native';
 import dayjs from 'dayjs';
 import type { StravaActivity } from '../utils/StravaUtil';
@@ -11,6 +11,7 @@ import { useUser } from '../hooks/useUser';
 import { useSchedule } from '../hooks/useSchedule';
 import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
 import { supabase } from '../config/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface RideAnalysisScreenProps {
   activity: StravaActivity;
@@ -189,6 +190,13 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
   const handleAnalyzeRide = async () => {
     if (!detailed || !user?.id) return;
     if (analysis || isQueued) return;
+    
+    const openaiApiKey = await AsyncStorage.getItem('openai_api_key');
+    if (!openaiApiKey) {
+      Alert.alert('Missing API Key', 'Please set your OpenAI API key in Profile settings.');
+      return;
+    }
+    
     setIsAnalyzing(true);
     setAnalysisError(null);
     try {
@@ -253,6 +261,7 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
         current_activity: slimActivity,
         user_id: user.id,
         strava_id: activity.id,
+        openaiApiKey,
       };
       if (workoutPlan) {
         body.workout_plan = workoutPlan;

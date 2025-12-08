@@ -3,7 +3,7 @@
 import { useState, useEffect, memo } from "react";
 import { Edit2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { WorkoutModal } from "@/components/workouts/Modal";
@@ -12,6 +12,8 @@ import { getStoredWahooToken, getWahooAuthUrl, createWahooWorkout } from "@/util
 import { RideWorkout, Interval } from "@/types/workout";
 import { Exercise } from "@ridesofjulian/shared";
 import TabNavigation from "@/components/TabNavigation";
+import { useSupabase } from "@/contexts/SupabaseContext";
+import { getFtp } from "@/utils/FtpUtil";
 
 const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout; onEdit?: (workout: RideWorkout) => void; onDelete?: (workout: RideWorkout) => void }) => {
   const totalDuration = workout.intervals.reduce(
@@ -81,6 +83,7 @@ WorkoutCard.displayName = 'WorkoutCard';
 export default function CoachPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { supabase, user } = useSupabase();
   const [userPrompt, setUserPrompt] = useState("");
   const [ftp, setFtp] = useState<number>(200);
   const [weeklyHours, setWeeklyHours] = useState<number>(10);
@@ -90,6 +93,15 @@ export default function CoachPage() {
   const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
   const [editingWorkout, setEditingWorkout] = useState<RideWorkout | null>(null);
   const [isPushingToWahoo, setIsPushingToWahoo] = useState(false);
+
+  const { data: ftpHistory } = useQuery({
+    queryKey: ['ftpHistory', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      return await getFtp(supabase, user.id);
+    },
+    enabled: !!user,
+  });
 
   useEffect(() => {
     const storedPlan = sessionStorage.getItem('generated_training_plan');
@@ -118,6 +130,20 @@ export default function CoachPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const storedInputs = sessionStorage.getItem('training_plan_inputs');
+    if (!storedInputs && ftpHistory?.ftp && Object.keys(ftpHistory.ftp).length > 0) {
+      const entries = Object.entries(ftpHistory.ftp)
+        .map(([date, value]) => ({ date, value }))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      if (entries.length > 0) {
+        const latestFtp = entries[0].value;
+        setFtp(latestFtp);
+      }
+    }
+  }, [ftpHistory]);
+
   const calculateBlockDuration = (start: string, end: string) => {
     const startDateObj = new Date(start);
     const endDateObj = new Date(end);
@@ -140,6 +166,12 @@ export default function CoachPage() {
       return;
     }
 
+    const openaiApiKey = localStorage.getItem('openai_api_key');
+    if (!openaiApiKey) {
+      alert("Please set your OpenAI API key in Profile settings");
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedPlan([]); // Clear existing plan
     
@@ -155,6 +187,7 @@ export default function CoachPage() {
           weeklyHours,
           startDate,
           endDate,
+          openaiApiKey,
         }),
       });
 
