@@ -22,12 +22,20 @@ export function RideCard({
   formatElevation,
   formatDuration,
 }: RideCardProps) {
+  if (!activity || typeof activity.id !== 'number' || !activity.name) {
+    return null;
+  }
+  
   const emoji = activity.type === 'Run' || activity.sport_type === 'Run' ? '🏃' : '🚴';
   const isCycling = activity.type !== 'Run' && activity.sport_type !== 'Run';
   const tss = ftpForActivity && activity.weighted_average_watts && getTSS 
     ? getTSS(activity, ftpForActivity) 
     : 0;
   const hasSecondaryStats = (isCycling && (activity.average_watts || activity.kilojoules)) || activity.average_heartrate || tss > 0;
+
+  const distance = typeof activity.distance === 'number' ? activity.distance : 0;
+  const elevation = typeof activity.total_elevation_gain === 'number' ? activity.total_elevation_gain : 0;
+  const movingTime = typeof activity.moving_time === 'number' ? activity.moving_time : 0;
 
   return (
     <TouchableOpacity 
@@ -39,28 +47,28 @@ export function RideCard({
         {emoji} {String(activity.name || 'Untitled Ride')}
       </Text>
       <View style={styles.statsRow}>
-        <Text style={styles.statText}>{formatDistance(activity.distance)}</Text>
-        <Text style={styles.statText}>{formatElevation(activity.total_elevation_gain)}</Text>
-        {activity.moving_time && (
-          <Text style={styles.statText}>{formatDuration(Math.round(activity.moving_time / 60))}</Text>
-        )}
-        {hasSecondaryStats && (
+        <Text style={styles.statText}>{formatDistance(distance)}</Text>
+        <Text style={styles.statText}>{formatElevation(elevation)}</Text>
+        {movingTime > 0 ? (
+          <Text style={styles.statText}>{formatDuration(Math.round(movingTime / 60))}</Text>
+        ) : null}
+        {hasSecondaryStats ? (
           <>
             <View style={styles.separator} />
-            {isCycling && activity.average_watts && (
+            {isCycling && typeof activity.average_watts === 'number' && activity.average_watts > 0 ? (
               <Text style={styles.statText}>{Math.round(activity.average_watts)}W</Text>
-            )}
-            {activity.average_heartrate && (
+            ) : null}
+            {typeof activity.average_heartrate === 'number' && activity.average_heartrate > 0 ? (
               <Text style={styles.statText}>{Math.round(activity.average_heartrate)}bpm</Text>
-            )}
-            {isCycling && activity.kilojoules && (
+            ) : null}
+            {isCycling && typeof activity.kilojoules === 'number' && activity.kilojoules > 0 ? (
               <Text style={styles.statText}>{Math.round(activity.kilojoules)}kJ</Text>
-            )}
-            {tss > 0 && (
+            ) : null}
+            {tss > 0 ? (
               <Text style={styles.statText}>{tss}TSS</Text>
-            )}
+            ) : null}
           </>
-        )}
+        ) : null}
       </View>
     </TouchableOpacity>
   );

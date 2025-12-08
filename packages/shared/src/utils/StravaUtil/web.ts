@@ -20,7 +20,7 @@ const getEndOfYear = (year: number) => {
 export const login = () => {
   const redirectUrl = process.env.NEXT_PUBLIC_STRAVA_REDIRECT_URL;
   const scope = 'activity:read_all,profile:read_all';
-  window.location = `http://www.strava.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
+  window.location.href = `http://www.strava.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUrl}/exchange_token&approval_prompt=force&scope=${scope}`;
 };
 
 export const getAccessToken = async (authCode: string) => {

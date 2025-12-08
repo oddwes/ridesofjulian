@@ -2,6 +2,7 @@ import { useContext, useMemo } from "react"
 import Link from "next/link"
 import { ChevronUp } from "lucide-react"
 import { getTSS } from "@ridesofjulian/shared/utils/StravaUtil"
+import { StravaActivity } from "@ridesofjulian/shared"
 import { formatDuration } from "../../utils/TimeUtil"
 import { formatDistance, formatElevation } from "../../utils/FormatUtil"
 import { FtpContext } from "../FTP"
@@ -78,8 +79,8 @@ export const RideCard = ({
               {activity.moving_time && (
                 <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
               )}
-            {(ftpForActivity !== undefined && ftpForActivity !== 0) && (
-              <span>{getTSS(activity, ftpForActivity)}TSS</span>
+            {(ftpForActivity !== undefined && ftpForActivity !== 0 && activity.moving_time) && (
+              <span>{getTSS(activity as StravaActivity, ftpForActivity)}TSS</span>
             )}
             </div>
             {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (
@@ -126,8 +127,8 @@ export const RideCard = ({
             {activity.moving_time && (
               <span>{formatDuration(Math.round(activity.moving_time / 60))}</span>
             )}
-            {(ftpForActivity !== undefined && ftpForActivity !== 0) && (
-              <span>{getTSS(activity, ftpForActivity)}TSS</span>
+            {(ftpForActivity !== undefined && ftpForActivity !== 0 && activity.moving_time) && (
+              <span>{getTSS(activity as StravaActivity, ftpForActivity)}TSS</span>
             )}
           </div>
           {(isCycling && (activity.average_watts || activity.kilojoules) || activity.average_heartrate) && (
