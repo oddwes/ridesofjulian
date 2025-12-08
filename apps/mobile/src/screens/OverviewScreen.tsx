@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared';
-import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
+import { stravaApiCall, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
 import { useWorkouts } from '../hooks/useWorkouts';
 import { type FtpData, getFtpForDate } from '../utils/ftpUtil';
 import { getTSS, type StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
@@ -24,7 +24,7 @@ export function OverviewScreen({ dateRange }: OverviewScreenProps) {
     dateRange.start,
     dateRange.end,
     ensureValidStravaToken,
-    getAthleteActivities
+    stravaApiCall
   );
 
   const { data: allWorkouts = [], isLoading: workoutsLoading } = useWorkouts();

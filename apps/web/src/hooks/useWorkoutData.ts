@@ -21,16 +21,16 @@ export const useWorkoutData = (selectedYear: number) => {
     enabled: hasStravaToken,
   })
 
-  const { data: plannedWorkouts = [], isLoading: workoutsLoading } = useQuery({
-    queryKey: ['plannedWorkouts'],
-    queryFn: () => getPlannedWorkouts(),
-    enabled: hasWahooToken,
-  })
+  // const { data: plannedWorkouts = [], isLoading: workoutsLoading } = useQuery({
+  //   queryKey: ['plannedWorkouts'],
+  //   queryFn: () => getPlannedWorkouts(),
+  //   enabled: hasWahooToken,
+  // })
 
   const { data: gymWorkouts = [], isLoading: gymWorkoutsLoading } = useWorkouts()
 
-  const loading = activitiesLoading || workoutsLoading || gymWorkoutsLoading
+  const loading = activitiesLoading || gymWorkoutsLoading
 
-  return { activities, plannedWorkouts, gymWorkouts, loading }
+  return { activities, plannedWorkouts: [], gymWorkouts, loading }
 }
 

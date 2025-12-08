@@ -2,12 +2,15 @@ import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
 import { StravaActivity } from '../types/strava';
+import { getAthleteActivities } from '../utils/StravaUtil/utils';
+
+type StravaApiCall = (url: string, params: Record<string, any>) => Promise<any>;
 
 export const useStravaActivitiesForDateRange = (
   startDate: string,
   endDate: string,
   ensureValidToken: () => Promise<boolean>,
-  getAthleteActivities: (year: number) => Promise<StravaActivity[]>
+  apiCall: StravaApiCall
 ) => {
   const yearsToFetch = useMemo(() => {
     const start = dayjs(startDate);
@@ -25,7 +28,7 @@ export const useStravaActivitiesForDateRange = (
       queryFn: async () => {
         const ok = await ensureValidToken();
         if (!ok) throw new Error('No Strava token');
-        return getAthleteActivities(year);
+        return getAthleteActivities(year, apiCall);
       },
       retry: false,
     })),

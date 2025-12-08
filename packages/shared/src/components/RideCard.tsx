@@ -36,7 +36,7 @@ export function RideCard({
       activeOpacity={0.7}
     >
       <Text style={styles.title}>
-        {emoji} {activity.name}
+        {emoji} {String(activity.name || 'Untitled Ride')}
       </Text>
       <View style={styles.statsRow}>
         <Text style={styles.statText}>{formatDistance(activity.distance)}</Text>

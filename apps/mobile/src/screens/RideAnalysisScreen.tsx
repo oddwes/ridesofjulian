@@ -7,7 +7,7 @@ import type { StravaActivity } from '@ridesofjulian/shared/utils/StravaUtil';
 import { formatDistance, formatElevation, formatDuration } from '../utils/formatUtil';
 import { useStravaActivity } from '../hooks/useStravaActivity';
 import { useStravaActivitiesForDateRange } from '@ridesofjulian/shared';
-import { getAthleteActivities, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
+import { stravaApiCall, ensureValidStravaToken } from '@ridesofjulian/shared/utils/StravaUtil/mobile';
 import { useUser } from '../hooks/useUser';
 import { useSchedule } from '../hooks/useSchedule';
 import { TRAINING_PLAN_API_BASE_URL } from '../config/api';
@@ -71,7 +71,7 @@ export function RideAnalysisScreen({ activity }: RideAnalysisScreenProps) {
   );
 
   const { activities, isLoading: historyLoading } =
-    useStravaActivitiesForDateRange(historyStart, historyEnd, ensureValidStravaToken, getAthleteActivities);
+    useStravaActivitiesForDateRange(historyStart, historyEnd, ensureValidStravaToken, stravaApiCall);
   const rideHistory = activities;
 
   const { data: user } = useUser();

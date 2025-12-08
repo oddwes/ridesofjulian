@@ -9,7 +9,10 @@
     "./mobile": "./src/mobile.ts",
     "./utils/StravaUtil": "./src/utils/StravaUtil.ts",
     "./utils/StravaUtil/web": "./src/utils/StravaUtil/web.ts",
-    "./utils/StravaUtil/mobile": "./src/utils/StravaUtil/mobile.ts"
+    "./utils/StravaUtil/mobile": "./src/utils/StravaUtil/mobile.ts",
+    "./utils/WahooUtil": "./src/utils/WahooUtil.ts",
+    "./utils/WahooUtil/web": "./src/utils/WahooUtil/web.ts",
+    "./utils/WahooUtil/mobile": "./src/utils/WahooUtil/mobile.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",

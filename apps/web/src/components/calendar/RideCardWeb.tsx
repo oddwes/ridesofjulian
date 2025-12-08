@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getFtp, getFtpForDate } from '@/utils/FtpUtil';
 
 interface RideCardWebProps {
-  activity: StravaActivity;
+  activity: StravaActivity & { source?: 'strava' | 'wahoo' };
 }
 
 export function RideCardWeb({ activity }: RideCardWebProps) {
@@ -33,7 +33,9 @@ export function RideCardWeb({ activity }: RideCardWebProps) {
   );
 
   const handlePress = (activityId: number) => {
-    window.open(`https://strava.com/activities/${activityId}`, '_blank');
+    if (activity.source !== 'wahoo') {
+      window.open(`https://strava.com/activities/${activityId}`, '_blank');
+    }
   };
 
   return (

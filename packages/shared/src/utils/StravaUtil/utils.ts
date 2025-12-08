@@ -1,4 +1,31 @@
+import dayjs from 'dayjs';
 import { StravaActivity } from '../../types/strava';
+
+type StravaApiCall = (url: string, params: Record<string, any>) => Promise<any>;
+
+export const getAthleteActivities = async (
+  year: number,
+  apiCall: StravaApiCall,
+  page = 1
+): Promise<StravaActivity[]> => {
+  const perPage = 100;
+  const firstDayOfYear = dayjs(`${year}-01-01`).valueOf() / 1000;
+  const lastDayOfYear = dayjs(`${year}-12-31`).valueOf() / 1000;
+
+  const activities = await apiCall('https://www.strava.com/api/v3/athlete/activities', {
+    after: firstDayOfYear,
+    before: lastDayOfYear,
+    page,
+    per_page: perPage,
+  });
+
+  if (activities.length === perPage) {
+    const nextPage = await getAthleteActivities(year, apiCall, page + 1);
+    return activities.concat(nextPage);
+  }
+
+  return activities;
+};
 
 export const getTSS = (activity: StravaActivity, ftp: number): number => {
   if (!activity.weighted_average_watts) {

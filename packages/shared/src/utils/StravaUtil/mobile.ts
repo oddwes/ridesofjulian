@@ -104,7 +104,7 @@ export const connectStrava = async () => {
   return true;
 };
 
-const stravaApiGet = async (url: string, params: Record<string, any> = {}) => {
+export const stravaApiCall = async (url: string, params: Record<string, any> = {}) => {
   const accessToken = await AsyncStorage.getItem(STRAVA_ACCESS_TOKEN_KEY);
   if (!accessToken) throw new Error('No Strava access token');
 
@@ -119,24 +119,12 @@ const stravaApiGet = async (url: string, params: Record<string, any> = {}) => {
   return res.json();
 };
 
+const stravaApiGet = stravaApiCall;
+
+import { getAthleteActivities as getAthleteActivitiesShared } from './utils';
+
 export const getAthleteActivities = async (year: number, page = 1): Promise<StravaActivity[]> => {
-  const perPage = 100;
-  const firstDayOfYear = dayjs(`${year}-01-01`).valueOf() / 1000;
-  const lastDayOfYear = dayjs(`${year}-12-31`).valueOf() / 1000;
-
-  const activities = await stravaApiGet('https://www.strava.com/api/v3/athlete/activities', {
-    after: firstDayOfYear,
-    before: lastDayOfYear,
-    page,
-    per_page: perPage,
-  });
-
-  if (activities.length === perPage) {
-    const nextPage = await getAthleteActivities(year, page + 1);
-    return activities.concat(nextPage);
-  }
-
-  return activities;
+  return getAthleteActivitiesShared(year, stravaApiGet, page);
 };
 
 export const getActivityById = async (id: number): Promise<StravaDetailedActivity> => {

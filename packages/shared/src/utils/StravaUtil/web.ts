@@ -92,25 +92,13 @@ export const getAthleteStats = async () => {
   return await stravaApiV3Get(`https://www.strava.com/api/v3/athletes/${athlete.id}/stats`);
 };
 
+import { getAthleteActivities as getAthleteActivitiesShared } from './utils';
+
 export const getAthleteActivities = async (year: number, page = 1): Promise<StravaActivity[]> => {
-  const perPage = 100;
-  const firstDayOfYear = getBeginningOfYear(year).valueOf() / 1000;
-  const lastDayOfYear = getEndOfYear(year).valueOf() / 1000;
-  const activities = await stravaApiV3Get('https://www.strava.com/api/v3/athlete/activities', {
-    after: firstDayOfYear,
-    before: lastDayOfYear,
-    page: page,
-    per_page: perPage
-  });
-  if (activities.length === perPage) {
-    const nextPage = await getAthleteActivities(year, page + 1);
-    return activities.concat(nextPage);
-  } else {
-    return activities;
-  }
+  return getAthleteActivitiesShared(year, stravaApiV3Get, page);
 };
 
-const stravaApiV3Get = async (url: string, params: Record<string, any> = {}) => {
+export const stravaApiCall = async (url: string, params: Record<string, any> = {}) => {
   try {
     const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${localStorage.getItem(STRAVA_ACCESS_TOKEN_KEY)}` },
@@ -121,4 +109,6 @@ const stravaApiV3Get = async (url: string, params: Record<string, any> = {}) => 
     console.log(error);
   }
 };
+
+const stravaApiV3Get = stravaApiCall;
 

@@ -23,6 +23,7 @@ interface Activity {
   average_watts?: number
   kilojoules?: number
   average_heartrate?: number
+  source?: 'strava' | 'wahoo'
 }
 
 interface PlannedWorkout {
@@ -62,16 +63,11 @@ export const RideCard = ({
   )
   const emoji = activity.type === 'Run' || activity.sport_type === 'Run' ? '🏃' : '🚴'
   const isCycling = activity.type !== 'Run' && activity.sport_type !== 'Run'
+  const isStrava = activity.source !== 'wahoo'
   
   if (variant === 'mobile') {
-    return (
-      <a
-        href={`https://strava.com/activities/${activity.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block"
-      >
-        <div className="bg-orange-100 border-2 border-orange-500 rounded-lg p-2">
+    const content = (
+      <div className="bg-orange-100 border-2 border-orange-500 rounded-lg p-2">
           <div className="flex flex-col gap-1">
             <div className="text-sm font-semibold text-orange-800 truncate">
               {emoji} {activity.name}
@@ -101,18 +97,26 @@ export const RideCard = ({
             )}
           </div>
         </div>
-      </a>
     )
+    
+    if (isStrava) {
+      return (
+        <a
+          href={`https://strava.com/activities/${activity.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
+          {content}
+        </a>
+      )
+    }
+    
+    return content
   }
 
-  return (
-    <div className='w-full'>
-      <Link
-        href={`https://strava.com/activities/${activity.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center py-1 px-2">
+  const cardContent = (
+    <div className="w-full bg-orange-100 border-2 border-orange-500 rounded flex flex-col justify-center items-center py-1 px-2">
           <div className="text-sm font-semibold truncate w-full text-center text-orange-800">
             {emoji} {activity.name}
           </div>
@@ -140,7 +144,25 @@ export const RideCard = ({
             </div>
           )}
         </div>
-      </Link>
+  )
+  
+  if (isStrava) {
+    return (
+      <div className='w-full'>
+        <Link
+          href={`https://strava.com/activities/${activity.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {cardContent}
+        </Link>
+      </div>
+    )
+  }
+  
+  return (
+    <div className='w-full'>
+      {cardContent}
     </div>
   )
 }
