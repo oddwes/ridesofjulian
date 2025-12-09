@@ -30,7 +30,6 @@ export const DatePicker = ({ value, onChange, onClose }: DatePickerProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  const selectedDate = value ? dayjs(value) : dayjs();
   const startOfMonth = currentMonth.startOf("month");
   const endOfMonth = currentMonth.endOf("month");
   const startOfCalendar = startOfMonth.startOf("week");

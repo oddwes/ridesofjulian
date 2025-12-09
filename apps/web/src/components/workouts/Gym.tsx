@@ -64,11 +64,6 @@ const EditGymWorkout = forwardRef<EditWorkoutHandle, EditGymWorkoutProps>(({
     isSaving,
   }));
 
-  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDateTime = e.target.value;
-    setWorkoutDateTime(newDateTime);
-  };
-
   const handleExercisesChange = (updatedExercises: Exercise[]) => {
     setExercises(updatedExercises);
   };
