@@ -200,7 +200,7 @@ export default function CoachPage() {
               workouts.push(parsed);
               setGeneratedPlan([...workouts]);
             }
-          } catch (e) {
+          } catch {
             // JSON might be incomplete, keep in buffer for next chunk
             buffer = event + '\n\n' + buffer;
           }
