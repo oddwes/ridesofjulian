@@ -6,6 +6,7 @@ import advancedFormat from 'dayjs/plugin/advancedFormat';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { SlidingLoadingIndicator } from '../components/SlidingLoadingIndicator';
 import { Day } from '../components/calendar/Day';
+import { WorkoutChart } from '../components/WorkoutChart';
 import { getFtpForDate, type FtpData } from '../utils/ftpUtil';
 import { PlanWeeklySummary } from '../components/PlanWeeklySummary';
 import { useSchedule } from '../hooks/useSchedule';
@@ -28,16 +29,6 @@ interface PlanScreenProps {
 
 const formatDurationMinutes = (intervals: Interval[]) =>
   intervals.reduce((sum, interval) => sum + interval.duration / 60, 0);
-
-const getIntervalColor = (powerMin: number, powerMax: number) => {
-  const avgPower = (powerMin + powerMax) / 2;
-  if (avgPower < 100) return 'rgba(156, 163, 175, 0.8)';
-  if (avgPower < 150) return 'rgba(96, 165, 250, 0.8)';
-  if (avgPower < 200) return 'rgba(52, 211, 153, 0.8)';
-  if (avgPower < 250) return 'rgba(251, 191, 36, 0.8)';
-  if (avgPower < 300) return 'rgba(251, 146, 60, 0.8)';
-  return 'rgba(220, 38, 38, 0.85)';
-};
 
 const computeWorkoutTss = (workout: RideWorkout, ftpHistory: FtpData | null | undefined): number => {
   const ftpForWorkout = getFtpForDate(ftpHistory ?? null, workout.selectedDate);
@@ -211,13 +202,6 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
               )}
               {!isCollapsed && scheduledWorkouts.map((workout) => {
                 const totalMinutes = formatDurationMinutes(workout.intervals);
-                const maxPower =
-                  workout.intervals.length > 0
-                    ? Math.max(
-                        300,
-                        ...workout.intervals.map((i) => i.powerMax || 0)
-                      )
-                    : 0;
 
                 return (
                   <Pressable
@@ -236,47 +220,7 @@ export function PlanScreen({ dateRange, isLoadingDateRange, onPlannedRidePress }
                       {Math.floor(totalMinutes / 60)}h {Math.round(totalMinutes % 60)}m
                     </Text>
 
-                    {workout.intervals.length > 0 && maxPower > 0 && (
-                      <View style={styles.workoutChart}>
-                        <View style={styles.workoutChartRow}>
-                          {workout.intervals.map((interval) => {
-                            if (!interval.duration) return null;
-                            const barHeight = (interval.powerMax / maxPower) * 72 || 4;
-                            return (
-                              <View
-                                key={interval.id}
-                                style={[
-                                  styles.workoutChartSegment,
-                                  { flex: interval.duration },
-                                ]}
-                              >
-                                <View
-                                  style={[
-                                    styles.workoutChartBar,
-                                    {
-                                      height: Math.max(barHeight, 4),
-                                      backgroundColor: getIntervalColor(
-                                        interval.powerMin,
-                                        interval.powerMax
-                                      ),
-                                    },
-                                  ]}
-                                />
-                              </View>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    )}
-
-                    {workout.intervals.map((interval) => (
-                      <View key={interval.id} style={styles.intervalRow}>
-                        <Text style={styles.intervalName}>{interval.name}</Text>
-                        <Text style={styles.intervalMeta}>
-                          {interval.duration / 60}m | {interval.powerMin}-{interval.powerMax}W
-                        </Text>
-                      </View>
-                    ))}
+                    <WorkoutChart intervals={workout.intervals} />
                   </Pressable>
                 );
               })}
@@ -337,42 +281,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
     marginBottom: 6,
-  },
-  workoutChart: {
-    marginBottom: 6,
-    paddingVertical: 4,
-    backgroundColor: '#020617',
-  },
-  workoutChartRow: {
-    height: 80,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    overflow: 'hidden',
-  },
-  workoutChartSegment: {
-    flex: 1,
-    marginHorizontal: 1,
-    justifyContent: 'flex-end',
-  },
-  workoutChartBar: {
-    width: '100%',
-    borderRadius: 3,
-  },
-  intervalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  intervalName: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#e5e7eb',
-    flex: 1,
-    marginRight: 8,
-  },
-  intervalMeta: {
-    fontSize: 12,
-    color: '#9ca3af',
   },
 });
 

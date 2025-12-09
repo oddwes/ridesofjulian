@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import TabNavigation from '@/components/TabNavigation'
 import { SlidingLoadingIndicator } from '@/components/SlidingLoadingIndicator'
-import { DetailedChart } from '@/components/workouts/RideWorkoutChart'
+import { WorkoutChart } from '@/components/RideWorkoutChart'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp, getFtpForDate, type FtpData } from '@/utils/FtpUtil'
 import type { RideWorkout, Interval } from '@/types/workout'
@@ -178,25 +178,7 @@ export default function PlanPage() {
                         {Math.floor(minutes / 60)}h {Math.round(minutes % 60)}m
                       </p>
                     </div>
-                    <div className="mb-3">
-                      <DetailedChart
-                        intervals={workout.intervals}
-                        height="h-24"
-                        showEmptyState={false}
-                      />
-                    </div>
-                    <div className="space-y-1 text-xs">
-                      {workout.intervals.map((interval) => (
-                        <div key={interval.id} className="flex justify-between">
-                          <span className="font-medium truncate mr-2">
-                            {interval.name}
-                          </span>
-                          <span className="text-slate-300 whitespace-nowrap">
-                            {interval.duration / 60}m | {interval.powerMin}-{interval.powerMax}W
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    <WorkoutChart intervals={workout.intervals} />
                   </div>
                 )
               })}
