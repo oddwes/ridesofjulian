@@ -39,7 +39,7 @@ export const PlannedRide = memo(({
               {onDelete && (
                 <button
                   onClick={() => onDelete(workout)}
-                  className="p-1 rounded-full text-red-400 hover:bg-slate-800/80"
+                  className="text-red-400"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -47,7 +47,7 @@ export const PlannedRide = memo(({
               {onEdit && (
                 <button
                   onClick={() => onEdit(workout)}
-                  className="p-1 rounded-full text-blue-400 hover:bg-slate-800/80"
+                  className="p-1 text-blue-400"
                 >
                   <Edit2 size={16} />
                 </button>

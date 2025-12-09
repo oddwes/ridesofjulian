@@ -1,7 +1,9 @@
-import { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import { useState, forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import dayjs from "dayjs";
+import EditableLabel from 'react-inline-editing';
 import EditWorkout, { Interval, EditWorkoutHandle } from "./Edit";
 import { Exercise } from '@ridesofjulian/shared';
+import { DatePicker } from "./DatePicker";
 
 type RideWorkout = {
   type: 'ride';
@@ -33,7 +35,27 @@ export interface WorkoutModalHandle {
 export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
   ({ workout, onClose, onSave, onDelete }, ref) => {
     const [isSaving, setIsSaving] = useState(false);
+    const [editingTitle, setEditingTitle] = useState(false);
+    const [workoutTitle, setWorkoutTitle] = useState(workout?.workoutTitle || '');
+    const [selectedDate, setSelectedDate] = useState(workout?.selectedDate || '');
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const dateContainerRef = useRef<HTMLDivElement>(null);
+    const modalContentRef = useRef<HTMLDivElement>(null);
     const editWorkoutRef = useRef<EditWorkoutHandle>(null);
+
+    useEffect(() => {
+      if (workout) {
+        setWorkoutTitle(workout.workoutTitle);
+        setSelectedDate(workout.selectedDate);
+        setEditingTitle(false);
+        setShowDatePicker(false);
+      } else {
+        setWorkoutTitle('');
+        setSelectedDate('');
+        setEditingTitle(false);
+        setShowDatePicker(false);
+      }
+    }, [workout?.id, workout?.workoutTitle, workout?.selectedDate]);
 
     useImperativeHandle(ref, () => ({
       save: () => editWorkoutRef.current?.save(),
@@ -42,7 +64,9 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
     const handleSave = async (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => {
       setIsSaving(true);
       try {
-        await onSave(data);
+        const dateToUse = data.date || selectedDate;
+        await onSave({ ...data, title: workoutTitle, date: dateToUse });
+        setSelectedDate(dateToUse);
       } catch (error) {
         console.error("Save failed:", error);
       } finally {
@@ -50,9 +74,25 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
       }
     };
 
+    const handleDateClick = () => {
+      setShowDatePicker(true);
+    };
+
+    const handleDateChange = (date: string) => {
+      setSelectedDate(date);
+    };
+
     const handleClose = () => {
       if (!isSaving) {
         onClose();
+      }
+    };
+
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (modalContentRef.current && !modalContentRef.current.contains(e.target as Node)) {
+        if (!isSaving) {
+          onClose();
+        }
       }
     };
 
@@ -71,32 +111,69 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
     if (!workout) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 rounded-lg">
-        <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10 flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-600">{workout.workoutTitle}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {dayjs(workout.selectedDate).format('dddd, MMMM D, YYYY')}
-              </p>
+      <div 
+        className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50"
+        onClick={handleBackdropClick}
+      >
+        <div 
+          ref={modalContentRef}
+          className="bg-slate-900 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col text-gray-50"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="sticky top-0 px-6 py-4 z-10 flex justify-between items-start">
+            <div className="flex-1">
+              {workout.type === 'ride' ? (
+                <div onClick={() => !editingTitle && setEditingTitle(true)}>
+                  <EditableLabel
+                    key={`${workout.id}-${workout.workoutTitle}`}
+                    text={workoutTitle || workout.workoutTitle || 'Untitled Workout'}
+                    labelClassName="text-xl font-semibold text-gray-50 cursor-pointer"
+                    inputClassName="px-1 rounded text-xl font-semibold bg-slate-800 text-gray-50"
+                    onFocus={() => setEditingTitle(true)}
+                    onFocusOut={(title: string) => {
+                      setWorkoutTitle(title || 'Untitled Workout');
+                      setEditingTitle(false);
+                    }}
+                    isEditing={editingTitle}
+                    labelPlaceHolder="Untitled Workout"
+                  />
+                </div>
+              ) : (
+                <h2 className="text-xl font-semibold">{workoutTitle || 'Untitled Workout'}</h2>
+              )}
+              <div className="mt-1 relative" ref={dateContainerRef}>
+                <p
+                  onClick={handleDateClick}
+                  className="text-sm cursor-pointer hover:text-blue-400 transition-colors"
+                >
+                  {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                </p>
+                {showDatePicker && (
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    onClose={() => setShowDatePicker(false)}
+                  />
+                )}
+              </div>
             </div>
             {onDelete && (
               <button
                 onClick={handleDelete}
                 disabled={isSaving}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Delete
               </button>
             )}
           </div>
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto px-4">
             {workout.type === 'gym' ? (
               <EditWorkout
                 ref={editWorkoutRef}
                 type="gym"
                 initialExercises={workout.exercises}
-                initialDate={workout.selectedDate}
+                initialDate={selectedDate}
                 onSave={handleSave}
                 disabled={isSaving}
               />
@@ -106,24 +183,24 @@ export const WorkoutModal = forwardRef<WorkoutModalHandle, WorkoutModalProps>(
                 type="ride"
                 initialIntervals={workout.intervals}
                 initialTitle={workout.workoutTitle}
-                initialDate={workout.selectedDate}
+                initialDate={selectedDate}
                 onSave={handleSave}
                 disabled={isSaving}
               />
             )}
           </div>
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end items-center gap-3 z-10">
+          <div className="sticky bottom-0 px-6 py-4 flex justify-end items-center gap-3 z-10">
             <button
               onClick={handleClose}
               disabled={isSaving}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={() => editWorkoutRef.current?.save()}
               disabled={isSaving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? "Saving..." : "Save"}
             </button>

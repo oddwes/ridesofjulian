@@ -444,7 +444,7 @@ export default function CoachPage() {
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
                 placeholder="e.g., Build base fitness with polarized training approach, focusing on endurance and high intensity intervals"
-                className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder:text-slate-500 resize-none"
+                className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder:text-slate-500 resize-y"
                 rows={4}
                 disabled={isGenerating}
               />

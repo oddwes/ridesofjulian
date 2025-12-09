@@ -11,7 +11,8 @@ import { PlannedRide } from '@/components/PlannedRide'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp, getFtpForDate, type FtpData } from '@/utils/FtpUtil'
 import type { RideWorkout, Interval } from '@/types/workout'
-import { deleteWorkoutFromSchedule } from '@ridesofjulian/shared'
+import { deleteWorkoutFromSchedule, type Exercise } from '@ridesofjulian/shared'
+import { WorkoutModal } from '@/components/workouts/Modal'
 
 dayjs.extend(isoWeek)
 
@@ -91,6 +92,7 @@ export default function PlanPage() {
 
   const todayStr = dayjs().format('YYYY-MM-DD')
   const [collapsedWeeks, setCollapsedWeeks] = useState<string[] | null>(null)
+  const [editingWorkout, setEditingWorkout] = useState<ScheduledRideWorkout | null>(null)
 
   useEffect(() => {
     if (!weeks.length || collapsedWeeks !== null) return
@@ -103,7 +105,77 @@ export default function PlanPage() {
 
   const collapsed = collapsedWeeks ?? []
 
-  const handleDeleteWorkout = async (workout: RideWorkout) => {
+  const updateSchedule = async (workout: ScheduledRideWorkout, updater: (plan: RideWorkout[]) => RideWorkout[]) => {
+    if (!user?.id) return
+
+    const { data, error } = await supabase
+      .from('schedule')
+      .select('id, plan')
+      .eq('user_id', user.id)
+      .eq('type', 'cycling')
+      .eq('date', workout.scheduleRowDate)
+      .single<{ id: number; plan: RideWorkout[] }>()
+
+    if (error || !data) {
+      console.error('Failed to load schedule row', error)
+      throw new Error('Failed to load schedule row')
+    }
+
+    const currentPlan = data.plan || []
+    const nextPlan = updater(currentPlan)
+
+    const { error: updateError } = await supabase
+      .from('schedule')
+      .update({ plan: nextPlan })
+      .eq('id', data.id)
+
+    if (updateError) {
+      console.error('Failed to update schedule row', updateError)
+      throw new Error('Failed to update schedule row')
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['schedule', user.id] })
+  }
+
+  const handleEditWorkout = (workout: RideWorkout) => {
+    const scheduledWorkout = workout as ScheduledRideWorkout
+    setEditingWorkout(scheduledWorkout)
+  }
+
+  const handleSaveEditedWorkout = async (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => {
+    if (!editingWorkout || !user?.id) return
+
+    const { intervals, title, date } = data
+    if (!intervals) return
+
+    try {
+      await updateSchedule(editingWorkout, (plan) =>
+        plan.map((w) =>
+          w.id === editingWorkout.id
+            ? { ...w, workoutTitle: title ?? w.workoutTitle, selectedDate: date, intervals }
+            : w
+        )
+      )
+      setEditingWorkout(null)
+    } catch (error) {
+      console.error('Failed to save workout:', error)
+      throw error
+    }
+  }
+
+  const handleDeleteWorkout = async () => {
+    if (!editingWorkout || !user?.id) return
+    try {
+      await deleteWorkoutFromSchedule(supabase, user.id, editingWorkout.id, editingWorkout.scheduleRowDate)
+      queryClient.invalidateQueries({ queryKey: ['schedule', user.id] })
+      setEditingWorkout(null)
+    } catch (error) {
+      console.error('Failed to delete workout:', error)
+      throw error
+    }
+  }
+
+  const handleDeleteWorkoutFromCard = async (workout: RideWorkout) => {
     if (!user?.id) return
     const scheduledWorkout = workout as ScheduledRideWorkout
     if (!confirm(`Delete "${workout.workoutTitle}"?`)) return
@@ -186,7 +258,8 @@ export default function PlanPage() {
                       key={item.workout.id}
                       workout={item.workout}
                       isToday={isToday}
-                      onDelete={canDelete ? handleDeleteWorkout : undefined}
+                      onEdit={handleEditWorkout}
+                      onDelete={canDelete ? handleDeleteWorkoutFromCard : undefined}
                     />
                   )
                 } else {
@@ -213,6 +286,13 @@ export default function PlanPage() {
           </div>
         )
       })}
+
+      <WorkoutModal
+        workout={editingWorkout ? { ...editingWorkout, type: 'ride' as const } : null}
+        onClose={() => setEditingWorkout(null)}
+        onSave={handleSaveEditedWorkout}
+        onDelete={editingWorkout && isFutureOrToday(editingWorkout.selectedDate) ? handleDeleteWorkout : undefined}
+      />
     </div>
   )
 }

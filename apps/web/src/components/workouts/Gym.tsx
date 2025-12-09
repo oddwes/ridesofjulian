@@ -91,17 +91,6 @@ const EditGymWorkout = forwardRef<EditWorkoutHandle, EditGymWorkoutProps>(({
   return (
     <div className="text-gray-600">
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Workout Date & Time</label>
-          <input
-            type="datetime-local"
-            value={workoutDateTime}
-            onChange={handleDateTimeChange}
-            disabled={disabled}
-            className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          />
-        </div>
-
         <div className="border-t border-gray-200 pt-4">
           <ExerciseList
             exercises={exercises}
