@@ -219,24 +219,22 @@ export function CoachScreen() {
           try {
             const parsed = JSON.parse(dataContent);
             
-            // Handle plan title metadata - check both formats
-            if (!receivedPlanTitle) {
-              if (parsed.type === 'planTitle' && parsed.planTitle) {
-                setPlanTitle(parsed.planTitle);
-                AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
-                receivedPlanTitle = true;
-                continue;
-              } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id) {
-                // Fallback: if it has planTitle but no workout fields, treat as title
-                setPlanTitle(parsed.planTitle);
-                AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
-                receivedPlanTitle = true;
-                continue;
-              }
+            // Handle plan title metadata - check both formats (always check, not just if not received)
+            if (parsed.type === 'planTitle' && parsed.planTitle && !receivedPlanTitle) {
+              setPlanTitle(parsed.planTitle);
+              AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+              receivedPlanTitle = true;
+              continue;
+            } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id && !receivedPlanTitle) {
+              // Fallback: if it has planTitle but no workout fields, treat as title
+              setPlanTitle(parsed.planTitle);
+              AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+              receivedPlanTitle = true;
+              continue;
             }
             
-            // Handle workout objects
-            if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+            // Handle workout objects (only if not a plan title)
+            if (parsed.id && (parsed.workoutTitle || parsed.selectedDate || parsed.intervals)) {
               workouts.push(parsed as RideWorkout);
               setGeneratedPlan([...workouts]);
             }
@@ -274,21 +272,21 @@ export function CoachScreen() {
                   try {
                     const parsed = JSON.parse(dataContent);
                     
-                    if (!receivedPlanTitle) {
-                      if (parsed.type === 'planTitle' && parsed.planTitle) {
-                        setPlanTitle(parsed.planTitle);
-                        AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
-                        receivedPlanTitle = true;
-                        continue;
-                      } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id) {
-                        setPlanTitle(parsed.planTitle);
-                        AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
-                        receivedPlanTitle = true;
-                        continue;
-                      }
+                    // Handle plan title metadata first
+                    if (parsed.type === 'planTitle' && parsed.planTitle && !receivedPlanTitle) {
+                      setPlanTitle(parsed.planTitle);
+                      AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                      receivedPlanTitle = true;
+                      continue;
+                    } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id && !receivedPlanTitle) {
+                      setPlanTitle(parsed.planTitle);
+                      AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                      receivedPlanTitle = true;
+                      continue;
                     }
                     
-                    if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+                    // Handle workout objects (only if not a plan title)
+                    if (parsed.id && (parsed.workoutTitle || parsed.selectedDate || parsed.intervals)) {
                       workouts.push(parsed as RideWorkout);
                       setGeneratedPlan([...workouts]);
                     }
@@ -307,18 +305,18 @@ export function CoachScreen() {
                     if (dataContent && dataContent !== '[DONE]') {
                       try {
                         const parsed = JSON.parse(dataContent);
-                        if (!receivedPlanTitle) {
-                          if (parsed.type === 'planTitle' && parsed.planTitle) {
-                            setPlanTitle(parsed.planTitle);
-                            AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
-                            receivedPlanTitle = true;
-                          } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id) {
-                            setPlanTitle(parsed.planTitle);
-                            AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
-                            receivedPlanTitle = true;
-                          }
+                        // Handle plan title metadata first
+                        if (parsed.type === 'planTitle' && parsed.planTitle && !receivedPlanTitle) {
+                          setPlanTitle(parsed.planTitle);
+                          AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                          receivedPlanTitle = true;
+                        } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id && !receivedPlanTitle) {
+                          setPlanTitle(parsed.planTitle);
+                          AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                          receivedPlanTitle = true;
                         }
-                        if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+                        // Handle workout objects (only if not a plan title)
+                        if (parsed.id && (parsed.workoutTitle || parsed.selectedDate || parsed.intervals)) {
                           workouts.push(parsed as RideWorkout);
                           setGeneratedPlan([...workouts]);
                         }
@@ -546,7 +544,9 @@ export function CoachScreen() {
         {generatedPlan.length > 0 && (
           <View style={styles.planSection}>
             <View style={styles.planHeader}>
-              <Text style={styles.planTitle}>{planTitle}</Text>
+              <Text style={styles.planTitle} numberOfLines={2} ellipsizeMode="tail">
+                {planTitle}
+              </Text>
               {!hasMatchingPlan && (
                 <Pressable
                   style={styles.saveButton}
@@ -721,11 +721,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 12,
   },
   planTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: '#f9fafb',
+    flex: 1,
+    marginRight: 8,
   },
   saveButton: {
     paddingHorizontal: 10,
