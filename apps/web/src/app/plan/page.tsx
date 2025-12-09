@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import TabNavigation from '@/components/TabNavigation'
 import { SlidingLoadingIndicator } from '@/components/SlidingLoadingIndicator'
-import { WorkoutChart } from '@/components/RideWorkoutChart'
+import { PlannedRide } from '@/components/PlannedRide'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp, getFtpForDate, type FtpData } from '@/utils/FtpUtil'
 import type { RideWorkout, Interval } from '@/types/workout'
@@ -156,30 +156,13 @@ export default function PlanPage() {
             {!isCollapsed && (
             <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
               {sortedWorkouts.map((workout) => {
-                const minutes = formatDurationMinutes(workout.intervals)
                 const isToday = workout.selectedDate === todayStr
                 return (
-                  <div
+                  <PlannedRide
                     key={workout.id}
-                    className={`bg-slate-950 border rounded-xl p-4 text-slate-100 shadow-md ${
-                      isToday ? 'border-2 border-blue-500' : 'border-slate-800'
-                    }`}
-                  >
-                    <div className="mb-2">
-                      <div className="flex justify-between items-baseline">
-                        <h4 className="text-sm font-semibold truncate mr-2">
-                          {workout.workoutTitle}
-                        </h4>
-                        <span className="text-xs text-slate-400 whitespace-nowrap">
-                          {workout.selectedDate}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-300">
-                        {Math.floor(minutes / 60)}h {Math.round(minutes % 60)}m
-                      </p>
-                    </div>
-                    <WorkoutChart intervals={workout.intervals} />
-                  </div>
+                    workout={workout}
+                    isToday={isToday}
+                  />
                 )
               })}
               {restDates.map((dateStr) => {

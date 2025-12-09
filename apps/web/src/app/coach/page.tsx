@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
-import { Edit2, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { WorkoutModal } from "@/components/workouts/Modal";
-import { DetailedChart } from "@/components/workouts/RideWorkoutChart";
+import { PlannedRide } from "@/components/PlannedRide";
 import { getStoredWahooToken, getWahooAuthUrl, createWahooWorkout } from "@/utils/WahooUtil";
 import { RideWorkout, Interval } from "@/types/workout";
 import { Exercise } from "@ridesofjulian/shared";
@@ -15,70 +14,6 @@ import TabNavigation from "@/components/TabNavigation";
 import { useSupabase } from "@/contexts/SupabaseContext";
 import { getFtp } from "@/utils/FtpUtil";
 
-const WorkoutCard = memo(({ workout, onEdit, onDelete }: { workout: RideWorkout; onEdit?: (workout: RideWorkout) => void; onDelete?: (workout: RideWorkout) => void }) => {
-  const totalDuration = workout.intervals.reduce(
-    (sum, interval) => sum + interval.duration / 60,
-    0
-  );
-
-  const durationHours = Math.floor(totalDuration / 60);
-  const durationMinutes = Math.round(totalDuration % 60);
-
-  return (
-    <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 shadow-md">
-      <div className="mb-3">
-        <div className="flex justify-between items-start mb-1">
-          <h4 className="text-sm sm:text-base font-semibold text-slate-50">
-            {workout.workoutTitle}
-          </h4>
-          <div className="flex gap-1">
-            {onDelete && (
-              <button
-                onClick={() => onDelete(workout)}
-                className="p-1 rounded-full text-red-400 hover:bg-slate-800/80"
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-            {onEdit && (
-              <button
-                onClick={() => onEdit(workout)}
-                className="p-1 rounded-full text-blue-400 hover:bg-slate-800/80"
-              >
-                <Edit2 size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-        <p className="text-xs text-slate-300">
-          {workout.selectedDate} | {durationHours}h {durationMinutes}m
-        </p>
-      </div>
-
-      <div className="mb-3">
-        <DetailedChart intervals={workout.intervals} height="h-32" showEmptyState={false} />
-      </div>
-
-      <div className="space-y-1 mb-1 text-xs">
-        {workout.intervals.map((interval, intervalIdx) => (
-          <div
-            key={intervalIdx}
-            className="flex justify-between"
-          >
-            <span className="font-medium truncate mr-2 text-slate-100">
-              {interval.name}
-            </span>
-            <span className="text-slate-300 whitespace-nowrap">
-              {interval.duration / 60}m | {interval.powerMin}-{interval.powerMax}W
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-});
-
-WorkoutCard.displayName = 'WorkoutCard';
 
 export default function CoachPage() {
   const router = useRouter();
@@ -560,7 +495,12 @@ export default function CoachPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {workouts.map((workout, idx) => (
-                      <WorkoutCard key={idx} workout={workout} onEdit={handleEditWorkout} onDelete={handleDeleteWorkout} />
+                      <PlannedRide 
+                        key={idx} 
+                        workout={workout} 
+                        onEdit={handleEditWorkout} 
+                        onDelete={handleDeleteWorkout}
+                      />
                     ))}
                   </div>
                 </div>
