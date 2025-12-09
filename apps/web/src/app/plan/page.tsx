@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import TabNavigation from '@/components/TabNavigation'
@@ -11,10 +11,12 @@ import { PlannedRide } from '@/components/PlannedRide'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp, getFtpForDate, type FtpData } from '@/utils/FtpUtil'
 import type { RideWorkout, Interval } from '@/types/workout'
+import { deleteWorkoutFromSchedule } from '@ridesofjulian/shared'
 
 dayjs.extend(isoWeek)
 
 type ScheduleRow = { date: string; plan: RideWorkout[] | null; type: string }
+type ScheduledRideWorkout = RideWorkout & { scheduleRowDate: string }
 
 const formatDurationMinutes = (intervals: Interval[]) =>
   intervals.reduce((sum, interval) => sum + interval.duration / 60, 0)
@@ -37,6 +39,7 @@ const computeWorkoutTss = (workout: RideWorkout, ftpHistory: FtpData | null | un
 
 export default function PlanPage() {
   const { supabase, user } = useSupabase()
+  const queryClient = useQueryClient()
 
   const { data: scheduleRows = [], isLoading: scheduleLoading } = useQuery<ScheduleRow[]>({
     queryKey: ['schedule', user?.id],
@@ -64,7 +67,7 @@ export default function PlanPage() {
   })
 
   const weeks = useMemo(() => {
-    const map: Record<string, { weekStart: dayjs.Dayjs; workouts: RideWorkout[]; totalMinutes: number; totalTss: number }> = {}
+    const map: Record<string, { weekStart: dayjs.Dayjs; workouts: ScheduledRideWorkout[]; totalMinutes: number; totalTss: number }> = {}
 
     scheduleRows.forEach((row) => {
       if (!row.plan) return
@@ -77,7 +80,7 @@ export default function PlanPage() {
         }
         const minutes = formatDurationMinutes(workout.intervals)
         const tss = computeWorkoutTss(workout, ftpHistory)
-        map[key].workouts.push(workout)
+        map[key].workouts.push({ ...workout, scheduleRowDate: row.date })
         map[key].totalMinutes += minutes
         map[key].totalTss += tss
       })
@@ -100,6 +103,24 @@ export default function PlanPage() {
 
   const collapsed = collapsedWeeks ?? []
 
+  const handleDeleteWorkout = async (workout: RideWorkout) => {
+    if (!user?.id) return
+    const scheduledWorkout = workout as ScheduledRideWorkout
+    if (!confirm(`Delete "${workout.workoutTitle}"?`)) return
+    try {
+      await deleteWorkoutFromSchedule(supabase, user.id, scheduledWorkout.id, scheduledWorkout.scheduleRowDate)
+      queryClient.invalidateQueries({ queryKey: ['schedule', user.id] })
+    } catch (error) {
+      console.error('Failed to delete workout:', error)
+    }
+  }
+
+  const isFutureOrToday = (dateStr: string) => {
+    const workoutDate = dayjs(dateStr).startOf('day')
+    const today = dayjs().startOf('day')
+    return workoutDate.isSame(today) || workoutDate.isAfter(today)
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto px-3 md:px-4 overflow-x-hidden">
       <TabNavigation />
@@ -120,9 +141,10 @@ export default function PlanPage() {
           (dateStr) => !week.workouts.some((w) => w.selectedDate === dateStr)
         )
 
-        const sortedWorkouts = week.workouts
-          .slice()
-          .sort((a, b) => a.selectedDate.localeCompare(b.selectedDate))
+        const sortedItems = [
+          ...week.workouts.map((w) => ({ type: 'workout' as const, date: w.selectedDate, workout: w })),
+          ...restDates.map((d) => ({ type: 'rest' as const, date: d, workout: null as null }))
+        ].sort((a, b) => a.date.localeCompare(b.date))
 
         return (
           <div key={weekKey} className="mb-6 space-y-1">
@@ -155,33 +177,36 @@ export default function PlanPage() {
             </button>
             {!isCollapsed && (
             <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {sortedWorkouts.map((workout) => {
-                const isToday = workout.selectedDate === todayStr
-                return (
-                  <PlannedRide
-                    key={workout.id}
-                    workout={workout}
-                    isToday={isToday}
-                  />
-                )
-              })}
-              {restDates.map((dateStr) => {
-                const isTodayRest = dateStr === todayStr
-                return (
-                  <div
-                    key={`rest-${dateStr}`}
-                    className={`rounded-xl border p-4 text-gray-700 ${
-                      isTodayRest ? 'border-2 border-blue-500 bg-gray-200' : 'border-slate-800 bg-gray-300/80'
-                    }`}
-                  >
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-sm font-semibold">
-                        {dayjs(dateStr).format('MMMM D, YYYY')}
-                      </span>
-                      <span className="text-xs text-gray-600">Rest</span>
+              {sortedItems.map((item) => {
+                if (item.type === 'workout') {
+                  const isToday = item.date === todayStr
+                  const canDelete = isFutureOrToday(item.date)
+                  return (
+                    <PlannedRide
+                      key={item.workout.id}
+                      workout={item.workout}
+                      isToday={isToday}
+                      onDelete={canDelete ? handleDeleteWorkout : undefined}
+                    />
+                  )
+                } else {
+                  const isTodayRest = item.date === todayStr
+                  return (
+                    <div
+                      key={`rest-${item.date}`}
+                      className={`rounded-xl border p-4 text-gray-700 ${
+                        isTodayRest ? 'border-2 border-blue-500 bg-gray-200' : 'border-slate-800 bg-gray-300/80'
+                      }`}
+                    >
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm font-semibold">
+                          {dayjs(item.date).format('MMMM D, YYYY')}
+                        </span>
+                        <span className="text-xs text-gray-600">Rest</span>
+                      </div>
                     </div>
-                  </div>
-                )
+                  )
+                }
               })}
             </div>
             )}

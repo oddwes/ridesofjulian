@@ -19,6 +19,7 @@ type RideWorkout = {
 
 const PLAN_KEY = 'generated_training_plan';
 const INPUTS_KEY = 'training_plan_inputs';
+const PLAN_TITLE_KEY = 'generated_plan_title';
 
 export function CoachScreen() {
   const { session } = useAuth();
@@ -27,6 +28,7 @@ export function CoachScreen() {
   const [ftp, setFtp] = useState<number>(200);
   const [blockDuration, setBlockDuration] = useState<number>(7);
   const [weeklyHours, setWeeklyHours] = useState<number>(10);
+  const [planTitle, setPlanTitle] = useState<string>('Your Training Plan');
   const formatLocalDate = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -45,14 +47,19 @@ export function CoachScreen() {
   useEffect(() => {
     const loadStored = async () => {
       try {
-        const [planStr, inputsStr] = await Promise.all([
+        const [planStr, inputsStr, titleStr] = await Promise.all([
           AsyncStorage.getItem(PLAN_KEY),
           AsyncStorage.getItem(INPUTS_KEY),
+          AsyncStorage.getItem(PLAN_TITLE_KEY),
         ]);
 
         if (planStr) {
           const parsed = JSON.parse(planStr) as RideWorkout[];
           setGeneratedPlan(parsed);
+        }
+
+        if (titleStr) {
+          setPlanTitle(titleStr);
         }
 
         if (inputsStr) {
@@ -166,12 +173,14 @@ export function CoachScreen() {
 
     setIsGenerating(true);
     setGeneratedPlan([]);
+    setPlanTitle('Your Training Plan'); // Reset title at start of generation
 
     return new Promise<void>((resolve, reject) => {
       const workouts: RideWorkout[] = [];
       const url = `${TRAINING_PLAN_API_BASE_URL}/api/generate-plan`;
       let processedLength = 0;
       let buffer = '';
+      let receivedPlanTitle = false;
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', url, true);
@@ -183,24 +192,57 @@ export function CoachScreen() {
         processedLength = responseText.length;
 
         buffer += newChunk;
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-
-            if (!data || data === '[DONE]') {
-              continue;
+        
+        // Process complete SSE events (separated by \n\n)
+        while (true) {
+          const eventEnd = buffer.indexOf('\n\n');
+          if (eventEnd === -1) break;
+          
+          const event = buffer.substring(0, eventEnd);
+          buffer = buffer.substring(eventEnd + 2);
+          
+          const lines = event.split('\n');
+          let dataContent = '';
+          
+          // Extract data: content from SSE event
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              dataContent = line.slice(6).trim();
+              break;
             }
+          }
 
-            try {
-              const workout = JSON.parse(data) as RideWorkout;
-              workouts.push(workout);
+          if (!dataContent || dataContent === '[DONE]') {
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(dataContent);
+            
+            // Handle plan title metadata - check both formats
+            if (!receivedPlanTitle) {
+              if (parsed.type === 'planTitle' && parsed.planTitle) {
+                setPlanTitle(parsed.planTitle);
+                AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                receivedPlanTitle = true;
+                continue;
+              } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id) {
+                // Fallback: if it has planTitle but no workout fields, treat as title
+                setPlanTitle(parsed.planTitle);
+                AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                receivedPlanTitle = true;
+                continue;
+              }
+            }
+            
+            // Handle workout objects
+            if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+              workouts.push(parsed as RideWorkout);
               setGeneratedPlan([...workouts]);
-            } catch (e) {
-              console.error('Failed to parse workout:', e);
             }
+          } catch (e) {
+            // JSON might be incomplete, ignore for now and wait for next chunk
+            // Don't log incomplete JSON errors as they're expected during streaming
           }
         }
       };
@@ -208,18 +250,81 @@ export function CoachScreen() {
       xhr.onload = async () => {
         try {
           if (xhr.status >= 200 && xhr.status < 300) {
+            // Process any remaining buffer
             if (buffer.trim()) {
-              const lines = buffer.split('\n\n');
-              for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                  const data = line.slice(6).trim();
-                  if (data && data !== '[DONE]') {
-                    try {
-                      const workout = JSON.parse(data) as RideWorkout;
-                      workouts.push(workout);
+              // Try to process remaining buffer as complete events
+              while (true) {
+                const eventEnd = buffer.indexOf('\n\n');
+                if (eventEnd === -1) break;
+                
+                const event = buffer.substring(0, eventEnd);
+                buffer = buffer.substring(eventEnd + 2);
+                
+                const lines = event.split('\n');
+                let dataContent = '';
+                
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    dataContent = line.slice(6).trim();
+                    break;
+                  }
+                }
+                
+                if (dataContent && dataContent !== '[DONE]') {
+                  try {
+                    const parsed = JSON.parse(dataContent);
+                    
+                    if (!receivedPlanTitle) {
+                      if (parsed.type === 'planTitle' && parsed.planTitle) {
+                        setPlanTitle(parsed.planTitle);
+                        AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                        receivedPlanTitle = true;
+                        continue;
+                      } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id) {
+                        setPlanTitle(parsed.planTitle);
+                        AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                        receivedPlanTitle = true;
+                        continue;
+                      }
+                    }
+                    
+                    if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+                      workouts.push(parsed as RideWorkout);
                       setGeneratedPlan([...workouts]);
-                    } catch (e) {
-                      console.error('Failed to parse final workout:', e);
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse final data:', e);
+                  }
+                }
+              }
+              
+              // Handle any remaining single event without trailing \n\n
+              if (buffer.trim()) {
+                const lines = buffer.split('\n');
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    const dataContent = line.slice(6).trim();
+                    if (dataContent && dataContent !== '[DONE]') {
+                      try {
+                        const parsed = JSON.parse(dataContent);
+                        if (!receivedPlanTitle) {
+                          if (parsed.type === 'planTitle' && parsed.planTitle) {
+                            setPlanTitle(parsed.planTitle);
+                            AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                            receivedPlanTitle = true;
+                          } else if (parsed.planTitle && !parsed.workoutTitle && !parsed.selectedDate && !parsed.intervals && !parsed.id) {
+                            setPlanTitle(parsed.planTitle);
+                            AsyncStorage.setItem(PLAN_TITLE_KEY, parsed.planTitle);
+                            receivedPlanTitle = true;
+                          }
+                        }
+                        if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+                          workouts.push(parsed as RideWorkout);
+                          setGeneratedPlan([...workouts]);
+                        }
+                      } catch (e) {
+                        console.error('Failed to parse remaining buffer:', e);
+                      }
                     }
                   }
                 }
@@ -261,7 +366,9 @@ export function CoachScreen() {
 
   const clearPlan = async () => {
     await AsyncStorage.removeItem(PLAN_KEY);
+    await AsyncStorage.removeItem(PLAN_TITLE_KEY);
     setGeneratedPlan([]);
+    setPlanTitle('Your Training Plan');
   };
 
   const handleDeleteWorkout = (workout: RideWorkout) => {
@@ -439,7 +546,7 @@ export function CoachScreen() {
         {generatedPlan.length > 0 && (
           <View style={styles.planSection}>
             <View style={styles.planHeader}>
-              <Text style={styles.planTitle}>Your Training Plan</Text>
+              <Text style={styles.planTitle}>{planTitle}</Text>
               {!hasMatchingPlan && (
                 <Pressable
                   style={styles.saveButton}

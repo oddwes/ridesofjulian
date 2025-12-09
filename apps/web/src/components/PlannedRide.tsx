@@ -7,7 +7,7 @@ interface PlannedRideProps {
   workout: RideWorkout
   isToday?: boolean
   onEdit?: (workout: RideWorkout) => void
-  onDelete?: (workout: RideWorkout) => void
+  onDelete?: (workout: RideWorkout) => void | Promise<void>
 }
 
 const formatDurationMinutes = (intervals: RideWorkout['intervals']) =>

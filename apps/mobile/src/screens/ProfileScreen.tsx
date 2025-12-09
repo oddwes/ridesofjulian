@@ -355,13 +355,7 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
   const email = user?.email;
 
   return (
-    <View 
-      style={styles.container}
-      onStartShouldSetResponder={() => {
-        blurAllInputs();
-        return false;
-      }}
-    >
+    <View style={styles.container}>
       <View style={styles.modalHandle} />
       
       <View style={styles.header}>
@@ -375,8 +369,8 @@ export function ProfileScreen({ onClose }: ProfileScreenProps) {
       <ScrollView 
         style={styles.content} 
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         onScrollBeginDrag={blurAllInputs}
-        onTouchStart={blurAllInputs}
       >
         <Pressable onPress={blurAllInputs} style={styles.profileSection}>
           {profilePicUrl ? (

@@ -13,7 +13,9 @@ const getSystemPrompt = (ftp: number) => {
 
   return process.env.TRAINING_PLAN_SYSTEM_PROMPT || `Gather information on the most effective cycling workouts and generate a detailed training plan based on the user's requirements.
 
-Output each workout as a separate JSON object on its own line (JSONL format). Each workout object should have:
+First, output a single JSON object with a "planTitle" field containing a concise, descriptive title for this training plan (e.g., "Base Building Phase", "Peak Performance Block", "Winter Endurance Build"). This should be on its own line.
+
+Then output each workout as a separate JSON object on its own line (JSONL format). Each workout object should have:
 - workoutTitle: descriptive name
 - selectedDate: ISO date string (YYYY-MM-DD) starting from the provided start date. Use dates exactly as calendar dates (e.g., if start date is 2025-11-17, first workout should be 2025-11-17, not the day before or after).
 - intervals: array of interval objects with:
@@ -70,7 +72,7 @@ async function generatePlanResponse({
 
     const userMessage = `Create a training plan from ${startDate} through ${endDate}. The athlete has ${weeklyHours} hours available per week for training - ensure each week's total workout duration adds up to this amount. Training goal: ${userPrompt}. Distribute workouts across the week with 4-6 workouts per week, ensuring appropriate rest days and progressive load. Include workouts of varying durations and intensities.
 
-Output one workout JSON object per line. Do not wrap in an array.`;
+First, output a plan metadata object with a "planTitle" field - a concise, descriptive title for this training plan (e.g., "Base Building Phase", "Peak Performance Block"). Then output one workout JSON object per line. Do not wrap in an array.`;
 
     const stream = await openai.chat.completions.create({
       model: "gpt-4.1",
@@ -83,6 +85,7 @@ Output one workout JSON object per line. Do not wrap in an array.`;
 
     const encoder = new TextEncoder();
     let buffer = "";
+    let planTitleSent = false;
 
     const readableStream = new ReadableStream({
       async start(controller) {
@@ -99,15 +102,24 @@ Output one workout JSON object per line. Do not wrap in an array.`;
               const trimmed = line.trim();
               if (trimmed) {
                 try {
-                  const workout = JSON.parse(trimmed);
-                  // Send workout as SSE
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify(workout)}\n\n`)
-                  );
+                  const parsed = JSON.parse(trimmed);
+                  
+                  // Check if this is the plan metadata object (has planTitle)
+                  if (parsed.planTitle && !planTitleSent) {
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ type: 'planTitle', planTitle: parsed.planTitle })}\n\n`)
+                    );
+                    planTitleSent = true;
+                  } else if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+                    // This is a workout object
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`)
+                    );
+                  }
                 } catch (e) {
                   // Not a complete JSON yet, will be in next iteration
                   buffer = trimmed + '\n' + buffer;
-                  console.error("Failed to parse workout:", e);
+                  console.error("Failed to parse JSON:", e);
                 }
               }
             }
@@ -116,10 +128,16 @@ Output one workout JSON object per line. Do not wrap in an array.`;
           // Process any remaining data in buffer
           if (buffer.trim()) {
             try {
-              const workout = JSON.parse(buffer.trim());
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(workout)}\n\n`)
-              );
+              const parsed = JSON.parse(buffer.trim());
+              if (parsed.planTitle && !planTitleSent) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'planTitle', planTitle: parsed.planTitle })}\n\n`)
+                );
+              } else if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`)
+                );
+              }
             } catch (e) {
               console.error("Failed to parse final buffer:", e);
             }

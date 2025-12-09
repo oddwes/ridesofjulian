@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { TrashIcon } from '@heroicons/react/24/solid';
+import { Trash2 } from 'lucide-react';
 import EditableLabel from 'react-inline-editing';
 import { Exercise, getDisplayWeight, normalizeWeightInput, WeightUnit } from '@ridesofjulian/shared';
 
@@ -173,7 +173,7 @@ export const ExerciseList: React.FC<ExerciseListProps> = ({ exercises, onExercis
               className="text-red-500"
               aria-label="Delete exercise"
             >
-              <TrashIcon className="h-5 w-5" />
+              <Trash2 className="h-5 w-5" />
             </button>
           </div>
 

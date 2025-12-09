@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { WorkoutModal } from "@/components/workouts/Modal";
 import { PlannedRide } from "@/components/PlannedRide";
-import { getStoredWahooToken, getWahooAuthUrl, createWahooWorkout } from "@/utils/WahooUtil";
 import { RideWorkout, Interval } from "@/types/workout";
 import { Exercise } from "@ridesofjulian/shared";
 import TabNavigation from "@/components/TabNavigation";
@@ -16,7 +14,6 @@ import { getFtp } from "@/utils/FtpUtil";
 
 
 export default function CoachPage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { supabase, user } = useSupabase();
   const [userPrompt, setUserPrompt] = useState("");
@@ -26,8 +23,8 @@ export default function CoachPage() {
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
+  const [planTitle, setPlanTitle] = useState<string>("Your Training Plan");
   const [editingWorkout, setEditingWorkout] = useState<RideWorkout | null>(null);
-  const [isPushingToWahoo, setIsPushingToWahoo] = useState(false);
 
   const { data: ftpHistory } = useQuery({
     queryKey: ['ftpHistory', user?.id],
@@ -38,9 +35,26 @@ export default function CoachPage() {
     enabled: !!user,
   });
 
+  const { data: scheduleData } = useQuery({
+    queryKey: ['schedule', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('schedule')
+        .select('date, plan, type')
+        .eq('user_id', user.id)
+        .eq('type', 'cycling')
+        .order('date', { ascending: true });
+      if (error) throw error;
+      return data as { date: string; plan: RideWorkout[] | null; type: string }[];
+    },
+    enabled: !!user,
+  });
+
   useEffect(() => {
     const storedPlan = sessionStorage.getItem('generated_training_plan');
     const storedInputs = sessionStorage.getItem('training_plan_inputs');
+    const storedPlanTitle = sessionStorage.getItem('generated_plan_title');
     
     if (storedPlan) {
       try {
@@ -49,6 +63,10 @@ export default function CoachPage() {
       } catch (error) {
         console.error('Error loading stored plan:', error);
       }
+    }
+    
+    if (storedPlanTitle) {
+      setPlanTitle(storedPlanTitle);
     }
     
     if (storedInputs) {
@@ -139,6 +157,7 @@ export default function CoachPage() {
 
       const workouts: RideWorkout[] = [];
       let buffer = "";
+      let receivedPlanTitle = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -146,24 +165,70 @@ export default function CoachPage() {
         if (done) break;
         
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
+        for (const event of events) {
+          const lines = event.split('\n');
+          let dataContent = '';
+          
+          // Extract data: content from SSE event
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              dataContent = line.slice(6).trim();
+              break;
+            }
+          }
+          
+          if (!dataContent || dataContent === '[DONE]') {
+            continue;
+          }
+          
+          try {
+            const parsed = JSON.parse(dataContent);
             
-            if (data === '[DONE]') {
+            // Handle plan title metadata
+            if (parsed.type === 'planTitle' && parsed.planTitle && !receivedPlanTitle) {
+              setPlanTitle(parsed.planTitle);
+              sessionStorage.setItem('generated_plan_title', parsed.planTitle);
+              receivedPlanTitle = true;
               continue;
             }
             
-            try {
-              const workout = JSON.parse(data);
-              workouts.push(workout);
+            // Handle workout objects
+            if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+              workouts.push(parsed);
               setGeneratedPlan([...workouts]);
-            } catch (e) {
-              console.error("Failed to parse workout:", e);
             }
+          } catch (e) {
+            // JSON might be incomplete, keep in buffer for next chunk
+            buffer = event + '\n\n' + buffer;
+          }
+        }
+      }
+
+      // Process any remaining buffer
+      if (buffer.trim()) {
+        const lines = buffer.split('\n');
+        let dataContent = '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            dataContent = line.slice(6).trim();
+            break;
+          }
+        }
+        
+        if (dataContent && dataContent !== '[DONE]') {
+          try {
+            const parsed = JSON.parse(dataContent);
+            if (parsed.type === 'planTitle' && parsed.planTitle && !receivedPlanTitle) {
+              setPlanTitle(parsed.planTitle);
+              sessionStorage.setItem('generated_plan_title', parsed.planTitle);
+            } else if (parsed.workoutTitle || parsed.selectedDate || parsed.intervals) {
+              workouts.push(parsed);
+            }
+          } catch (e) {
+            console.error("Failed to parse final buffer:", e);
           }
         }
       }
@@ -224,78 +289,10 @@ export default function CoachPage() {
   const clearPlan = () => {
     const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
     sessionStorage.removeItem('generated_training_plan');
+    sessionStorage.removeItem('generated_plan_title');
     sessionStorage.removeItem(pushedWorkoutsKey);
     setGeneratedPlan([]);
-  };
-
-  const pushPlanToWahoo = async () => {
-    const accessToken = getStoredWahooToken();
-    
-    if (!accessToken) {
-      if (confirm("You need to authorize with Wahoo first. Redirect to Wahoo login?")) {
-        window.location.href = getWahooAuthUrl('/coach');
-      }
-      return;
-    }
-
-    if (generatedPlan.length === 0) {
-      alert("No workouts to push");
-      return;
-    }
-
-    const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
-    const pushedWorkouts = JSON.parse(sessionStorage.getItem(pushedWorkoutsKey) || '[]');
-    
-    const workoutsToPush = generatedPlan.filter(w => !pushedWorkouts.includes(w.id));
-    
-    if (workoutsToPush.length === 0) {
-      alert("All workouts have already been pushed to Wahoo!");
-      return;
-    }
-
-    setIsPushingToWahoo(true);
-    let successCount = 0;
-    let failCount = 0;
-    let rateLimited = false;
-
-    try {
-      for (const workout of workoutsToPush) {
-        try {
-          await createWahooWorkout(workout);
-          
-          pushedWorkouts.push(workout.id);
-          sessionStorage.setItem(pushedWorkoutsKey, JSON.stringify(pushedWorkouts));
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to push workout ${workout.workoutTitle}:`, error);
-          if (error instanceof Error && error.message === 'RATE_LIMITED') {
-            rateLimited = true;
-          }
-          failCount++;
-          if (rateLimited) break;
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
-      
-      const totalPushed = pushedWorkouts.length;
-      const remaining = generatedPlan.length - totalPushed;
-      
-      if (failCount === 0 && remaining === 0) {
-        sessionStorage.removeItem(pushedWorkoutsKey);
-        alert(`Successfully pushed all ${successCount} workouts to Wahoo!`);
-        router.push('/');
-      } else if (rateLimited) {
-        alert(`Rate limited by Wahoo. Pushed ${successCount} workouts this attempt. ${remaining} remaining. Click "Push to Wahoo" again to continue.`);
-      } else if (remaining > 0) {
-        alert(`Pushed ${successCount} workouts. ${failCount} failed. ${remaining} remaining. Click "Push to Wahoo" to retry.`);
-      }
-    } catch (error) {
-      console.error("Error pushing plan to Wahoo:", error);
-      alert("Failed to push plan to Wahoo");
-    } finally {
-      setIsPushingToWahoo(false);
-    }
+    setPlanTitle("Your Training Plan");
   };
 
   const parseLocalDate = (dateString: string) => {
@@ -325,6 +322,14 @@ export default function CoachPage() {
     return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000); // 604800000 = 7 * 24 * 3600 * 1000
   };
 
+  const getISOYear = (date: Date) => {
+    // Get the year that the ISO week belongs to (year of the Thursday in that week)
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7; // Monday = 0, Sunday = 6
+    target.setDate(target.getDate() - dayNr + 3); // Thursday in current week
+    return target.getFullYear();
+  };
+
   const getWeekRange = (date: Date) => {
     // Return Monday-Sunday range for the given date
     const dayNr = (date.getDay() + 6) % 7; // Monday = 0, Sunday = 6
@@ -341,7 +346,8 @@ export default function CoachPage() {
     workouts.forEach(workout => {
       const date = parseLocalDate(workout.selectedDate);
       const weekNum = getISOWeek(date);
-      const weekKey = `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      const isoYear = getISOYear(date);
+      const weekKey = `${isoYear}-W${String(weekNum).padStart(2, '0')}`;
       
       if (!weeks[weekKey]) {
         weeks[weekKey] = [];
@@ -352,6 +358,68 @@ export default function CoachPage() {
     return Object.entries(weeks).sort(([a], [b]) => a.localeCompare(b));
   };
 
+  const hasMatchingPlan = !!scheduleData?.some(
+    (row) =>
+      row.date === startDate &&
+      JSON.stringify(row.plan) === JSON.stringify(generatedPlan)
+  );
+
+  const handleSavePlan = async () => {
+    if (!user) {
+      alert("You must be logged in to save a plan");
+      return;
+    }
+
+    if (generatedPlan.length === 0) {
+      alert("No plan to save");
+      return;
+    }
+
+    try {
+      sessionStorage.setItem('generated_training_plan', JSON.stringify(generatedPlan));
+      sessionStorage.setItem('training_plan_inputs', JSON.stringify({
+        userPrompt,
+        ftp,
+        weeklyHours,
+        startDate,
+        endDate,
+      }));
+      if (planTitle) {
+        sessionStorage.setItem('generated_plan_title', planTitle);
+      }
+
+      const insertData: {
+        date: string;
+        plan: RideWorkout[];
+        type: string;
+        user_id: string;
+        title?: string;
+      } = {
+        date: startDate,
+        plan: generatedPlan,
+        type: 'cycling',
+        user_id: user.id,
+      };
+      
+      if (planTitle && planTitle !== 'Your Training Plan') {
+        insertData.title = planTitle;
+      }
+
+      const { error } = await supabase.from('schedule').insert(insertData);
+
+      if (error) {
+        console.error('Error saving plan to schedule', error);
+        alert('Failed to save plan to schedule.');
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['schedule'] });
+        alert('Training plan saved to your schedule.');
+      }
+    } catch (e) {
+      console.error('Error saving plan', e);
+      alert('Failed to save training plan.');
+    }
+  };
+
   return (
     <>
       <TabNavigation />
@@ -359,6 +427,12 @@ export default function CoachPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-white">AI Training Plan Builder</h1>
+            <button
+              onClick={clearPlan}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Clear
+            </button>
           </div>
           <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 sm:p-6 mb-6 w-full">
           <div className="space-y-4">
@@ -420,7 +494,12 @@ export default function CoachPage() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
+                  onClick={(e) => {
+                    if (!isGenerating && (e.target as HTMLInputElement).showPicker) {
+                      (e.target as HTMLInputElement).showPicker();
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 cursor-pointer"
                   disabled={isGenerating}
                 />
               </div>
@@ -432,7 +511,12 @@ export default function CoachPage() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
+                  onClick={(e) => {
+                    if (!isGenerating && (e.target as HTMLInputElement).showPicker) {
+                      (e.target as HTMLInputElement).showPicker();
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 cursor-pointer"
                   disabled={isGenerating}
                 />
               </div>
@@ -452,23 +536,17 @@ export default function CoachPage() {
         {generatedPlan.length > 0 && (
           <div className="space-y-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-white">Your Training Plan</h2>
+              <p className="text-lg sm:text-2xl font-bold text-white">{planTitle}</p>
               <div className="flex gap-3">
-                {getStoredWahooToken() && (
+                {!hasMatchingPlan && (
                   <button
-                    onClick={pushPlanToWahoo}
-                    disabled={isPushingToWahoo}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleSavePlan}
+                    disabled={isGenerating || !generatedPlan.length}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isPushingToWahoo ? "Pushing..." : "Push to Wahoo"}
+                    Save
                   </button>
                 )}
-                <button
-                  onClick={clearPlan}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                >
-                  Clear Plan
-                </button>
               </div>
             </div>
             {groupWorkoutsByWeek(generatedPlan).map(([weekKey, workouts]) => {

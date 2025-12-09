@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import dayjs from 'dayjs';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { DatePickerModal } from '../components/DatePickerModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { formatDuration } from '../utils/formatUtil';
 import { connectWahoo, createWahooWorkout, deleteWahooWorkout, ensureValidWahooToken } from '../utils/WahooUtil';
+import { deleteWorkoutFromSchedule } from '@ridesofjulian/shared';
 
 interface PlannedRideEditScreenProps {
   workout: ScheduledRideWorkout;
@@ -144,7 +145,8 @@ export function PlannedRideEditScreen({ workout, onClose }: PlannedRideEditScree
     if (!session?.user?.id) return;
     setIsDeleting(true);
     try {
-      await updateSchedule((plan) => plan.filter((w) => w.id !== workout.id));
+      await deleteWorkoutFromSchedule(supabase, session.user.id, workout.id, workout.scheduleRowDate);
+      queryClient.invalidateQueries({ queryKey: ['schedule', session.user.id] });
       onClose();
     } finally {
       setIsDeleting(false);
@@ -204,10 +206,15 @@ export function PlannedRideEditScreen({ workout, onClose }: PlannedRideEditScree
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        <View style={styles.modalHandle} />
-        <ScrollView contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <View style={styles.modalHandle} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={true}
+      >
           <View style={styles.header}>
             {/* <View style={styles.headerMain}> */}
               <TextInput
@@ -430,17 +437,16 @@ export function PlannedRideEditScreen({ workout, onClose }: PlannedRideEditScree
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-        <DatePickerModal
-          visible={showDatePicker}
-          date={dayjs(selectedDate || dayjs().format('YYYY-MM-DD')).toDate()}
-          onChange={(date) => {
-            setSelectedDate(dayjs(date).format('YYYY-MM-DD'));
-          }}
-          onClose={() => setShowDatePicker(false)}
-        />
-      </View>
-    </TouchableWithoutFeedback>
+      </ScrollView>
+      <DatePickerModal
+        visible={showDatePicker}
+        date={dayjs(selectedDate || dayjs().format('YYYY-MM-DD')).toDate()}
+        onChange={(date) => {
+          setSelectedDate(dayjs(date).format('YYYY-MM-DD'));
+        }}
+        onClose={() => setShowDatePicker(false)}
+      />
+    </View>
   );
 }
 
