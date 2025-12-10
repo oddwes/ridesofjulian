@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Container from "@/components/ui/Container";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { WorkoutModal } from "@/components/workouts/Modal";
+import { Modal } from "@/components/ui/Modal";
 import { PlannedRide } from "@/components/PlannedRide";
 import { RideWorkout, Interval } from "@/types/workout";
 import { Exercise } from "@ridesofjulian/shared";
 import TabNavigation from "@/components/TabNavigation";
 import { useSupabase } from "@/contexts/SupabaseContext";
 import { getFtp } from "@/utils/FtpUtil";
+import EditWorkout, { type EditWorkoutHandle } from "@/components/workouts/Edit";
 
 
 export default function CoachPage() {
@@ -25,6 +26,10 @@ export default function CoachPage() {
   const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
   const [planTitle, setPlanTitle] = useState<string>("Your Training Plan");
   const [editingWorkout, setEditingWorkout] = useState<RideWorkout | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [workoutTitle, setWorkoutTitle] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const editWorkoutRef = useRef<EditWorkoutHandle>(null);
 
   const { data: ftpHistory } = useQuery({
     queryKey: ['ftpHistory', user?.id],
@@ -251,6 +256,8 @@ export default function CoachPage() {
 
   const handleEditWorkout = (workout: RideWorkout) => {
     setEditingWorkout(workout);
+    setWorkoutTitle(workout.workoutTitle);
+    setSelectedDate(workout.selectedDate);
   };
 
   const handleDeleteWorkout = (workout: RideWorkout) => {
@@ -272,7 +279,7 @@ export default function CoachPage() {
     
     const updatedWorkout: RideWorkout = {
       ...editingWorkout,
-      workoutTitle: title,
+      workoutTitle: title ?? workoutTitle,
       selectedDate: date,
       intervals,
     };
@@ -285,6 +292,16 @@ export default function CoachPage() {
     sessionStorage.setItem('generated_training_plan', JSON.stringify(updatedPlan));
     setEditingWorkout(null);
   };
+
+  const handleModalSave = async () => {
+    if (!editWorkoutRef.current) return
+    setIsSaving(true)
+    try {
+      await editWorkoutRef.current.save()
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const clearPlan = () => {
     const pushedWorkoutsKey = 'pushed_workouts_' + JSON.stringify(generatedPlan.map(w => w.id));
@@ -597,11 +614,28 @@ export default function CoachPage() {
         </div>
       )}
 
-      <WorkoutModal
-        workout={editingWorkout ? { ...editingWorkout, type: 'ride' as const } : null}
-        onClose={() => setEditingWorkout(null)}
-        onSave={handleSaveEditedWorkout}
-      />
+      {editingWorkout && (
+        <Modal
+          title={workoutTitle}
+          date={selectedDate}
+          onTitleChange={setWorkoutTitle}
+          onDateChange={setSelectedDate}
+          onClose={() => setEditingWorkout(null)}
+          onSave={handleModalSave}
+          isSaving={isSaving}
+          editableTitle={true}
+        >
+          <EditWorkout
+            ref={editWorkoutRef}
+            type="ride"
+            initialIntervals={editingWorkout.intervals}
+            initialTitle={workoutTitle}
+            initialDate={selectedDate}
+            onSave={handleSaveEditedWorkout}
+            disabled={isSaving}
+          />
+        </Modal>
+      )}
     </>
   );
 }

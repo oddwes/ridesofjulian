@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -12,7 +12,8 @@ import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp, getFtpForDate, type FtpData } from '@/utils/FtpUtil'
 import type { RideWorkout, Interval } from '@/types/workout'
 import { deleteWorkoutFromSchedule, type Exercise } from '@ridesofjulian/shared'
-import { WorkoutModal } from '@/components/workouts/Modal'
+import { Modal } from '@/components/ui/Modal'
+import EditWorkout, { type EditWorkoutHandle } from '@/components/workouts/Edit'
 
 dayjs.extend(isoWeek)
 
@@ -93,6 +94,10 @@ export default function PlanPage() {
   const todayStr = dayjs().format('YYYY-MM-DD')
   const [collapsedWeeks, setCollapsedWeeks] = useState<string[] | null>(null)
   const [editingWorkout, setEditingWorkout] = useState<ScheduledRideWorkout | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [workoutTitle, setWorkoutTitle] = useState('')
+  const [selectedDate, setSelectedDate] = useState('')
+  const editWorkoutRef = useRef<EditWorkoutHandle>(null)
 
   useEffect(() => {
     if (!weeks.length || collapsedWeeks !== null) return
@@ -140,6 +145,8 @@ export default function PlanPage() {
   const handleEditWorkout = (workout: RideWorkout) => {
     const scheduledWorkout = workout as ScheduledRideWorkout
     setEditingWorkout(scheduledWorkout)
+    setWorkoutTitle(scheduledWorkout.workoutTitle)
+    setSelectedDate(scheduledWorkout.selectedDate)
   }
 
   const handleSaveEditedWorkout = async (data: { intervals?: Interval[]; exercises?: Exercise[]; title?: string; date: string }) => {
@@ -152,7 +159,7 @@ export default function PlanPage() {
       await updateSchedule(editingWorkout, (plan) =>
         plan.map((w) =>
           w.id === editingWorkout.id
-            ? { ...w, workoutTitle: title ?? w.workoutTitle, selectedDate: date, intervals }
+            ? { ...w, workoutTitle: title ?? workoutTitle, selectedDate: date, intervals }
             : w
         )
       )
@@ -160,6 +167,16 @@ export default function PlanPage() {
     } catch (error) {
       console.error('Failed to save workout:', error)
       throw error
+    }
+  }
+
+  const handleModalSave = async () => {
+    if (!editWorkoutRef.current) return
+    setIsSaving(true)
+    try {
+      await editWorkoutRef.current.save()
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -287,12 +304,29 @@ export default function PlanPage() {
         )
       })}
 
-      <WorkoutModal
-        workout={editingWorkout ? { ...editingWorkout, type: 'ride' as const } : null}
-        onClose={() => setEditingWorkout(null)}
-        onSave={handleSaveEditedWorkout}
-        onDelete={editingWorkout && isFutureOrToday(editingWorkout.selectedDate) ? handleDeleteWorkout : undefined}
-      />
+      {editingWorkout && (
+        <Modal
+          title={workoutTitle}
+          date={selectedDate}
+          onTitleChange={setWorkoutTitle}
+          onDateChange={setSelectedDate}
+          onClose={() => setEditingWorkout(null)}
+          onSave={handleModalSave}
+          onDelete={isFutureOrToday(editingWorkout.selectedDate) ? handleDeleteWorkout : undefined}
+          isSaving={isSaving}
+          editableTitle={true}
+        >
+          <EditWorkout
+            ref={editWorkoutRef}
+            type="ride"
+            initialIntervals={editingWorkout.intervals}
+            initialTitle={workoutTitle}
+            initialDate={selectedDate}
+            onSave={handleSaveEditedWorkout}
+            disabled={isSaving}
+          />
+        </Modal>
+      )}
     </div>
   )
 }

@@ -6,7 +6,7 @@ import Col from "../ui/Col"
 import { RideCard, PlannedRideCard } from "./RideCard"
 import { GymCard } from "./GymCard"
 
-const Day = ({ activities = [], plannedWorkouts = [], gymWorkouts = [], isToday, date, onWorkoutClick }) => {
+const Day = ({ activities = [], plannedWorkouts = [], gymWorkouts = [], isToday, date, onWorkoutClick, onActivityClick }) => {
   const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
   
@@ -39,7 +39,22 @@ const Day = ({ activities = [], plannedWorkouts = [], gymWorkouts = [], isToday,
     const items = []
     
     activities.forEach((activity) => {
-      items.push({ type: 'activity', time: new Date(activity.start_date), content: <RideCard activity={activity} variant="desktop" /> })
+      items.push({ 
+        type: 'activity', 
+        time: new Date(activity.start_date), 
+        content: (
+          <div 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onActivityClick?.(activity);
+            }} 
+            className="cursor-pointer"
+          >
+            <RideCard activity={activity} variant="desktop" />
+          </div>
+        )
+      })
     })
     
     if (plannedWorkouts.length > 0 && activities.length === 0) {

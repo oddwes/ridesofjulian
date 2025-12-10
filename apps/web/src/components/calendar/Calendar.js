@@ -3,16 +3,21 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { Week } from './Week';
 import Row from '../ui/Row';
-import { useState } from 'react';
-import { WorkoutModal } from '../workouts/Modal';
+import { useState, useRef } from 'react';
+import { Modal } from '../ui/Modal';
 import { getStoredWahooToken, deleteWahooWorkout, updateWahooWorkout } from '../../utils/WahooUtil';
 import { updateGymWorkout, deleteGymWorkout } from '../../utils/GymUtil';
 import { useQueryClient } from '@tanstack/react-query';
+import EditWorkout from '../workouts/Edit';
 
 dayjs.extend(isBetween);
 
-const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [] }) => {
+const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [], onActivityClick }) => {
   const [editingWorkout, setEditingWorkout] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [workoutTitle, setWorkoutTitle] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const editWorkoutRef = useRef(null);
   const queryClient = useQueryClient();
   
   const handleWorkoutClick = (workout) => {
@@ -23,6 +28,8 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
         selectedDate: dayjs(workout.datetime).format('YYYY-MM-DD'),
         workoutTitle: 'Gym Workout'
       });
+      setWorkoutTitle('Gym Workout');
+      setSelectedDate(dayjs(workout.datetime).format('YYYY-MM-DD'));
     } else {
       const intervals = (workout.intervals || []).map((interval, idx) => ({
         id: `${workout.id}-${idx}`,
@@ -41,12 +48,15 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
         selectedDate: workoutDate,
         workoutTitle: workout.name
       });
+      setWorkoutTitle(workout.name || 'Untitled Workout');
+      setSelectedDate(workoutDate);
     }
   };
 
   const handleSaveEditedWorkout = async (data) => {
     if (editingWorkout?.type === 'gym') {
       const { exercises, date } = data;
+      setIsSaving(true);
       try {
         await updateGymWorkout(editingWorkout.id, exercises, date);
         queryClient.invalidateQueries({ queryKey: ['workouts'] });
@@ -55,6 +65,8 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
       } catch (error) {
         console.error("Error updating gym workout:", error);
         alert("Failed to update gym workout");
+      } finally {
+        setIsSaving(false);
       }
     } else {
       const { intervals, title, date } = data;
@@ -64,8 +76,9 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
         throw new Error("Not authorized");
       }
 
+      setIsSaving(true);
       try {
-        await updateWahooWorkout(editingWorkout.id, editingWorkout.plan_id, intervals, title, date);
+        await updateWahooWorkout(editingWorkout.id, editingWorkout.plan_id, intervals, title ?? workoutTitle, date);
         queryClient.invalidateQueries({ queryKey: ['workout', editingWorkout.id] });
         queryClient.invalidateQueries({ queryKey: ['plannedWorkouts'] });
         if (editingWorkout?.plan_id) {
@@ -76,7 +89,19 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
       } catch (error) {
         console.error("Error updating workout:", error);
         alert("Failed to update workout");
+      } finally {
+        setIsSaving(false);
       }
+    }
+  };
+
+  const handleModalSave = async () => {
+    if (!editWorkoutRef.current) return;
+    setIsSaving(true);
+    try {
+      await editWorkoutRef.current.save();
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -171,6 +196,7 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
             plannedWorkoutsForWeek={plannedWorkoutsForWeek}
             gymWorkoutsForWeek={gymWorkoutsForWeek}
             onWorkoutClick={handleWorkoutClick}
+            onActivityClick={onActivityClick}
             key={startDate}
           />
         </div>
@@ -187,12 +213,40 @@ const Calendar = ({ dateRange, activities, plannedWorkouts = [], gymWorkouts = [
         {printWeeks()}
       </div>
 
-      <WorkoutModal
-        workout={editingWorkout}
-        onClose={() => setEditingWorkout(null)}
-        onSave={handleSaveEditedWorkout}
-        onDelete={handleDeleteWorkout}
-      />
+      {editingWorkout && (
+        <Modal
+          title={workoutTitle}
+          date={selectedDate}
+          onTitleChange={setWorkoutTitle}
+          onDateChange={setSelectedDate}
+          onClose={() => setEditingWorkout(null)}
+          onSave={handleModalSave}
+          onDelete={handleDeleteWorkout}
+          isSaving={isSaving}
+          editableTitle={true}
+        >
+          {editingWorkout.type === 'gym' ? (
+            <EditWorkout
+              ref={editWorkoutRef}
+              type="gym"
+              initialExercises={editingWorkout.exercises}
+              initialDate={selectedDate}
+              onSave={handleSaveEditedWorkout}
+              disabled={isSaving}
+            />
+          ) : (
+            <EditWorkout
+              ref={editWorkoutRef}
+              type="ride"
+              initialIntervals={editingWorkout.intervals}
+              initialTitle={workoutTitle}
+              initialDate={selectedDate}
+              onSave={handleSaveEditedWorkout}
+              disabled={isSaving}
+            />
+          )}
+        </Modal>
+      )}
     </>
   );
 };

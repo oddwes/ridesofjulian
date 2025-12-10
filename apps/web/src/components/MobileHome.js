@@ -18,6 +18,7 @@ import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
 import { useSupabase } from '@/contexts/SupabaseContext'
 import { getFtp } from '@/utils/FtpUtil'
 import { DateRangeDropdown } from './DateRangeDropdown'
+import { RideAnalysisModal } from './RideAnalysisModal'
 
 dayjs.extend(isoWeek)
 
@@ -25,6 +26,7 @@ const MobileHome = () => {
   const { supabase, user } = useSupabase()
 
   const [selectedRange, setSelectedRange] = useState('3months')
+  const [selectedActivity, setSelectedActivity] = useState(null)
 
   const dateRangeOptions = useMemo(() => {
     const now = dayjs()
@@ -182,7 +184,12 @@ const MobileHome = () => {
                     {workouts.map((item, idx) => (
                       <div key={idx}>
                         {item.type === 'gym' && <GymCardWeb workout={item.workout} />}
-                        {item.type === 'ride' && <RideCardWeb activity={item.workout} />}
+                        {item.type === 'ride' && (
+                          <RideCardWeb 
+                            activity={item.workout} 
+                            onClick={() => setSelectedActivity(item.workout)}
+                          />
+                        )}
                         {item.type === 'planned' && <PlannedRideCard workout={item.workout} variant="mobile" />}
                       </div>
                     ))}
@@ -193,6 +200,10 @@ const MobileHome = () => {
           )
         })}
       </div>
+      <RideAnalysisModal
+        activity={selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+      />
     </div>
   )
 }

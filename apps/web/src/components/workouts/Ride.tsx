@@ -195,7 +195,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
             onDragStart={() => handleDragStart(index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
-            className={`rounded-lg px-4 py-2 flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch sm:items-center cursor-move ${
+            className={`rounded-lg p-2 flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch sm:items-center cursor-move ${
               draggedIndex === index ? 'opacity-50' : ''
             }`}
           >

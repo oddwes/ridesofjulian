@@ -10,9 +10,11 @@ import Calendar from './calendar/Calendar'
 import { SlidingLoadingIndicator } from './SlidingLoadingIndicator'
 import { DateRangeDropdown } from './DateRangeDropdown'
 import TabNavigation from './TabNavigation'
+import { RideAnalysisModal } from './RideAnalysisModal'
 
 const DesktopHome = () => {
   const [selectedRange, setSelectedRange] = useState('3months')
+  const [selectedActivity, setSelectedActivity] = useState(null)
 
   const dateRangeOptions = useMemo(() => {
     const now = dayjs()
@@ -79,8 +81,13 @@ const DesktopHome = () => {
           activities={activities}
           plannedWorkouts={isCurrentYearRange ? plannedWorkouts : []}
           gymWorkouts={isCurrentYearRange ? gymWorkouts : []}
+          onActivityClick={setSelectedActivity}
         />
       </div>
+      <RideAnalysisModal
+        activity={selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+      />
     </div>
   )
 }

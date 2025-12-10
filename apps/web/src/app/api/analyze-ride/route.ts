@@ -6,7 +6,11 @@ const getSystemPrompt = () =>
   process.env.RIDE_ANALYSIS_SYSTEM_PROMPT ||
   `You are an experienced cycling coach. Analyze the athlete's ride in context of their recent history and current training plan. 
 Provide clear, concise feedback, focusing on execution quality, intensity distribution, fatigue, and concrete next-step guidance. 
-Avoid repeating the raw data; interpret it.`;
+Avoid repeating the raw data; interpret it.
+
+IMPORTANT: When evaluating interval execution accuracy:
+- For aerobic (Z2/LT1) intervals: Prioritize heart rate accuracy over power. Heart rate is the primary metric for aerobic training zones.
+- For all other intervals (threshold, VO2max, anaerobic, etc.): Prioritize power accuracy over heart rate. Power is the primary metric for these higher-intensity zones.`;
 
 type AnalyzeRequest = {
   ride_history?: unknown;
@@ -16,6 +20,7 @@ type AnalyzeRequest = {
   user_id?: string;
   strava_id?: number;
   openaiApiKey: string;
+  user_note?: string;
 };
 
 type BuildMessageParams = {
@@ -23,6 +28,7 @@ type BuildMessageParams = {
   training_plan?: unknown;
   current_activity?: unknown;
   workout_plan?: unknown;
+  user_note?: string;
 };
 
 const buildUserMessage = ({
@@ -30,6 +36,7 @@ const buildUserMessage = ({
   training_plan,
   current_activity,
   workout_plan,
+  user_note,
 }: BuildMessageParams) => {
   const parts: string[] = [];
   if (current_activity) {
@@ -65,9 +72,16 @@ const buildUserMessage = ({
     );
   }
 
+  if (user_note) {
+    parts.push(
+      `\n\nATHLETE'S NOTES (PRIORITIZE THESE):\n${user_note}\n\nThese notes reflect the athlete's subjective experience and concerns. Address these points directly and give them significant weight in your analysis.`
+    );
+  }
+
   parts.push(
     `Based on this context, analyze the ride as a coach would. 
 Comment on: how well it matches the plan, load/fatigue implications, intensity distribution, and what to adjust in upcoming sessions. 
+${user_note ? 'Pay special attention to the athlete\'s notes above and ensure your analysis directly addresses their observations and concerns.' : ''}
 Keep the response under 600 words.`
   );
 
@@ -84,6 +98,7 @@ export async function POST(request: NextRequest) {
       user_id,
       strava_id,
       openaiApiKey,
+      user_note,
     }: AnalyzeRequest =
       await request.json();
 
@@ -122,6 +137,7 @@ export async function POST(request: NextRequest) {
       training_plan,
       current_activity,
       workout_plan,
+      user_note,
     });
 
     if (user_id && strava_id != null) {

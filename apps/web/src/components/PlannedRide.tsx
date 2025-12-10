@@ -25,7 +25,8 @@ export const PlannedRide = memo(({
 
   return (
     <div
-      className={`bg-slate-950 border rounded-xl p-4 text-slate-100 shadow-md ${
+      onClick={() => onEdit?.(workout)}
+      className={`bg-slate-950 border rounded-xl p-4 text-slate-100 shadow-md cursor-pointer hover:bg-slate-900 transition-colors ${
         isToday ? 'border-2 border-blue-500' : 'border-slate-800'
       }`}
     >
@@ -35,7 +36,7 @@ export const PlannedRide = memo(({
             {workout.workoutTitle}
           </h4>
           {(onEdit || onDelete) && (
-            <div className="flex gap-1">
+            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
               {onDelete && (
                 <button
                   onClick={() => onDelete(workout)}

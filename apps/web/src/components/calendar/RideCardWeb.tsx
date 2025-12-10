@@ -13,9 +13,10 @@ import { getFtp, getFtpForDate } from '@/utils/FtpUtil';
 
 interface RideCardWebProps {
   activity: StravaActivity & { source?: 'strava' | 'wahoo' };
+  onClick?: () => void;
 }
 
-export function RideCardWeb({ activity }: RideCardWebProps) {
+export function RideCardWeb({ activity, onClick }: RideCardWebProps) {
   const { ftp } = useContext(FtpContext);
   const { supabase, user } = useSupabase();
   const { data: ftpHistory } = useQuery({
@@ -33,7 +34,9 @@ export function RideCardWeb({ activity }: RideCardWebProps) {
   );
 
   const handlePress = (activityId: number) => {
-    if (activity.source !== 'wahoo') {
+    if (onClick) {
+      onClick();
+    } else if (activity.source !== 'wahoo') {
       window.open(`https://strava.com/activities/${activityId}`, '_blank');
     }
   };
