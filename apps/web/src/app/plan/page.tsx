@@ -252,14 +252,14 @@ export default function PlanPage() {
               {sortedItems.map((item) => {
                 if (item.type === 'workout') {
                   const isToday = item.date === todayStr
-                  const canDelete = isFutureOrToday(item.date)
+                  const canEditOrDelete = isFutureOrToday(item.date)
                   return (
                     <PlannedRide
                       key={item.workout.id}
                       workout={item.workout}
                       isToday={isToday}
-                      onEdit={handleEditWorkout}
-                      onDelete={canDelete ? handleDeleteWorkoutFromCard : undefined}
+                      onEdit={canEditOrDelete ? handleEditWorkout : undefined}
+                      onDelete={canEditOrDelete ? handleDeleteWorkoutFromCard : undefined}
                     />
                   )
                 } else {

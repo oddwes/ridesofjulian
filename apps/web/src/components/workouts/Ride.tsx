@@ -206,7 +206,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
                 onChange={(e) => updateInterval(interval.id, "name", e.target.value)}
                 placeholder="Interval name"
                 disabled={disabled}
-                className="w-full px-3 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -222,9 +222,9 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
                   }}
                   placeholder="Duration"
                   disabled={disabled}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">min</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">min</span>
               </div>
 
               <div className="flex-shrink-0">
@@ -240,11 +240,11 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
                       }}
                       placeholder="Min"
                       disabled={disabled}
-                      className="w-20 sm:w-24 px-2 py-2 pr-8 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-20 sm:w-24 px-2 py-2 pr-8 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">W</span>
                   </div>
-                  <span>-</span>
+                  <span className="text-sm">-</span>
                   <div className="relative">
                     <input
                       type="text"
@@ -256,7 +256,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
                       }}
                       placeholder="Max"
                       disabled={disabled}
-                      className="w-20 sm:w-24 px-2 py-2 pr-8 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-20 sm:w-24 px-2 py-2 pr-8 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">W</span>
                   </div>
@@ -269,7 +269,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
                   disabled={disabled}
                   className="p-1 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Copy size={18} />
+                  <Copy size={16} />
                 </button>
 
                 <button
@@ -277,7 +277,7 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
                   disabled={disabled}
                   className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>
