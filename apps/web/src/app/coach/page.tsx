@@ -14,14 +14,22 @@ import { getFtp } from "@/utils/FtpUtil";
 import EditWorkout, { type EditWorkoutHandle } from "@/components/workouts/Edit";
 
 
+const getTodayDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function CoachPage() {
   const queryClient = useQueryClient();
   const { supabase, user } = useSupabase();
   const [userPrompt, setUserPrompt] = useState("");
   const [ftp, setFtp] = useState<number>(200);
   const [weeklyHours, setWeeklyHours] = useState<number>(10);
-  const [startDate, setStartDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [endDate, setEndDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<RideWorkout[]>([]);
   const [planTitle, setPlanTitle] = useState<string>("Your Training Plan");
@@ -60,6 +68,7 @@ export default function CoachPage() {
     const storedPlan = sessionStorage.getItem('generated_training_plan');
     const storedInputs = sessionStorage.getItem('training_plan_inputs');
     const storedPlanTitle = sessionStorage.getItem('generated_plan_title');
+    const today = getTodayDateString();
     
     if (storedPlan) {
       try {
@@ -80,11 +89,14 @@ export default function CoachPage() {
         setUserPrompt(inputs.userPrompt || "");
         setFtp(inputs.ftp || 200);
         setWeeklyHours(inputs.weeklyHours || 10);
-        setStartDate(inputs.startDate || new Date().toISOString().split("T")[0]);
-        setEndDate(inputs.endDate || new Date().toISOString().split("T")[0]);
+        setStartDate(inputs.startDate || today);
+        setEndDate(inputs.endDate || today);
       } catch (error) {
         console.error('Error loading stored inputs:', error);
       }
+    } else {
+      setStartDate(today);
+      setEndDate(today);
     }
   }, []);
 
@@ -468,7 +480,7 @@ export default function CoachPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="min-w-0 overflow-hidden">
                 <label className="block text-xs font-semibold mb-1 text-slate-200">
                   FTP
                 </label>
@@ -480,11 +492,11 @@ export default function CoachPage() {
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     setFtp(val ? parseInt(val) : 0);
                   }}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
+                  className="w-full max-w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 box-border"
                   disabled={isGenerating}
                 />
               </div>
-              <div>
+              <div className="min-w-0 overflow-hidden">
                 <label className="block text-xs font-semibold mb-1 text-slate-200">
                   Weekly Hours
                 </label>
@@ -496,14 +508,14 @@ export default function CoachPage() {
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     setWeeklyHours(val ? parseInt(val) : 0);
                   }}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100"
+                  className="w-full max-w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 box-border"
                   disabled={isGenerating}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="min-w-0 overflow-hidden">
                 <label className="block text-xs font-semibold mb-1 text-slate-200">
                   Start Date
                 </label>
@@ -516,11 +528,11 @@ export default function CoachPage() {
                       (e.target as HTMLInputElement).showPicker();
                     }
                   }}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 cursor-pointer"
+                  className="w-full max-w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 cursor-pointer box-border"
                   disabled={isGenerating}
                 />
               </div>
-              <div>
+              <div className="min-w-0 overflow-hidden">
                 <label className="block text-xs font-semibold mb-1 text-slate-200">
                   End Date
                 </label>
@@ -533,7 +545,7 @@ export default function CoachPage() {
                       (e.target as HTMLInputElement).showPicker();
                     }
                   }}
-                  className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 cursor-pointer"
+                  className="w-full max-w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-700 text-sm text-slate-100 cursor-pointer box-border"
                   disabled={isGenerating}
                 />
               </div>
