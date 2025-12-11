@@ -7,7 +7,8 @@ import { Session } from '@supabase/supabase-js';
 import Image from "next/image";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { login, ensureValidToken } from "@ridesofjulian/shared/utils/StravaUtil/web";
-import { hasWahooRefreshToken, initiateWahooAuth } from "@/utils/WahooUtil";
+import { STRAVA_ACCESS_TOKEN_KEY, STRAVA_REFRESH_TOKEN_KEY, STRAVA_TOKEN_EXPIRY_KEY } from "@ridesofjulian/shared/utils/StravaUtil";
+import { hasWahooRefreshToken, initiateWahooAuth, clearAllWahooData } from "@/utils/WahooUtil";
 import { FTPInput } from "@/components/FTP";
 import { Save } from "lucide-react";
 
@@ -172,11 +173,23 @@ export default function ProfilePage() {
   };
 
   const handleStravaConnect = () => {
-    login();
+    if (stravaConnected) {
+      localStorage.removeItem(STRAVA_ACCESS_TOKEN_KEY);
+      localStorage.removeItem(STRAVA_REFRESH_TOKEN_KEY);
+      localStorage.removeItem(STRAVA_TOKEN_EXPIRY_KEY);
+      setStravaConnected(false);
+    } else {
+      login();
+    }
   };
 
   const handleWahooConnect = async () => {
-    await initiateWahooAuth();
+    if (wahooConnected) {
+      clearAllWahooData();
+      setWahooConnected(false);
+    } else {
+      await initiateWahooAuth();
+    }
   };
 
   if (loading) {
@@ -273,20 +286,18 @@ export default function ProfilePage() {
         <div className="py-6 border-t border-b space-y-4">
           <button
             onClick={handleStravaConnect}
-            disabled={stravaConnected}
-            className="w-full flex items-center justify-center gap-2 bg-[#FC4C02] text-white pl-4 pr-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-[#FC4C02] text-white pl-4 pr-6 py-2 rounded-lg hover:bg-[#e64402] transition-colors"
           >
             <Image src="/strava.svg" width="30" height="30" alt="strava logo" />
-            <span className="font-bold">{stravaConnected ? 'Connected' : 'Connect to Strava'}</span>
+            <span className="font-bold">{stravaConnected ? 'Disconnect from Strava' : 'Connect to Strava'}</span>
           </button>
 
           <button
             onClick={handleWahooConnect}
-            disabled={wahooConnected}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Image src="/wahoo.png" width="40" height="40" alt="wahooligan logo" />
-            <span className="font-bold">{wahooConnected ? 'Connected' : 'Connect to Wahoo'}</span>
+            <span className="font-bold">{wahooConnected ? 'Disconnect from Wahoo' : 'Connect to Wahoo'}</span>
           </button>
 
         </div>
