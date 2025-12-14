@@ -14,7 +14,7 @@ type WeeklySummaryProps = {
 
 export function WeeklySummary({ activities, ftpHistory, weekStart }: WeeklySummaryProps) {
   const { ftp } = useContext(FtpContext);
-  const weekEnd = weekStart.endOf('week');
+  const weekEnd = weekStart.add(6, 'day').endOf('day');
 
   const weekActivities = activities.filter((a) => {
     const d = dayjs(a.start_date);

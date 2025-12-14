@@ -12,7 +12,7 @@ type WeeklySummaryProps = {
 };
 
 export function WeeklySummary({ activities, ftpHistory, weekStart }: WeeklySummaryProps) {
-  const weekEnd = weekStart.endOf('week');
+  const weekEnd = weekStart.add(6, 'day').endOf('day');
 
   const weekActivities = activities.filter((a) => {
     if (!a.start_date) return false;
