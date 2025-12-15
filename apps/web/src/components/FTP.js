@@ -11,6 +11,29 @@ export const FtpContext = createContext({ ftp: undefined, setFtp: () => {} })
 
 export const FTPProvider = ({ children }) => {
   const [ftp, setFtp] = useState()
+  const { supabase, user } = useSupabase()
+
+  const { data: ftpHistory } = useQuery({
+    queryKey: ['ftpHistory', user?.id],
+    queryFn: async () => {
+      if (!user) return null
+      return await getFtp(supabase, user.id)
+    },
+    enabled: !!user,
+  })
+
+  useEffect(() => {
+    if (ftpHistory?.ftp && Object.keys(ftpHistory.ftp).length > 0) {
+      const entries = Object.entries(ftpHistory.ftp)
+        .map(([date, value]) => ({ date, value }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+      
+      if (entries.length > 0) {
+        const latestFtp = entries[0].value
+        setFtp(latestFtp)
+      }
+    }
+  }, [ftpHistory])
 
   const updateFtp = (newFtp) => {
     setFtp(newFtp)
@@ -46,13 +69,14 @@ export const FTPInput = () => {
         .map(([date, value]) => ({ date, value }))
         .sort((a, b) => new Date(b.date) - new Date(a.date))
       
-      if (entries.length > 0 && !ftp) {
+      if (entries.length > 0) {
         const latestFtp = entries[0].value
-        setFtp(latestFtp)
-        setOriginalFtp(latestFtp)
+        if (!originalFtp) {
+          setOriginalFtp(latestFtp)
+        }
       }
     }
-  }, [ftpHistory, ftp, setFtp])
+  }, [ftpHistory, originalFtp])
 
   const handleFtpChange = (e) => {
     const value = e.target.value
