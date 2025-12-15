@@ -13,6 +13,7 @@ export interface RideWorkout {
   workoutTitle: string;
   selectedDate: string;
   intervals: Interval[];
+  wahooId?: number;
 }
 
 export interface Workout {

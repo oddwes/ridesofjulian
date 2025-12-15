@@ -15,7 +15,10 @@ type RideWorkoutData = {
   initialIntervals?: Interval[];
   initialTitle?: string;
   initialDate?: string;
+  initialWahooId?: number;
+  workoutId?: number;
   onSave: (data: { intervals: Interval[]; title: string; date: string }) => Promise<void>;
+  onWahooIdChange?: (wahooId: number | null) => Promise<void>;
 };
 
 type GymWorkoutData = {
@@ -45,14 +48,17 @@ const EditWorkout = forwardRef<EditWorkoutHandle, EditWorkoutProps>((props, ref)
       />
     );
   } else {
-    const { initialIntervals, initialTitle, initialDate, onSave, disabled } = props;
+    const { initialIntervals, initialTitle, initialDate, initialWahooId, workoutId, onSave, onWahooIdChange, disabled } = props;
     return (
       <EditRideWorkout
         ref={ref}
         initialIntervals={initialIntervals}
         initialTitle={initialTitle}
         initialDate={initialDate}
+        initialWahooId={initialWahooId}
+        workoutId={workoutId}
         onSave={onSave}
+        onWahooIdChange={onWahooIdChange}
         disabled={disabled}
       />
     );

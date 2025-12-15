@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DetailedChart } from "./RideWorkoutChart";
 import { useSupabase } from "@/contexts/SupabaseContext";
 import { getFtp, getFtpForDate, type FtpData } from "@/utils/FtpUtil";
+import { createWahooWorkout, ensureValidWahooToken, initiateWahooAuth, deleteWahooWorkout } from '@/utils/WahooUtil';
 
 export interface Interval {
   id: string;
@@ -24,7 +25,10 @@ interface EditRideWorkoutProps {
   initialIntervals?: Interval[];
   initialTitle?: string;
   initialDate?: string;
+  initialWahooId?: number;
+  workoutId?: number;
   onSave: (data: { intervals: Interval[]; title: string; date: string }) => Promise<void>;
+  onWahooIdChange?: (wahooId: number | null) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -42,7 +46,10 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
   initialIntervals = defaultIntervals,
   initialTitle = "",
   initialDate = new Date().toISOString().split("T")[0],
+  initialWahooId,
+  workoutId,
   onSave,
+  onWahooIdChange,
   disabled = false,
 }, ref) => {
   const { supabase, user } = useSupabase();
@@ -51,6 +58,9 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
   const [workoutTitle, setWorkoutTitle] = useState<string>(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isPushingToWahoo, setIsPushingToWahoo] = useState(false);
+  const [wahooError, setWahooError] = useState<string | null>(null);
+  const [wahooId, setWahooId] = useState<number | null>(initialWahooId ?? null);
 
   const { data: ftpHistory } = useQuery<FtpData | null>({
     queryKey: ['ftpHistory', user?.id],
@@ -65,7 +75,8 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
     setIntervals(initialIntervals);
     setWorkoutTitle(initialTitle);
     setSelectedDate(initialDate);
-  }, [initialIntervals, initialTitle, initialDate]);
+    setWahooId(initialWahooId ?? null);
+  }, [initialIntervals, initialTitle, initialDate, initialWahooId]);
 
   const handleSave = async () => {
     if (intervals.length === 0) {
@@ -155,8 +166,93 @@ const EditRideWorkout = forwardRef<EditWorkoutHandle, EditRideWorkoutProps>(({
     return getFtpForDate(ftpHistory ?? null, selectedDate);
   }, [ftpHistory, selectedDate]);
 
+  const handlePushToWahoo = async () => {
+    if (!user?.id) {
+      alert('Please log in to push workouts to Wahoo');
+      return;
+    }
+
+    if (isPushingToWahoo) return;
+
+    setIsPushingToWahoo(true);
+    setWahooError(null);
+
+    try {
+      if (wahooId) {
+        await deleteWahooWorkout(wahooId);
+        setWahooId(null);
+        if (onWahooIdChange) {
+          await onWahooIdChange(null);
+        }
+        return;
+      }
+
+      if (!intervals.length) {
+        alert('Please add at least one interval');
+        return;
+      }
+
+      const token = await ensureValidWahooToken();
+
+      if (!token) {
+        const currentPath = window.location.pathname + window.location.search;
+        await initiateWahooAuth(currentPath);
+        return;
+      }
+
+      const result = await createWahooWorkout({
+        id: workoutId || Date.now(),
+        workoutTitle: workoutTitle || 'Custom Workout',
+        selectedDate,
+        intervals: intervals.map(({ id: _id, ...interval }) => interval),
+      });
+
+      setWahooId(result.workoutId);
+      if (onWahooIdChange) {
+        await onWahooIdChange(result.workoutId);
+      }
+
+      alert('Workout pushed to Wahoo successfully!');
+    } catch (error) {
+      console.error('Failed to push workout to Wahoo:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to push workout to Wahoo';
+      setWahooError(errorMessage);
+      if (errorMessage === 'RATE_LIMITED') {
+        alert('Rate limited. Please try again later.');
+      } else {
+        alert(errorMessage);
+      }
+    } finally {
+      setIsPushingToWahoo(false);
+    }
+  };
+
   return (
     <div className="text-gray-50">
+      {user && (
+        <div className="mb-4 flex">
+          <button
+            onClick={handlePushToWahoo}
+            disabled={disabled || isPushingToWahoo || (!intervals.length && !wahooId)}
+            className={`px-3 py-1 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              isPushingToWahoo
+                ? 'bg-gray-600'
+                : wahooId
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
+          >
+            {isPushingToWahoo
+              ? 'Working...'
+              : wahooId
+              ? 'Delete from Wahoo'
+              : 'Push to Wahoo'}
+          </button>
+        </div>
+      )}
+      {wahooError && (
+        <p className="text-orange-500 text-sm text-center mb-4">{wahooError}</p>
+      )}
       <div className="mb-6">
         <DetailedChart intervals={intervals} />
       </div>

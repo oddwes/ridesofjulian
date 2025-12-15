@@ -133,22 +133,32 @@ export const Modal = ({
               )}
             </div>
             <div className="flex items-center gap-2">
-              {!showFooter && (
+              {showFooter ? (
                 <button
                   onClick={handleClose}
-                  className="px-4 py-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+                  disabled={isSaving}
+                  className="px-4 py-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Close
                 </button>
-              )}
-              {onDelete && (
-                <button
-                  onClick={handleDelete}
-                  disabled={isSaving}
-                  className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Delete
-                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleClose}
+                    className="px-4 py-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+                  >
+                    Close
+                  </button>
+                  {onDelete && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -157,14 +167,16 @@ export const Modal = ({
           {children}
         </div>
         {showFooter && (
-          <div className="sticky bottom-0 px-6 py-4 flex justify-end items-center gap-3 z-10">
-            <button
-              onClick={handleClose}
-              disabled={isSaving}
-              className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
+          <div className="sticky bottom-0 px-6 py-4 flex justify-between items-center gap-3 z-10">
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                disabled={isSaving}
+                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete
+              </button>
+            )}
             {onSave && (
               <button
                 onClick={onSave}

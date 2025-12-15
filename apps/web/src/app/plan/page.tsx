@@ -170,6 +170,25 @@ export default function PlanPage() {
     }
   }
 
+  const handleWahooIdChange = async (wahooId: number | null) => {
+    if (!editingWorkout || !user?.id) return
+
+    try {
+      const updatedWahooId = wahooId ?? undefined
+      await updateSchedule(editingWorkout, (plan) =>
+        plan.map((w) =>
+          w.id === editingWorkout.id
+            ? { ...w, wahooId: updatedWahooId }
+            : w
+        )
+      )
+      setEditingWorkout({ ...editingWorkout, wahooId: updatedWahooId })
+    } catch (error) {
+      console.error('Failed to update wahooId:', error)
+      throw error
+    }
+  }
+
   const handleModalSave = async () => {
     if (!editWorkoutRef.current) return
     setIsSaving(true)
@@ -322,7 +341,10 @@ export default function PlanPage() {
             initialIntervals={editingWorkout.intervals}
             initialTitle={workoutTitle}
             initialDate={selectedDate}
+            initialWahooId={editingWorkout.wahooId}
+            workoutId={editingWorkout.id}
             onSave={handleSaveEditedWorkout}
+            onWahooIdChange={handleWahooIdChange}
             disabled={isSaving}
           />
         </Modal>
