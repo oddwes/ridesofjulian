@@ -214,7 +214,7 @@ export function ExerciseList({
                   ]}
                   value={
                     weightInputs[exerciseId] ??
-                    (exercise.weight ? getDisplayWeight(exercise.weight).toString() : '')
+                    (exercise.weight ? getDisplayWeight(exercise.weight, weightUnit).toString() : '')
                   }
                   onChangeText={(text) => {
                     setWeightInputs(prev => ({ ...prev, [exerciseId]: text }));
@@ -241,7 +241,7 @@ export function ExerciseList({
                   placeholderTextColor="#9ca3af"
                 />
               ) : (
-                <Text style={styles.valueText}>{exercise.weight ? getDisplayWeight(exercise.weight) : '0'}</Text>
+                <Text style={styles.valueText}>{exercise.weight ? getDisplayWeight(exercise.weight, weightUnit) : '0'}</Text>
               )}
             </View>
             <View style={styles.inputGroup}>
