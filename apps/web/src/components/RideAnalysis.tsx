@@ -137,6 +137,7 @@ export function RideAnalysis({ activity }: RideAnalysisProps) {
   const [isQueued, setIsQueued] = useState(false)
   const [isCheckingAnalysis, setIsCheckingAnalysis] = useState(true)
   const [loadingOpacity, setLoadingOpacity] = useState(1)
+  const [jsonCopied, setJsonCopied] = useState(false)
 
   const toKmh = (mps?: number) => (mps == null ? undefined : mps * 3.6)
 
@@ -197,6 +198,25 @@ export function RideAnalysis({ activity }: RideAnalysisProps) {
 
   const handleViewOnStrava = () => {
     window.open(`https://strava.com/activities/${activity.id}`, '_blank')
+  }
+
+  const handleCopyJson = async () => {
+    const json = detailed ?? activity
+    const excludeKeys = new Set([
+      'map',
+      'segment_efforts',
+      'splits_metric',
+      'splits_standard',
+      'gear',
+      'photos',
+      'stats_visibility',
+    ])
+    const filtered = Object.fromEntries(
+      Object.entries(json).filter(([key]) => !excludeKeys.has(key))
+    )
+    await navigator.clipboard.writeText(JSON.stringify(filtered, null, 2))
+    setJsonCopied(true)
+    setTimeout(() => setJsonCopied(false), 2000)
   }
 
   const handleAnalyzeRide = async () => {
@@ -331,12 +351,20 @@ export function RideAnalysis({ activity }: RideAnalysisProps) {
           {formatDistance(activity.distance)} · {formatElevation(activity.total_elevation_gain)} ·{' '}
           {formatDuration(Math.round(activity.moving_time / 60))}
         </p>
-        <button
-          onClick={handleViewOnStrava}
-          className="px-4 py-2 bg-[#fc4c02] rounded-lg hover:bg-[#e04402] transition-colors text-white text-sm font-semibold whitespace-nowrap"
-        >
-          View on Strava
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopyJson}
+            className="px-3 py-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors text-white text-sm font-semibold whitespace-nowrap"
+          >
+            {jsonCopied ? 'Copied!' : 'Copy data'}
+          </button>
+          <button
+            onClick={handleViewOnStrava}
+            className="px-4 py-2 bg-[#fc4c02] rounded-lg hover:bg-[#e04402] transition-colors text-white text-sm font-semibold whitespace-nowrap"
+          >
+            View on Strava
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
